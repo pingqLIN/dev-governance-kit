@@ -1,0 +1,13 @@
+{
+  "schema": "dev-governance-kit.ports.registry.v1",
+  "description": "Canonical shared port registry. Machine-local overlays stay outside this file.",
+  "sourceOfTruth": "registry/ports.registry.json",
+  "ranges": {
+    "frontend": { "start": 3100, "end": 3199 },
+    "api": { "start": 3200, "end": 3299 },
+    "data": { "start": 3300, "end": 3399 },
+    "preview": { "start": 3400, "end": 3499 },
+    "agent": { "start": 3500, "end": 3599 }
+  },
+  "entries": []
+}

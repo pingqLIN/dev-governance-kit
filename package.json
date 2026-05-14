@@ -1,0 +1,16 @@
+{
+  "name": "dev-governance-kit",
+  "version": "0.1.0",
+  "description": "Multi-project development governance toolkit focused on port governance v1.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "scan:project": "node scripts/scan-project.mjs",
+    "scan:workspace": "node scripts/scan-workspace.mjs",
+    "validate:registry": "node scripts/validate-registry.mjs registry/ports.registry.json",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

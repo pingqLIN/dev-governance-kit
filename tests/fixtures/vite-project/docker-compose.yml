@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres
+    environment:
+      DATABASE_URL: "postgres://demo:db-password@localhost:5433/app"
+    ports:
+      - "127.0.0.1:5434:5432"
+  cache:
+    image: redis
+    expose:
+      - "6379"
