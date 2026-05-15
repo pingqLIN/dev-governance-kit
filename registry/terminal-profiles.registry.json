@@ -1,0 +1,6 @@
+{
+  "schema": "dev-governance-kit.terminal-profiles.registry.v1",
+  "description": "Canonical Terminal profile governance records. Machine-local settings paths and scan evidence stay in reports/.",
+  "sourceOfTruth": "registry/terminal-profiles.registry.json",
+  "profiles": []
+}

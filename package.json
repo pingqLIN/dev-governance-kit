@@ -1,13 +1,18 @@
 {
   "name": "dev-governance-kit",
   "version": "0.1.0",
-  "description": "Multi-project development governance toolkit focused on port governance v1.",
+  "description": "Multi-project development governance toolkit for ports, terminal profiles, startup entries, public routes, and local document search.",
   "type": "module",
   "private": true,
   "scripts": {
     "scan:project": "node scripts/scan-project.mjs",
     "scan:workspace": "node scripts/scan-workspace.mjs",
-    "validate:registry": "node scripts/validate-registry.mjs registry/ports.registry.json",
+    "validate:registry": "node scripts/validate-registry.mjs registry",
+    "scan:terminal": "node scripts/scan-terminal.mjs",
+    "plan:terminal-fix": "node scripts/plan-terminal-fix.mjs",
+    "scan:startup": "node scripts/scan-startup.mjs",
+    "scan:public-routes": "node scripts/scan-public-routes.mjs",
+    "scan:docs": "node scripts/scan-docs.mjs",
     "test": "node --test"
   },
   "engines": {

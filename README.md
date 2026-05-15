@@ -1,6 +1,6 @@
 # dev-governance-kit
 
-`dev-governance-kit` is a local multi-project governance toolkit. The first release implements port governance so development services, agents, and humans can share one auditable source of truth.
+`dev-governance-kit` is a local multi-project governance toolkit. It keeps development services, agents, Terminal profiles, startup automation, public routes, and local documentation search behind auditable sources of truth.
 
 The project follows a UniText-like layout:
 
@@ -9,7 +9,7 @@ The project follows a UniText-like layout:
 - `scripts/` stores verification and audit commands.
 - `reports/` stores generated evidence and is ignored except for `.gitkeep`.
 
-Version 1 is audit-first. It does not patch target projects or apply workspace-wide changes.
+The toolkit is audit-first. Scanners produce evidence in `reports/`; reviewed records are promoted into `registry/`.
 
 ## Quick Start
 
@@ -39,6 +39,36 @@ Validate the canonical registry:
 npm run validate:registry
 ```
 
+Audit Windows Terminal profile assets:
+
+```powershell
+npm run scan:terminal -- --out reports\terminal-profile-audit.md
+```
+
+Create a reviewed Terminal settings fix plan:
+
+```powershell
+npm run plan:terminal-fix
+```
+
+Audit Codex/development startup surfaces:
+
+```powershell
+npm run scan:startup -- --out reports\startup-audit.md
+```
+
+Audit Cloudflare public route configs:
+
+```powershell
+npm run scan:public-routes -- --out reports\public-routes-audit.md
+```
+
+Build the local static document search artifacts:
+
+```powershell
+npm run scan:docs
+```
+
 Check declared ports before starting a service:
 
 ```powershell
@@ -57,7 +87,7 @@ node templates/check-ports.mjs 3101,3201
 
 ## Registry Entry Contract
 
-Every approved service entry must include:
+Port service entries must include:
 
 | Field | Meaning |
 |---|---|
@@ -71,6 +101,8 @@ Every approved service entry must include:
 | `source` | File or policy that owns the allocation |
 | `notes` | Required human context for why the allocation exists |
 
+Additional registries use the same rule: canonical files contain stable identifiers and reviewed policy only. Machine-local paths, full command lines, Terminal settings paths, Cloudflare credential paths, and temporary scan evidence stay in `reports/`.
+
 ## Safety Defaults
 
 - Scans are read-only.
@@ -78,4 +110,5 @@ Every approved service entry must include:
 - `.env` reports redact non-port and non-host values.
 - `0.0.0.0` is treated as a visibility risk that must be documented.
 - Automatic port fallback is flagged because it makes agent startup behavior ambiguous.
-- Generated reports are evidence, not canonical policy; promote intentional findings into `registry/ports.registry.json` only after review.
+- Terminal settings are not modified by audit commands. `plan:terminal-fix` is dry-run unless explicitly run with `--apply`.
+- Generated reports are evidence, not canonical policy; promote intentional findings into `registry/*.registry.json` only after review.

@@ -1,16 +1,29 @@
 #!/usr/bin/env node
-import { loadRegistry, validateRegistry } from "./lib/registry-core.mjs";
+import { loadJson, loadRegistryFiles, validateGovernanceRegistry } from "./lib/governance-registry-core.mjs";
 
-const registryPath = process.argv[2] ?? "registry/ports.registry.json";
-const registry = await loadRegistry(registryPath);
-const errors = validateRegistry(registry);
+const targetPath = process.argv[2] ?? "registry";
+const registryPaths = await loadRegistryFiles(targetPath);
+const failures = [];
 
-if (errors.length) {
-  console.error("Port registry validation failed:");
-  for (const error of errors) {
-    console.error(`- ${error}`);
+for (const registryPath of registryPaths) {
+  const registry = await loadJson(registryPath);
+  const errors = validateGovernanceRegistry(registry);
+  if (errors.length) {
+    failures.push({ registryPath, errors });
+  }
+}
+
+if (failures.length) {
+  console.error("Registry validation failed:");
+  for (const failure of failures) {
+    console.error(`\n${failure.registryPath}`);
+    for (const error of failure.errors) {
+      console.error(`- ${error}`);
+    }
   }
   process.exit(1);
 }
 
-console.log(`Port registry valid: ${registryPath}`);
+for (const registryPath of registryPaths) {
+  console.log(`Registry valid: ${registryPath}`);
+}

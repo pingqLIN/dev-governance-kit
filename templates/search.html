@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>dev-governance-kit Search</title>
+  <style>
+    body{font-family:Segoe UI,system-ui,sans-serif;margin:0;background:#f6f8fa;color:#20242a}
+    main{max-width:980px;margin:0 auto;padding:32px 20px}
+    input{width:100%;box-sizing:border-box;font-size:18px;padding:12px;border:1px solid #b8c0cc;border-radius:6px}
+    article{background:white;border:1px solid #d8dee8;border-radius:6px;margin:14px 0;padding:14px}
+    h1{font-size:28px;margin:0 0 16px}
+    h2{font-size:18px;margin:0 0 8px}
+    code{color:#5b6270}
+  </style>
+</head>
+<body>
+<main>
+  <h1>dev-governance-kit 文件檢索</h1>
+  <input id="q" autofocus placeholder="搜尋 registry、templates、docs">
+  <section id="results"></section>
+</main>
+<script>
+const results = document.getElementById('results');
+const input = document.getElementById('q');
+let docs = [];
+fetch('search-index.json').then(r => r.json()).then(index => { docs = index.documents || []; render(''); });
+input.addEventListener('input', () => render(input.value));
+function render(query) {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = docs.filter(doc => !terms.length || terms.every(term => (doc.path + ' ' + doc.title + ' ' + doc.tokens.join(' ')).toLowerCase().includes(term))).slice(0, 50);
+  results.innerHTML = matches.map(doc => '<article><h2>' + esc(doc.title) + '</h2><code>' + esc(doc.path) + '</code><p>' + esc(doc.preview) + '</p></article>').join('');
+}
+function esc(value){return String(value).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));}
+</script>
+</body>
+</html>

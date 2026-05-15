@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { validateRegistry } from "../scripts/lib/registry-core.mjs";
+import { validateGovernanceRegistry } from "../scripts/lib/governance-registry-core.mjs";
 
 function baseRegistry(entries) {
   return {
@@ -161,4 +162,10 @@ test("validateRegistry rejects machine-local registry fields", () => {
   assert.ok(errors.some((error) => error.includes("service must not contain machine-local")));
   assert.ok(errors.some((error) => error.includes("source must not contain machine-local")));
   assert.ok(errors.some((error) => error.includes("notes must not contain machine-local")));
+});
+
+test("validateGovernanceRegistry delegates existing port registry validation", () => {
+  const errors = validateGovernanceRegistry(baseRegistry([]));
+
+  assert.deepEqual(errors, []);
 });

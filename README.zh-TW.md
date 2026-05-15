@@ -1,6 +1,6 @@
 # dev-governance-kit
 
-`dev-governance-kit` 是本機多專案開發治理工具包。第一版先實作 Port Governance，讓開發服務、AI agent 與人類操作者共用同一份可稽核的 source of truth。
+`dev-governance-kit` 是本機多專案開發治理工具包。它把開發服務、AI agent、Windows Terminal profiles、開機啟動項、Cloudflare 對外路由與本機文件檢索放在可稽核的 source of truth 後面管理。
 
 本專案採用類似 UniText 的資料管理分層：
 
@@ -9,7 +9,7 @@
 - `scripts/` 存放驗證、掃描、稽核指令。
 - `reports/` 存放產生出的本機 evidence；除了 `.gitkeep` 以外預設不納入版控。
 
-Version 1 是 audit-first。它只產生證據與治理建議，不會直接 patch 目標專案，也不會批次套用整個 workspace 的設定。
+本工具包是 audit-first。掃描只產生 `reports/` evidence；經 review 的紀錄才提升到 `registry/`。
 
 ## 快速開始
 
@@ -31,6 +31,36 @@ node scripts/scan-workspace.mjs Q:\Projects --out reports\workspace-port-audit.m
 npm run validate:registry
 ```
 
+掃描 Windows Terminal profile assets：
+
+```powershell
+npm run scan:terminal -- --out reports\terminal-profile-audit.md
+```
+
+產生 Terminal settings 修復計畫：
+
+```powershell
+npm run plan:terminal-fix
+```
+
+掃描 Codex / 開發環境開機啟動項：
+
+```powershell
+npm run scan:startup -- --out reports\startup-audit.md
+```
+
+掃描 Cloudflare 對外路由設定：
+
+```powershell
+npm run scan:public-routes -- --out reports\public-routes-audit.md
+```
+
+產生本機靜態文件檢索 artifacts：
+
+```powershell
+npm run scan:docs
+```
+
 啟動服務前檢查已宣告的 TCP port：
 
 ```powershell
@@ -49,7 +79,7 @@ node templates/check-ports.mjs 3101,3201
 
 ## Registry 條目規定
 
-每個已核准的服務條目都必須包含：
+每個已核准的 port 服務條目都必須包含：
 
 | 欄位 | 意義 |
 |---|---|
@@ -63,6 +93,8 @@ node templates/check-ports.mjs 3101,3201
 | `source` | 擁有此配置的檔案或政策 |
 | `notes` | 必填的人類脈絡，說明此配置存在的原因 |
 
+其他 registry 也遵守同一個原則：canonical 檔案只存穩定 ID 與已審查 policy。本機路徑、完整啟動命令、Terminal settings 路徑、Cloudflare credential 路徑與暫時掃描 evidence 都留在 `reports/`。
+
 ## 安全預設
 
 - 掃描都是 read-only。
@@ -70,4 +102,5 @@ node templates/check-ports.mjs 3101,3201
 - `.env` 報告會遮罩非 port、非 host 的值。
 - `0.0.0.0` 會被視為 visibility risk，必須文件化。
 - automatic port fallback 會被標記，因為它會讓 agent 啟動行為變得模糊。
-- 產生出的 reports 只是 evidence，不是 canonical policy；有意義的 findings 必須經 review 後再提升到 `registry/ports.registry.json`。
+- Terminal audit 不會修改 Windows Terminal settings；`plan:terminal-fix` 預設 dry-run，除非明確加 `--apply`。
+- 產生出的 reports 只是 evidence，不是 canonical policy；有意義的 findings 必須經 review 後再提升到 `registry/*.registry.json`。

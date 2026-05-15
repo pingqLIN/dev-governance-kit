@@ -1,0 +1,6 @@
+{
+  "schema": "dev-governance-kit.startup.registry.v1",
+  "description": "Canonical startup governance records for reviewed development automation. Machine-local launch paths stay in reports/.",
+  "sourceOfTruth": "registry/startup.registry.json",
+  "entries": []
+}
