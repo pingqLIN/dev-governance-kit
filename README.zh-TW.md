@@ -55,6 +55,18 @@ npm run scan:startup -- --out reports\startup-audit.md
 npm run scan:public-routes -- --out reports\public-routes-audit.md
 ```
 
+掃描 Git worktree inventory，並以 common repo 去重：
+
+```powershell
+npm run scan:worktrees -- Q:\Projects --out reports\worktree-audit.md
+```
+
+可選 policy thresholds：
+
+```powershell
+npm run scan:worktrees -- Q:\Projects --out reports\worktree-audit.md --max-age-days 30 --max-linked-worktrees 3
+```
+
 產生本機靜態文件檢索 artifacts：
 
 ```powershell
@@ -76,6 +88,36 @@ node templates/check-ports.mjs 3101,3201
 | db/cache/queue | `3300-3399` |
 | preview/docs | `3400-3499` |
 | agent/MCP/local tools | `3500-3599` |
+
+## Worktree Governance
+
+Linked worktree 使用 repo-specific container：
+
+```text
+Q:\Projects\<repo-name>
+Q:\Projects\<repo-name>.worktrees\<task-or-branch>-<yyyyMMdd-HHmmss>
+```
+
+既有 `Q:\Projects\<repo-name>-worktrees\...` container 仍有效，也會被掃描以維持相容。新的 container 建議使用 `.worktrees`，因為它會排序在 owning repo 旁邊，且清楚標示為 operational storage。
+
+建議在以下時機執行 `scan:worktrees`：
+
+- 建立一批新 worktrees 前
+- cleanup 或 consolidation 前
+- 回報 workspace project count 前
+- 例行 workspace hygiene review 時
+
+報告會使用以下 signals：
+
+| Signal | 意義 |
+|---|---|
+| `Git entries` | 所有偵測到的 Git checkouts 與 linked worktrees |
+| `Unique Git repositories` | 以 Git common-dir 去重後的 project count |
+| `Linked worktree entries` | `--git-dir` 不同於 `--git-common-dir` 的 checkouts |
+| `Worktree containers` | 偵測到的 `*.worktrees` 或 `*-worktrees` folders |
+| `Recommendation` | Review signal，例如 `within policy`、`cleanup candidate after branch/review check` 或 `review dirty worktrees before cleanup` |
+
+Cleanup 仍維持 manual 與 review-gated。處理 candidate worktree 前，先用 `git worktree list --porcelain` 確認 owning repo，並用 `git status --short --branch` 檢查狀態；dirty 或 unmerged work 必須先備份。只有已 review 且乾淨的 worktree 才可執行 `git worktree remove <path>`。`git worktree prune` 只在 reviewed removals 後執行。
 
 ## Registry 條目規定
 
@@ -103,4 +145,5 @@ node templates/check-ports.mjs 3101,3201
 - `0.0.0.0` 會被視為 visibility risk，必須文件化。
 - automatic port fallback 會被標記，因為它會讓 agent 啟動行為變得模糊。
 - Terminal audit 不會修改 Windows Terminal settings；`plan:terminal-fix` 預設 dry-run，除非明確加 `--apply`。
+- Worktree audit 只讀產生 evidence 與 cleanup candidate；實際 remove/prune 仍必須經 review gate。
 - 產生出的 reports 只是 evidence，不是 canonical policy；有意義的 findings 必須經 review 後再提升到 `registry/*.registry.json`。

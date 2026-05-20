@@ -63,6 +63,18 @@ Audit Cloudflare public route configs:
 npm run scan:public-routes -- --out reports\public-routes-audit.md
 ```
 
+Audit Git worktree inventory without double-counting linked worktrees:
+
+```powershell
+npm run scan:worktrees -- Q:\Projects --out reports\worktree-audit.md
+```
+
+Optional policy thresholds:
+
+```powershell
+npm run scan:worktrees -- Q:\Projects --out reports\worktree-audit.md --max-age-days 30 --max-linked-worktrees 3
+```
+
 Build the local static document search artifacts:
 
 ```powershell
@@ -84,6 +96,36 @@ node templates/check-ports.mjs 3101,3201
 | db/cache/queue | `3300-3399` |
 | preview/docs | `3400-3499` |
 | agent/MCP/local tools | `3500-3599` |
+
+## Worktree Governance
+
+Use repo-specific containers for linked worktrees:
+
+```text
+Q:\Projects\<repo-name>
+Q:\Projects\<repo-name>.worktrees\<task-or-branch>-<yyyyMMdd-HHmmss>
+```
+
+Existing `Q:\Projects\<repo-name>-worktrees\...` containers are still valid and scanned for compatibility. New containers should prefer `.worktrees` because the folder sorts next to the owning repo and is clearly operational storage.
+
+Run `scan:worktrees` at these checkpoints:
+
+- before creating a batch of new worktrees
+- before cleanup or consolidation
+- before reporting workspace project counts
+- during regular workspace hygiene reviews
+
+The report uses these signals:
+
+| Signal | Meaning |
+|---|---|
+| `Git entries` | All discovered Git checkouts and linked worktrees |
+| `Unique Git repositories` | Project count after Git common-dir de-duplication |
+| `Linked worktree entries` | Checkouts whose `--git-dir` differs from `--git-common-dir` |
+| `Worktree containers` | Detected `*.worktrees` or `*-worktrees` folders |
+| `Recommendation` | Review signal such as `within policy`, `cleanup candidate after branch/review check`, or `review dirty worktrees before cleanup` |
+
+Cleanup remains manual and review-gated. For a candidate worktree, confirm the owning repo with `git worktree list --porcelain`, check `git status --short --branch`, back up dirty or unmerged work first, then use `git worktree remove <path>` only for reviewed clean worktrees. Run `git worktree prune` only after reviewed removals.
 
 ## Registry Entry Contract
 
@@ -111,4 +153,5 @@ Additional registries use the same rule: canonical files contain stable identifi
 - `0.0.0.0` is treated as a visibility risk that must be documented.
 - Automatic port fallback is flagged because it makes agent startup behavior ambiguous.
 - Terminal settings are not modified by audit commands. `plan:terminal-fix` is dry-run unless explicitly run with `--apply`.
+- Worktree audits are read-only and only recommend cleanup candidates; removal and prune steps remain review-gated.
 - Generated reports are evidence, not canonical policy; promote intentional findings into `registry/*.registry.json` only after review.
