@@ -9,5 +9,66 @@
     "preview": { "start": 3400, "end": 3499 },
     "agent": { "start": 3500, "end": 3599 }
   },
-  "entries": []
+  "entries": [
+    {
+      "project": "tb2",
+      "service": "tb2-mcp-http",
+      "port": 3189,
+      "host": "127.0.0.1",
+      "visibility": "public",
+      "protocol": "http",
+      "source": "tb2 PORTS.md; public route audit",
+      "notes": "Durable TB2 loopback origin for MCP HTTP and health routes. Public ingress must stay through reviewed tunnel routes."
+    },
+    {
+      "project": "chatgpt-local-files-mcp",
+      "service": "mcp-http",
+      "port": 43189,
+      "host": "127.0.0.1",
+      "visibility": "public",
+      "protocol": "http",
+      "source": "workspace port audit; public route audit",
+      "notes": "Active public-route audit maps mcp.colorgeek.co here. Keep under review because TB2 source configs also declare the same hostname."
+    },
+    {
+      "project": "codex-calendar-todo",
+      "service": "staging-http",
+      "port": 9190,
+      "host": "127.0.0.1",
+      "visibility": "public",
+      "protocol": "http",
+      "source": "public route audit; startup audit",
+      "notes": "Staging route target for codex-calendar-todo-staging.colorgeek.co."
+    },
+    {
+      "project": "codex-remote",
+      "service": "remote-services-http",
+      "port": 14555,
+      "host": "127.0.0.1",
+      "visibility": "public",
+      "protocol": "http",
+      "source": "public route audit; startup audit",
+      "notes": "Codex remote service route target. Startup entry is managed separately in startup.registry.json."
+    },
+    {
+      "project": "taste",
+      "service": "web-http",
+      "port": 3010,
+      "host": "127.0.0.1",
+      "visibility": "public",
+      "protocol": "http",
+      "source": "public route audit",
+      "notes": "Public route target for taste.colorgeek.co."
+    },
+    {
+      "project": "lm-studio",
+      "service": "local-api-http",
+      "port": 1234,
+      "host": "127.0.0.1",
+      "visibility": "public",
+      "protocol": "http",
+      "source": "public route audit",
+      "notes": "Public route target for lmstudio.colorgeek.co; review exposure before widening access."
+    }
+  ]
 }

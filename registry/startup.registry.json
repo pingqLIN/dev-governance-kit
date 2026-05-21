@@ -2,5 +2,61 @@
   "schema": "dev-governance-kit.startup.registry.v1",
   "description": "Canonical startup governance records for reviewed development automation. Machine-local launch paths stay in reports/.",
   "sourceOfTruth": "registry/startup.registry.json",
-  "entries": []
+  "entries": [
+    {
+      "id": "chatgpt-local-files-mcp-windows-runtime",
+      "project": "chatgpt-local-files-mcp",
+      "trigger": "startup-folder",
+      "purpose": "Start the Windows-host ChatGPT local-files MCP runtime on login.",
+      "scriptRef": "chatgpt-local-files-mcp/scripts/startup-production.ps1",
+      "status": "candidate",
+      "source": "startup audit",
+      "notes": "Detected as Codex-created startup automation. Keep full local command line in reports only.",
+      "managedByCodex": true
+    },
+    {
+      "id": "codex-remote-services",
+      "project": "codex-remote",
+      "trigger": "startup-folder",
+      "purpose": "Start Codex remote services on login.",
+      "scriptRef": "codex/Start-CodexRemoteOnLogin.ps1",
+      "status": "candidate",
+      "source": "startup audit; public route audit",
+      "notes": "Detected as Codex-created startup automation for codex-remote.colorgeek.co.",
+      "managedByCodex": true
+    },
+    {
+      "id": "codex-calendar-todo",
+      "project": "codex-calendar-todo",
+      "trigger": "scheduled-task",
+      "purpose": "Keep the codex-calendar-todo local staging server available.",
+      "scriptRef": "codex-calendar-todo/scripts/windows-persistent-server.ps1",
+      "status": "candidate",
+      "source": "startup audit; public route audit",
+      "notes": "Scheduled task uses a local repo path in the machine report; registry stores only stable script reference.",
+      "managedByCodex": true
+    },
+    {
+      "id": "cloudflared",
+      "project": "cloudflare-maintenance-log",
+      "trigger": "windows-service",
+      "purpose": "Run Cloudflare tunnel routes for reviewed local services.",
+      "scriptRef": "cloudflared windows service",
+      "status": "candidate",
+      "source": "startup audit; public route audit",
+      "notes": "Service is running automatically; route ownership and duplicate hostnames are governed in public-routes.registry.json.",
+      "managedByCodex": false
+    },
+    {
+      "id": "tips-terminal",
+      "project": "Tips-terminel-new-gui",
+      "trigger": "registry-run",
+      "purpose": "Start the TipsTerminal helper at login.",
+      "scriptRef": "Tips-terminel-new-gui/scripts/Start-TipsTerminal.ps1",
+      "status": "candidate",
+      "source": "startup audit",
+      "notes": "Development automation candidate from Registry Run; review before approval.",
+      "managedByCodex": false
+    }
+  ]
 }
