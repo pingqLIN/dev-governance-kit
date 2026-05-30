@@ -7,7 +7,8 @@ import { test } from "node:test";
 import { buildDocsIndex } from "../scripts/lib/docs-index-core.mjs";
 import { loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
-import { validateLocalAgentsRegistry, validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
+import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
+import { validateApiKeysRegistry, validateLocalAgentsRegistry, validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
 import { scanStartupFolder } from "../scripts/lib/startup-core.mjs";
 import { buildTerminalFixPlan, scanTerminalSettingsObject } from "../scripts/lib/terminal-core.mjs";
@@ -128,6 +129,78 @@ test("new governance registries validate canonical shared data only", () => {
       managedByCodex: true
     }]
   }), []);
+
+  assert.deepEqual(validateApiKeysRegistry({
+    schema: "devgov.api-keys.registry.v1",
+    entries: [{
+      id: "openai-api-key",
+      project: "system-environment",
+      service: "OpenAI Platform",
+      variableName: "OPENAI_API_KEY",
+      credentialKind: "api-key",
+      storageLocation: "Windows Machine environment variables",
+      accessMethod: "Environment variable consumed by OpenAI SDKs.",
+      settingsUrl: "https://platform.openai.com/api-keys",
+      rules: "Never commit values; rotate in the owning service dashboard.",
+      status: "candidate",
+      source: "API key environment audit",
+      notes: "Stores only the variable name and policy."
+    }]
+  }), []);
+});
+
+test("API key scanner records names and redacts values", async () => {
+  const root = await mkdtemp(join(tmpdir(), "dev-governance-api-keys-"));
+  await writeFile(join(root, ".env"), "OPENAI_API_KEY=sk-test-secret\nAPP_PORT=3101\n", "utf8");
+  await writeFile(join(root, "README.md"), "Use OPENAI_API_KEY and CF_API_TOKEN for local tests.", "utf8");
+
+  const project = await scanProjectApiKeyReferences(root);
+  const report = renderApiKeyAudit({
+    generatedAt: "2026-05-31T00:00:00.000Z",
+    project,
+    environment: [{
+      scope: "machine",
+      name: "OPENAI_API_KEY",
+      service: "OpenAI Platform",
+      storageLocation: "Windows Machine environment variables",
+      accessMethod: "Environment variable consumed by OpenAI SDKs.",
+      settingsUrl: "https://platform.openai.com/api-keys",
+      rules: "Never commit values; rotate in the owning service dashboard.",
+      risk: "persistent-review"
+    }]
+  });
+
+  assert.equal(project.findings.length, 3);
+  assert.doesNotMatch(report, /sk-test-secret/);
+  assert.match(report, /OPENAI_API_KEY=<redacted>/);
+  assert.match(report, /machine-openai-api-key/);
+});
+
+test("API key registry suggestions promote only machine scope by default", () => {
+  const entries = buildApiKeyRegistryEntries([
+    {
+      scope: "process",
+      name: "ANTHROPIC_API_KEY",
+      service: "Anthropic Console",
+      storageLocation: "Current process environment",
+      accessMethod: "Environment variable consumed by Anthropic SDKs.",
+      settingsUrl: "https://console.anthropic.com/settings/keys",
+      rules: "Never commit values.",
+      risk: "transient-review"
+    },
+    {
+      scope: "machine",
+      name: "OPENAI_API_KEY",
+      service: "OpenAI Platform",
+      storageLocation: "Windows Machine environment variables",
+      accessMethod: "Environment variable consumed by OpenAI SDKs.",
+      settingsUrl: "https://platform.openai.com/api-keys",
+      rules: "Never commit values.",
+      risk: "persistent-review"
+    }
+  ]);
+
+  assert.deepEqual(entries.map((entry) => entry.id), ["machine-openai-api-key"]);
 });
 
 test("docs index excludes reports and redacts credential-like content", async () => {
@@ -188,6 +261,7 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.ok(state.localAgents.some((agent) => agent.id === "local-archive-maintainer"));
   assert.match(html, /DevGov Dashboard/);
   assert.match(html, /Local Service Agents/);
+  assert.match(html, /API Key Governance/);
   assert.match(html, /127\.0\.0\.1:3101/);
 });
 
@@ -199,4 +273,5 @@ test("doctor verifies DevGov dashboard governance without modifying canonical re
   assert.ok(result.checks.some((check) => check.id === "dashboard-port-registry" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "dashboard-startup-registry" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "local-agent-registry" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "api-key-registry" && check.ok));
 });

@@ -6,13 +6,14 @@ export const DASHBOARD_PORT = 3101;
 export const DASHBOARD_URL = `http://${DASHBOARD_HOST}:${DASHBOARD_PORT}`;
 
 export async function loadDashboardState(root = ".") {
-  const [pkg, ports, startup, publicRoutes, terminalProfiles, localAgents] = await Promise.all([
+  const [pkg, ports, startup, publicRoutes, terminalProfiles, localAgents, apiKeys] = await Promise.all([
     readJson(path.join(root, "package.json")),
     readJson(path.join(root, "registry", "ports.registry.json")),
     readJson(path.join(root, "registry", "startup.registry.json")),
     readJson(path.join(root, "registry", "public-routes.registry.json")),
     readJson(path.join(root, "registry", "terminal-profiles.registry.json")),
-    readJson(path.join(root, "registry", "local-agents.registry.json"))
+    readJson(path.join(root, "registry", "local-agents.registry.json")),
+    readJson(path.join(root, "registry", "api-keys.registry.json"))
   ]);
 
   const dashboardPort = ports.entries.find((entry) => (
@@ -33,13 +34,15 @@ export async function loadDashboardState(root = ".") {
       startupEntries: startup.entries.length,
       publicRoutes: publicRoutes.routes.length,
       terminalProfiles: terminalProfiles.profiles.length,
-      localAgents: localAgents.agents.length
+      localAgents: localAgents.agents.length,
+      apiKeys: apiKeys.entries.length
     },
     ports: ports.entries,
     startupEntries: startup.entries,
     publicRoutes: publicRoutes.routes,
     terminalProfiles: terminalProfiles.profiles,
-    localAgents: localAgents.agents
+    localAgents: localAgents.agents,
+    apiKeys: apiKeys.entries
   };
 }
 
@@ -159,7 +162,7 @@ export function renderDashboardHtml(state) {
     .strip {
       display: grid;
       gap: 12px;
-      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
       margin-bottom: 18px;
     }
     .metric {
@@ -255,6 +258,7 @@ export function renderDashboardHtml(state) {
     <button data-view="startup"><span class="glyph">04</span> Startup</button>
     <button data-view="routes"><span class="glyph">05</span> Routes</button>
     <button data-view="terminal"><span class="glyph">06</span> Terminal</button>
+    <button data-view="api-keys"><span class="glyph">07</span> API Keys</button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -281,6 +285,10 @@ export function renderDashboardHtml(state) {
       <div class="toolbar"><h2>Terminal Profiles</h2><input data-filter="terminal" placeholder="Filter terminal"></div>
       <table data-table="terminal"></table>
     </section>
+    <section id="api-keys">
+      <div class="toolbar"><h2>API Key Governance</h2><input data-filter="api-keys" placeholder="Filter API keys"></div>
+      <table data-table="api-keys"></table>
+    </section>
   </div>
 </main>
 <script>
@@ -296,7 +304,8 @@ document.getElementById('metrics').innerHTML = [
   ['Agents', state.summary.localAgents],
   ['Startup', state.summary.startupEntries],
   ['Routes', state.summary.publicRoutes],
-  ['Profiles', state.summary.terminalProfiles]
+  ['Profiles', state.summary.terminalProfiles],
+  ['API Keys', state.summary.apiKeys]
 ].map(([label, value]) => '<div class="metric"><strong>' + esc(value) + '</strong><span>' + esc(label) + '</span></div>').join('');
 renderDashboardPort();
 renderPorts('');
@@ -304,6 +313,7 @@ renderAgents('');
 renderStartup('');
 renderRoutes('');
 renderTerminal('');
+renderApiKeys('');
 document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase();
@@ -312,6 +322,7 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
     if (input.dataset.filter === 'startup') renderStartup(value);
     if (input.dataset.filter === 'routes') renderRoutes(value);
     if (input.dataset.filter === 'terminal') renderTerminal(value);
+    if (input.dataset.filter === 'api-keys') renderApiKeys(value);
   });
 });
 function renderDashboardPort() {
@@ -339,6 +350,10 @@ function renderRoutes(query) {
 function renderTerminal(query) {
   const rows = state.terminalProfiles.filter(row => match(row, query));
   renderTable('terminal', ['ID', 'Name', 'Asset Policy', 'Status', 'Notes'], rows.map(row => [row.id, row.name, row.assetPolicy, pill(row.status), row.notes]));
+}
+function renderApiKeys(query) {
+  const rows = state.apiKeys.filter(row => match(row, query));
+  renderTable('api-keys', ['Variable', 'Service', 'Storage', 'Settings', 'Status'], rows.map(row => [row.variableName, row.service, row.storageLocation, '<code>' + esc(row.settingsUrl) + '</code>', pill(row.status)]));
 }
 function renderTable(name, headers, rows) {
   document.querySelector('[data-table="' + name + '"]').innerHTML = '<tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>' + rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('');

@@ -17,6 +17,7 @@ export async function runDoctorChecks(root = ".", options = {}) {
   const registryFiles = [
     "ports.registry.json",
     "local-agents.registry.json",
+    "api-keys.registry.json",
     "startup.registry.json",
     "public-routes.registry.json",
     "terminal-profiles.registry.json"
@@ -52,7 +53,14 @@ export async function runDoctorChecks(root = ".", options = {}) {
     localArchiveAgent ? `${localArchiveAgent.displayName} (${localArchiveAgent.kind})` : "missing local-archive-maintainer"
   );
 
-  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1"]) {
+  const apiKeys = await readJson(path.join(root, "registry", "api-keys.registry.json"));
+  add(
+    "api-key-registry",
+    Array.isArray(apiKeys.entries),
+    `${apiKeys.entries.length} credential-location records`
+  );
+
+  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/scan-api-keys.mjs"]) {
     add(`script-${scriptPath}`, await fileExists(path.join(root, scriptPath)), scriptPath);
   }
 

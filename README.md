@@ -1,6 +1,6 @@
 # DevGov
 
-`DevGov` is a memorable local multi-project governance toolkit and dashboard. It keeps development services, local service agents, Terminal profiles, startup automation, public routes, worktrees, self-checks, and local documentation search behind auditable sources of truth.
+`DevGov` is a memorable local multi-project governance toolkit and dashboard. It keeps development services, local service agents, Terminal profiles, startup automation, public routes, development API key locations, worktrees, self-checks, and local documentation search behind auditable sources of truth.
 
 The project follows a UniText-like layout:
 
@@ -63,6 +63,12 @@ Audit Cloudflare public route configs:
 
 ```powershell
 npm run scan:public-routes -- --out reports\public-routes-audit.md
+```
+
+Audit development API key variable names and storage scopes without printing values:
+
+```powershell
+npm run scan:api-keys -- --project . --out reports\api-key-audit.md
 ```
 
 Audit Git worktree inventory without double-counting linked worktrees:
@@ -135,11 +141,13 @@ The dashboard entry point is `http://127.0.0.1:3101`. It reads canonical registr
 
 Local service agents are tracked in `registry/local-agents.registry.json`. These records identify resident loopback services such as Local Archive Maintainer without storing service-local homes, token files, logs, generated data, or full command lines in canonical registry data.
 
+Development API key locations are tracked in `registry/api-keys.registry.json`. These records identify the service, variable name, storage location type, access method, usage rules, review status, and provider settings page. Credential values, credential file contents, local secret paths, shell history, and full command lines must stay out of canonical registry data.
+
 Startup registration is review-gated. `scripts/register-dashboard-startup.ps1` can create or remove the Windows Startup entry when an operator explicitly runs it. The default on-demand path is `npm run dashboard:open -- --open`, which health-checks the dashboard and starts the loopback server only when needed.
 
 ## Doctor
 
-`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, required scripts, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
+`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, API key governance records, required scripts, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
 
 `npm run doctor:repair` is intentionally limited to local generated artifacts under `reports/`; it regenerates the static document search files without changing canonical registry data.
 
@@ -191,11 +199,27 @@ Port service entries must include:
 
 Additional registries use the same rule: canonical files contain stable identifiers and reviewed policy only. Machine-local paths, full command lines, Terminal settings paths, Cloudflare credential paths, and temporary scan evidence stay in `reports/`.
 
+API key entries must include:
+
+| Field | Meaning |
+|---|---|
+| `project` | Stable owner such as `system-environment`, not a machine-local path |
+| `service` | Provider or tool that owns the credential |
+| `variableName` | Environment variable name or stable secret handle, never the value |
+| `credentialKind` | `api-key`, `token`, `secret`, `password`, `credential`, or `account-identity` |
+| `storageLocation` | Storage location type such as Windows Machine environment variables |
+| `accessMethod` | How local tools consume the credential |
+| `settingsUrl` | Provider settings or dashboard page for review and rotation |
+| `rules` | Handling, rotation, and promotion rules |
+| `source` | Audit or policy that identified the record |
+| `notes` | Required human context |
+
 ## Safety Defaults
 
 - Scans are read-only.
 - Target project configuration is parsed as text or JSON and never executed.
 - `.env` reports redact non-port and non-host values.
+- API key scans report variable names and scopes only; values are neither printed nor promoted into registry data.
 - `0.0.0.0` is treated as a visibility risk that must be documented.
 - Automatic port fallback is flagged because it makes agent startup behavior ambiguous.
 - DevGov dashboard startup is opt-in. The repo provides registration scripts, but audit commands do not silently modify Windows Startup settings.

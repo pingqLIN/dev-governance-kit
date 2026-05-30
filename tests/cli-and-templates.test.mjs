@@ -38,6 +38,17 @@ test("scan-workspace refuses absolute output paths outside reports by default", 
   assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
 });
 
+test("scan-api-keys refuses absolute output paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/scan-api-keys.mjs", "--project", "tests/fixtures/vite-project", "--out", join(tmpdir(), "devgov-api-keys-outside.md"), "--fixture-only"],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
 test("scan CLIs fail when the requested root is missing", () => {
   const projectResult = spawnSync(
     process.execPath,

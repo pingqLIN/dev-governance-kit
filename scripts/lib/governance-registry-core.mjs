@@ -8,6 +8,7 @@ const VALID_STARTUP_TRIGGER = new Set(["startup-folder", "registry-run", "schedu
 const VALID_PUBLIC_EXPOSURE = new Set(["local-only", "staging-private", "prod-protected", "public-health", "public-api"]);
 const VALID_PROTOCOL = new Set(["http", "https", "tcp", "ws", "wss"]);
 const VALID_LOCAL_AGENT_KIND = new Set(["windows-service-agent", "scheduled-task-agent", "startup-folder-agent", "on-demand-agent"]);
+const VALID_CREDENTIAL_KIND = new Set(["api-key", "token", "secret", "password", "credential", "account-identity"]);
 
 export async function loadJson(jsonPath) {
   const text = await fs.readFile(jsonPath, "utf8");
@@ -41,6 +42,9 @@ export function validateGovernanceRegistry(registry) {
   }
   if (registry.schema === "devgov.local-agents.registry.v1") {
     return validateLocalAgentsRegistry(registry);
+  }
+  if (registry.schema === "devgov.api-keys.registry.v1") {
+    return validateApiKeysRegistry(registry);
   }
   return [`registry.schema is not supported: ${registry.schema ?? "<missing>"}`];
 }
@@ -159,6 +163,44 @@ export function validateLocalAgentsRegistry(registry) {
   return errors;
 }
 
+export function validateApiKeysRegistry(registry) {
+  const errors = validateRegistryEnvelope(registry, "devgov.api-keys.registry.v1", "entries");
+  if (errors.length) return errors;
+
+  const seen = new Set();
+  for (const [index, entry] of registry.entries.entries()) {
+    const label = `entries[${index}]`;
+    requireStrings(entry, [
+      "id",
+      "project",
+      "service",
+      "variableName",
+      "credentialKind",
+      "storageLocation",
+      "accessMethod",
+      "settingsUrl",
+      "rules",
+      "status",
+      "source",
+      "notes"
+    ], label, errors);
+    rejectMachineLocalStrings(entry, label, errors);
+    if (seen.has(entry.id)) errors.push(`${label}.id duplicates another API key entry`);
+    seen.add(entry.id);
+    if (!VALID_CREDENTIAL_KIND.has(entry.credentialKind)) {
+      errors.push(`${label}.credentialKind must be one of ${[...VALID_CREDENTIAL_KIND].join(", ")}`);
+    }
+    if (!VALID_STATUS.has(entry.status)) errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    if (looksSecretValue(entry.variableName)) {
+      errors.push(`${label}.variableName appears to contain a credential value instead of a variable name`);
+    }
+    if (looksSecretValue(entry.notes) || looksSecretValue(entry.rules) || looksSecretValue(entry.accessMethod)) {
+      errors.push(`${label} must not contain apparent credential values`);
+    }
+  }
+  return errors;
+}
+
 function validateRegistryEnvelope(registry, expectedSchema, collectionName) {
   const errors = [];
   if (registry.schema !== expectedSchema) errors.push(`registry.schema must be ${expectedSchema}`);
@@ -187,4 +229,9 @@ function rejectMachineLocalStrings(entry, label, errors) {
 
 function looksMachineLocal(value) {
   return /(?:^|[\s"'`(])(?:[A-Za-z]:[\\/]|\\\\|windows-projects:|linux-mirror:)/i.test(value);
+}
+
+function looksSecretValue(value) {
+  const text = String(value ?? "");
+  return /\b(?:sk-[A-Za-z0-9_-]{16,}|xox[baprs]-[A-Za-z0-9-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|hf_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,})\b/.test(text);
 }

@@ -11,6 +11,7 @@ The current project scope covers local development-environment governance:
 - audit Windows Terminal profile asset references
 - inventory Codex-created or development startup entries
 - inventory resident local service agents separately from ordinary services
+- inventory development API key locations without reading or storing credential values
 - inventory Git linked worktrees without double-counting repositories
 - manage Cloudflare/public route governance records
 - generate local static document-search artifacts
@@ -47,6 +48,8 @@ Terminal profile, startup, and public-route registries follow the same rule: can
 
 Local service agent registry records follow the same rule. Do not store service-local homes, bearer token paths, logs, generated indexes, or full commands in `registry/local-agents.registry.json`.
 
+API key registry records follow the same rule. Store only stable credential-location metadata such as service, environment variable name, storage location type, access method, rules, status, and provider settings URL. Do not store values, credential file contents, full local credential paths, shell history, or command lines in `registry/api-keys.registry.json`.
+
 Worktree reports also stay in `reports/`. They may include machine-local paths because they are local evidence, not canonical registry data.
 
 ## Port Governance Rules
@@ -61,15 +64,16 @@ Worktree reports also stay in `reports/`. They may include machine-local paths b
 8. Keep existing project scans read-only unless a future command explicitly supports reviewed patch generation.
 9. Version 1 does not include an `apply-project` command; all target-project edits remain manual and review-gated.
 
-## Terminal, Startup, Public Route, And Search Rules
+## Terminal, Startup, Public Route, API Key, And Search Rules
 
 1. Terminal profile scans are audit-first. Do not modify Windows Terminal settings unless an explicit reviewed apply command is requested.
 2. Before applying any Terminal settings fix, create a timestamped backup next to the settings file.
 3. Startup scans may inspect Startup folder entries, Registry Run entries, Scheduled Tasks, and Windows services, but full command lines stay in reports only.
 4. Cloudflare route scans must not read or print credential JSON, certs, private keys, API tokens, or PEM contents.
 5. Public routes must document exposure class, Access requirement, health URL, and review status before promotion into `registry/public-routes.registry.json`.
-6. Static document search generation writes local artifacts under `reports/` and must not start a service or allocate a port.
-7. Dashboard startup is opt-in. Registration scripts may write Windows Startup entries only when explicitly run by an operator.
+6. API key scans may record variable names and storage scopes, but must not print values. Process-only variables are report evidence unless an operator promotes them.
+7. Static document search generation writes local artifacts under `reports/` and must not start a service or allocate a port.
+8. Dashboard startup is opt-in. Registration scripts may write Windows Startup entries only when explicitly run by an operator.
 
 ## Worktree Governance Rules
 
