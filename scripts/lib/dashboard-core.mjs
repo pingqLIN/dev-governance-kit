@@ -1,4 +1,6 @@
 import fs from "node:fs/promises";
+import http from "node:http";
+import https from "node:https";
 import path from "node:path";
 
 export const DASHBOARD_HOST = "127.0.0.1";
@@ -50,7 +52,126 @@ export async function loadDashboardState(root = ".") {
       layers: agentInstructions.layers,
       itemTypes: agentInstructions.itemTypes,
       entries: agentInstructions.entries
-    }
+    },
+    serviceTargets: buildServiceTargets({
+      dashboardPort,
+      publicRoutes: publicRoutes.routes,
+      localAgents: localAgents.agents
+    })
+  };
+}
+
+export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [] }) {
+  const targets = [];
+  if (dashboardPort) {
+    targets.push({
+      id: "devgov-dashboard",
+      label: "DevGov Dashboard",
+      kind: "dashboard",
+      registryStatus: "approved",
+      url: `${dashboardPort.protocol}://${dashboardPort.host}:${dashboardPort.port}/health`,
+      target: `${dashboardPort.host}:${dashboardPort.port}`
+    });
+  }
+
+  for (const agent of localAgents) {
+    targets.push({
+      id: `local-agent:${agent.id}`,
+      label: agent.displayName,
+      kind: "local-agent",
+      registryStatus: agent.status,
+      url: agent.healthUrl,
+      target: agent.serviceId
+    });
+  }
+
+  for (const route of publicRoutes) {
+    targets.push({
+      id: `public-route:${route.id}`,
+      label: route.hostname,
+      kind: "public-route",
+      registryStatus: route.status,
+      url: route.healthUrl,
+      target: `${route.localHost}:${route.localPort}`
+    });
+  }
+
+  return targets;
+}
+
+export async function checkServiceStatuses(root = ".", options = {}) {
+  const state = await loadDashboardState(root);
+  const timeoutMs = options.timeoutMs ?? 2500;
+  const statuses = await Promise.all(state.serviceTargets.map(async (target) => ({
+    ...target,
+    live: await checkUrl(target.url, timeoutMs)
+  })));
+
+  return {
+    schema: "devgov.service-status.v1",
+    generatedAt: new Date().toISOString(),
+    timeoutMs,
+    services: statuses
+  };
+}
+
+export function buildUniTextAgentInstructionIndex(agentInstructions) {
+  const sourcePath = "registry/agent-instructions.registry.json";
+  const nodes = [
+    ...agentInstructions.layers.map((layer) => ({
+      id: `layer:${layer.id}`,
+      type: "agent-instruction-layer",
+      label: layer.id,
+      path: sourcePath,
+      summary: layer.appliesTo,
+      status: layer.status,
+      searchText: [layer.id, layer.scope, layer.appliesTo, layer.notes].join(" ")
+    })),
+    ...agentInstructions.itemTypes.map((itemType) => ({
+      id: `item-type:${itemType.id}`,
+      type: "agent-instruction-item-type",
+      label: itemType.label,
+      path: sourcePath,
+      summary: itemType.description,
+      status: itemType.status,
+      searchText: [itemType.id, itemType.label, itemType.description, itemType.governanceUse].join(" ")
+    })),
+    ...agentInstructions.entries.map((entry) => ({
+      id: `instruction:${entry.id}`,
+      type: "agent-instruction",
+      label: entry.id,
+      path: sourcePath,
+      logicalPath: entry.evidence,
+      summary: entry.requirement,
+      status: entry.status,
+      searchText: [
+        entry.id,
+        entry.type,
+        entry.layer,
+        entry.appliesTo,
+        entry.requirement,
+        entry.enforcement,
+        entry.evidence,
+        entry.notes
+      ].join(" ")
+    }))
+  ];
+
+  return {
+    schema: "devgov.unitext-agent-instructions.v1",
+    generatedAt: new Date().toISOString(),
+    adapter: {
+      id: "governance-folder",
+      sourceOfTruth: agentInstructions.sourceOfTruth,
+      canonicalRegistry: sourcePath,
+      queryUse: "Ingest as a UniText-style governance-folder read model without copying local-only evidence."
+    },
+    nodes,
+    edges: agentInstructions.entries.flatMap((entry) => [
+      { from: `layer:${entry.layer}`, to: `instruction:${entry.id}`, kind: "governs" },
+      { from: `item-type:${entry.type}`, to: `instruction:${entry.id}`, kind: "classifies" }
+    ]),
+    queryFields: ["id", "type", "label", "path", "logicalPath", "summary", "status", "searchText"]
   };
 }
 
@@ -71,6 +192,7 @@ export function renderDashboardHtml(state) {
       --panel: #fffdfa;
       --accent: #0f766e;
       --blue: #285bb8;
+      --ok: #0f766e;
       --warn: #b7791f;
       --bad: #b42318;
     }
@@ -157,6 +279,18 @@ export function renderDashboardHtml(state) {
       background: var(--ink);
       color: white;
     }
+    .action-button {
+      border: 2px solid var(--ink);
+      background: var(--panel);
+      min-height: 38px;
+      padding: 7px 12px;
+      width: auto;
+    }
+    .action-button[disabled] {
+      color: var(--muted);
+      cursor: not-allowed;
+      opacity: .7;
+    }
     .glyph {
       border: 1px solid currentColor;
       display: inline-grid;
@@ -207,6 +341,24 @@ export function renderDashboardHtml(state) {
       padding: 8px 10px;
       width: 100%;
     }
+    a {
+      color: var(--blue);
+      text-decoration-thickness: 2px;
+      text-underline-offset: 3px;
+    }
+    .guidance {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 12px;
+    }
+    .guidance-row {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 180px minmax(0, 1fr);
+    }
     table {
       background: var(--panel);
       border: 2px solid var(--ink);
@@ -239,11 +391,17 @@ export function renderDashboardHtml(state) {
     .public, .candidate { background: #fff0c2; }
     .blocked { background: #ffd7d2; }
     .approved { background: #d8f3ec; }
+    .ONLINE { background: #d8f3ec; }
+    .OFFLINE { background: #ffd7d2; }
+    .ERROR { background: #fff0c2; }
+    .CHECKING { background: #e8edf5; }
     @media (max-width: 820px) {
       .mast, main { grid-template-columns: 1fr; }
       nav { position: static; }
       .strip { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
       .status { justify-content: start; }
+      .toolbar { align-items: stretch; flex-direction: column; }
+      .guidance-row { grid-template-columns: 1fr; }
       table { font-size: 14px; }
     }
   </style>
@@ -268,6 +426,7 @@ export function renderDashboardHtml(state) {
     <button data-view="terminal"><span class="glyph">06</span> Terminal</button>
     <button data-view="api-keys"><span class="glyph">07</span> API Keys</button>
     <button data-view="agent-instructions"><span class="glyph">08</span> Agent Instructions</button>
+    <button data-view="service-status"><span class="glyph">09</span> Service Status</button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -300,7 +459,22 @@ export function renderDashboardHtml(state) {
     </section>
     <section id="agent-instructions">
       <div class="toolbar"><h2>Agent Instructions</h2><input data-filter="agent-instructions" placeholder="Filter agent instructions"></div>
+      <div class="guidance" id="agent-storage-guidance"></div>
       <table data-table="agent-instructions"></table>
+    </section>
+    <section id="service-status">
+      <div class="toolbar">
+        <h2>Network Service Status</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <input data-filter="service-status" placeholder="Filter services">
+          <button class="action-button" id="refresh-status" type="button">Quick Test</button>
+          <button class="action-button" type="button" disabled title="Restart requires a reviewed apply path for each service.">Restart Disabled</button>
+        </div>
+      </div>
+      <div class="guidance">
+        <div><strong>Restart policy:</strong> quick health tests are safe here. One-click restart stays disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.</div>
+      </div>
+      <table data-table="service-status"></table>
     </section>
   </div>
 </main>
@@ -329,6 +503,9 @@ renderRoutes('');
 renderTerminal('');
 renderApiKeys('');
 renderAgentInstructions('');
+renderAgentStorageGuidance();
+renderServiceStatusTable('', state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' } })));
+refreshServiceStatus();
 document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase();
@@ -339,8 +516,10 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
     if (input.dataset.filter === 'terminal') renderTerminal(value);
     if (input.dataset.filter === 'api-keys') renderApiKeys(value);
     if (input.dataset.filter === 'agent-instructions') renderAgentInstructions(value);
+    if (input.dataset.filter === 'service-status') renderServiceStatusTable(value, serviceStatusRows);
   });
 });
+document.getElementById('refresh-status').addEventListener('click', refreshServiceStatus);
 function renderDashboardPort() {
   const entry = state.dashboardPort;
   document.getElementById('dashboard-port').innerHTML = entry
@@ -349,31 +528,69 @@ function renderDashboardPort() {
 }
 function renderPorts(query) {
   const rows = state.ports.filter(row => match(row, query));
-  renderTable('ports', ['Project', 'Service', 'Socket', 'Visibility', 'Notes'], rows.map(row => [row.project, row.service, '<code>' + esc(row.host + ':' + row.port) + '</code>', pill(row.visibility), row.notes]));
+  renderTable('ports', ['Project', 'Service', 'Socket', 'Visibility', 'Notes'], rows.map(row => [textCell(row.project), textCell(row.service), '<code>' + esc(row.host + ':' + row.port) + '</code>', pill(row.visibility), linkify(row.notes)]));
 }
 function renderAgents(query) {
   const rows = state.localAgents.filter(row => match(row, query));
-  renderTable('agents', ['Agent', 'Kind', 'Health', 'Startup', 'Status'], rows.map(row => [row.displayName, row.kind, '<code>' + esc(row.healthUrl) + '</code>', '<code>' + esc(row.startupRef) + '</code>', pill(row.status)]));
+  renderTable('agents', ['Agent', 'Kind', 'Health', 'Startup', 'Status'], rows.map(row => [textCell(row.displayName), textCell(row.kind), linkify(row.healthUrl), fileRef(row.startupRef), pill(row.status)]));
 }
 function renderStartup(query) {
   const rows = state.startupEntries.filter(row => match(row, query));
-  renderTable('startup', ['ID', 'Trigger', 'Status', 'Script', 'Purpose'], rows.map(row => [row.id, row.trigger, pill(row.status), '<code>' + esc(row.scriptRef) + '</code>', row.purpose]));
+  renderTable('startup', ['ID', 'Trigger', 'Status', 'Script', 'Purpose'], rows.map(row => [textCell(row.id), textCell(row.trigger), pill(row.status), fileRef(row.scriptRef), linkify(row.purpose)]));
 }
 function renderRoutes(query) {
   const rows = state.publicRoutes.filter(row => match(row, query));
-  renderTable('routes', ['Hostname', 'Local Target', 'Exposure', 'Access', 'Status'], rows.map(row => [row.hostname, '<code>' + esc(row.localHost + ':' + row.localPort) + '</code>', row.exposureClass, row.accessRequired ? 'required' : 'not required', pill(row.status)]));
+  renderTable('routes', ['Hostname', 'Health URL', 'Local Target', 'Exposure', 'Access', 'Status'], rows.map(row => [linkify('https://' + row.hostname), linkify(row.healthUrl), '<code>' + esc(row.localHost + ':' + row.localPort) + '</code>', textCell(row.exposureClass), row.accessRequired ? 'required' : 'not required', pill(row.status)]));
 }
 function renderTerminal(query) {
   const rows = state.terminalProfiles.filter(row => match(row, query));
-  renderTable('terminal', ['ID', 'Name', 'Asset Policy', 'Status', 'Notes'], rows.map(row => [row.id, row.name, row.assetPolicy, pill(row.status), row.notes]));
+  renderTable('terminal', ['ID', 'Name', 'Asset Policy', 'Status', 'Notes'], rows.map(row => [textCell(row.id), textCell(row.name), textCell(row.assetPolicy), pill(row.status), linkify(row.notes)]));
 }
 function renderApiKeys(query) {
   const rows = state.apiKeys.filter(row => match(row, query));
-  renderTable('api-keys', ['Variable', 'Service', 'Storage', 'Settings', 'Status'], rows.map(row => [row.variableName, row.service, row.storageLocation, '<code>' + esc(row.settingsUrl) + '</code>', pill(row.status)]));
+  renderTable('api-keys', ['Variable', 'Service', 'Storage', 'Settings', 'Status'], rows.map(row => [textCell(row.variableName), textCell(row.service), textCell(row.storageLocation), linkify(row.settingsUrl), pill(row.status)]));
 }
 function renderAgentInstructions(query) {
   const rows = state.agentInstructions.entries.filter(row => match(row, query));
-  renderTable('agent-instructions', ['ID', 'Type', 'Layer', 'Requirement', 'Evidence', 'Status'], rows.map(row => [row.id, row.type, row.layer, row.requirement, '<code>' + esc(row.evidence) + '</code>', pill(row.status)]));
+  renderTable('agent-instructions', ['ID', 'Type', 'Layer', 'Requirement', 'Evidence', 'Status'], rows.map(row => [textCell(row.id), textCell(row.type), textCell(row.layer), linkify(row.requirement), fileRef(row.evidence), pill(row.status)]));
+}
+let serviceStatusRows = [];
+function renderAgentStorageGuidance() {
+  document.getElementById('agent-storage-guidance').innerHTML = [
+    ['Runtime source', fileRef(state.agentInstructions.sourceOfTruth)],
+    ['Canonical registry', fileRef('registry/agent-instructions.registry.json')],
+    ['Generated local JSON', fileRef('reports/agent-instructions-index.json')],
+    ['Generated text index', fileRef('reports/agent-instructions-index.txt')],
+    ['UniText query endpoint', internalLink('/api/unitext-agent-instructions')]
+  ].map(([label, value]) => '<div class="guidance-row"><strong>' + esc(label) + '</strong><span>' + value + '</span></div>').join('');
+}
+function renderServiceStatusTable(query, rows) {
+  const filtered = rows.filter(row => match(row, query));
+  renderTable('service-status', ['State', 'Service', 'Kind', 'URL', 'Target', 'Registry', 'Last Check'], filtered.map(row => [
+    pill(row.live?.state || 'CHECKING'),
+    textCell(row.label),
+    textCell(row.kind),
+    linkify(row.url),
+    textCell(row.target),
+    pill(row.registryStatus),
+    row.live?.checkedAt ? textCell(row.live.checkedAt + (row.live.statusCode ? ' status=' + row.live.statusCode : '') + (row.live.error ? ' ' + row.live.error : '')) : textCell('pending')
+  ]));
+}
+async function refreshServiceStatus() {
+  const button = document.getElementById('refresh-status');
+  button.disabled = true;
+  button.textContent = 'Checking';
+  try {
+    const response = await fetch('/api/service-status');
+    const payload = await response.json();
+    serviceStatusRows = payload.services || [];
+  } catch (error) {
+    serviceStatusRows = state.serviceTargets.map(target => ({ ...target, live: { state: 'ERROR', error: error.message } }));
+  } finally {
+    renderServiceStatusTable(document.querySelector('input[data-filter="service-status"]').value.toLowerCase(), serviceStatusRows);
+    button.disabled = false;
+    button.textContent = 'Quick Test';
+  }
 }
 function renderTable(name, headers, rows) {
   document.querySelector('[data-table="' + name + '"]').innerHTML = '<tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>' + rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('');
@@ -383,6 +600,25 @@ function pill(value) {
 }
 function match(row, query) {
   return !query || JSON.stringify(row).toLowerCase().includes(query);
+}
+function textCell(value) {
+  return esc(value);
+}
+function linkify(value) {
+  const escaped = esc(value);
+  return escaped.replace(/(https?:\\/\\/[^\\s<]+)/g, '<a href="$1" target="_blank" rel="noreferrer">$1</a>');
+}
+function internalLink(value) {
+  return '<a href="' + esc(value) + '" target="_blank" rel="noreferrer"><code>' + esc(value) + '</code></a>';
+}
+function fileRef(value) {
+  const text = String(value ?? '');
+  let pathPart = text.split('#')[0];
+  if (pathPart.startsWith('devgov/')) pathPart = pathPart.slice('devgov/'.length);
+  if (/^(?:AGENTS|README)\\.zh-tw\\.md$|^(?:AGENTS|README)\\.md$|^package\\.json$|^(?:registry|scripts|templates|docs|reports)\\/[A-Za-z0-9._\\/-]+\\.(?:md|json|txt|yml|yaml|mjs|ps1|html)$/.test(pathPart)) {
+    return '<a href="/file?path=' + encodeURIComponent(pathPart) + '" target="_blank" rel="noreferrer"><code>' + esc(text) + '</code></a>';
+  }
+  return '<code>' + esc(text) + '</code>';
 }
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
@@ -399,4 +635,37 @@ async function readJson(filePath) {
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[ch]));
+}
+
+function checkUrl(url, timeoutMs) {
+  return new Promise((resolveStatus) => {
+    let resolved = false;
+    const started = Date.now();
+    const parsed = new URL(url);
+    const client = parsed.protocol === "https:" ? https : http;
+    const request = client.get(url, { timeout: timeoutMs }, (response) => {
+      response.resume();
+      response.on("end", () => {
+        if (resolved) return;
+        resolved = true;
+        resolveStatus({
+          state: response.statusCode >= 200 && response.statusCode < 400 ? "ONLINE" : "ERROR",
+          statusCode: response.statusCode,
+          latencyMs: Date.now() - started,
+          checkedAt: new Date().toISOString()
+        });
+      });
+    });
+    request.on("timeout", () => request.destroy(new Error("timeout")));
+    request.on("error", (error) => {
+      if (resolved) return;
+      resolved = true;
+      resolveStatus({
+        state: error.message === "timeout" || ["ECONNREFUSED", "ENOTFOUND", "ETIMEDOUT", "ECONNRESET"].includes(error.code) ? "OFFLINE" : "ERROR",
+        error: error.message,
+        latencyMs: Date.now() - started,
+        checkedAt: new Date().toISOString()
+      });
+    });
+  });
 }
