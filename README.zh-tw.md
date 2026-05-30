@@ -148,6 +148,8 @@ DevGov 保留服務：
 
 本地端服務 Agents 會記錄在 `registry/local-agents.registry.json`。這些 records 用來識別 Local Archive Maintainer 這類常駐 loopback services，但不會把 service-local home、token files、logs、generated data 或完整 command lines 放進 canonical registry data。
 
+Agent instruction governance 會記錄在 `registry/agent-instructions.registry.json`。儀表板包含 Agent Instructions view，`/api/agent-instructions` 會回傳 source-of-truth layers、item types 與 entries，供本機查詢整合使用。
+
 開發用 API key 存放位置由 `registry/api-keys.registry.json` 追蹤。這些 records 保存 service、variable name、storage location type、access method、usage rules、review status 與 provider settings page。Credential values、credential file contents、本機 secret paths、shell history 與完整 command lines 都不得放進 canonical registry data。
 
 開機啟動註冊採 review-gated。`scripts/register-dashboard-startup.ps1` 可以在操作者明確執行時建立或移除 Windows Startup entry。預設的隨服務開啟路徑是 `npm run dashboard:open -- --open`，它會先做 health check，只有在儀表板尚未啟動時才啟動 loopback server。

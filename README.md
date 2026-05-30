@@ -147,6 +147,8 @@ The dashboard entry point is `http://127.0.0.1:3101`. It reads canonical registr
 
 Local service agents are tracked in `registry/local-agents.registry.json`. These records identify resident loopback services such as Local Archive Maintainer without storing service-local homes, token files, logs, generated data, or full command lines in canonical registry data.
 
+Agent instruction governance is tracked in `registry/agent-instructions.registry.json`. The dashboard includes an Agent Instructions view, and `/api/agent-instructions` returns the source-of-truth layers, item types, and entries for local query integrations.
+
 Development API key locations are tracked in `registry/api-keys.registry.json`. These records identify the service, variable name, storage location type, access method, usage rules, review status, and provider settings page. Credential values, credential file contents, local secret paths, shell history, and full command lines must stay out of canonical registry data.
 
 Startup registration is review-gated. `scripts/register-dashboard-startup.ps1` can create or remove the Windows Startup entry when an operator explicitly runs it. The default on-demand path is `npm run dashboard:open -- --open`, which health-checks the dashboard and starts the loopback server only when needed.

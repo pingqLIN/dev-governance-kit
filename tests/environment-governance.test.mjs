@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { buildDocsIndex } from "../scripts/lib/docs-index-core.mjs";
+import { buildDocsIndex, renderSearchHtml } from "../scripts/lib/docs-index-core.mjs";
 import { loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
@@ -250,6 +250,7 @@ test("scan-docs writes static search artifacts under reports", async () => {
   const html = await readFile(htmlOut, "utf8");
   assert.equal(index.documents[0].title, "Searchable");
   assert.match(html, /const docs = \[/);
+  assert.match(renderSearchHtml(index), /搜尋 AGENTS、registry、templates、docs/);
 });
 
 test("dashboard renders canonical DevGov registry state", async () => {
@@ -259,9 +260,13 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.equal(state.app.name, "DevGov");
   assert.equal(state.dashboardPort.port, 3101);
   assert.ok(state.localAgents.some((agent) => agent.id === "local-archive-maintainer"));
+  assert.equal(state.summary.agentInstructions, state.agentInstructions.entries.length);
+  assert.ok(state.agentInstructions.entries.some((entry) => entry.id === "agent.authority.single-runtime-source"));
   assert.match(html, /DevGov Dashboard/);
   assert.match(html, /Local Service Agents/);
   assert.match(html, /API Key Governance/);
+  assert.match(html, /Agent Instructions/);
+  assert.match(html, /agent\.authority\.single-runtime-source/);
   assert.match(html, /127\.0\.0\.1:3101/);
 });
 

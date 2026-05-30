@@ -49,7 +49,7 @@ export function renderSearchHtml(indexSource = "search-index.json") {
 <body>
 <main>
   <h1>DevGov 文件檢索</h1>
-  <input id="q" autofocus placeholder="搜尋 registry、templates、docs">
+  <input id="q" autofocus placeholder="搜尋 AGENTS、registry、templates、docs">
   <section id="results"></section>
 </main>
 <script>

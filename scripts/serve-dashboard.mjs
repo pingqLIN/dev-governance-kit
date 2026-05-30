@@ -17,6 +17,11 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, { ok: true, project: "devgov", service: "dashboard-http", port });
       return;
     }
+    if (url.pathname === "/favicon.ico") {
+      response.writeHead(204, { "cache-control": "max-age=86400" });
+      response.end();
+      return;
+    }
     if (url.pathname === "/api/state") {
       sendJson(response, await loadDashboardState(root));
       return;
@@ -24,6 +29,11 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/local-agents") {
       const state = await loadDashboardState(root);
       sendJson(response, { agents: state.localAgents });
+      return;
+    }
+    if (url.pathname === "/api/agent-instructions") {
+      const state = await loadDashboardState(root);
+      sendJson(response, state.agentInstructions);
       return;
     }
     if (url.pathname === "/api/doctor") {
