@@ -80,6 +80,17 @@
       "range": "frontend",
       "source": "url-hero PORTS.md; project port audit",
       "notes": "Fixed local Vite development server. Vite strictPort is enabled so agents do not silently fall back to another port."
+    },
+    {
+      "project": "sbs",
+      "service": "local-proxy-http",
+      "port": 3287,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "range": "api",
+      "source": "sbs PORTS.md; project port audit",
+      "notes": "SBS extension and patched-upstream local proxy. Keep loopback-only; protocol launcher auto-starts this listener on demand."
     }
   ]
 }
