@@ -11,8 +11,8 @@ export async function loadRegistry(registryPath) {
 
 export function validateRegistry(registry) {
   const errors = [];
-  if (registry.schema !== "dev-governance-kit.ports.registry.v1") {
-    errors.push("registry.schema must be dev-governance-kit.ports.registry.v1");
+  if (registry.schema !== "devgov.ports.registry.v1") {
+    errors.push("registry.schema must be devgov.ports.registry.v1");
   }
   if (!registry.ranges || typeof registry.ranges !== "object") {
     errors.push("registry.ranges is required");

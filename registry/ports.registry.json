@@ -1,5 +1,5 @@
 {
-  "schema": "dev-governance-kit.ports.registry.v1",
+  "schema": "devgov.ports.registry.v1",
   "description": "Canonical shared port registry. Machine-local overlays stay outside this file.",
   "sourceOfTruth": "registry/ports.registry.json",
   "ranges": {
@@ -82,6 +82,17 @@
       "notes": "Fixed local Vite development server. Vite strictPort is enabled so agents do not silently fall back to another port."
     },
     {
+      "project": "devgov",
+      "service": "dashboard-http",
+      "port": 3101,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "range": "frontend",
+      "source": "DevGov dashboard governance",
+      "notes": "Long-lived local dashboard entry. Keep loopback-only and fail fast if the port is occupied instead of falling back."
+    },
+    {
       "project": "sbs",
       "service": "local-proxy-http",
       "port": 3287,
@@ -91,6 +102,16 @@
       "range": "api",
       "source": "sbs PORTS.md; project port audit",
       "notes": "SBS extension and patched-upstream local proxy. Keep loopback-only; protocol launcher auto-starts this listener on demand."
+    },
+    {
+      "project": "local-archive-maintainer",
+      "service": "app-server-http",
+      "port": 8787,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "Local Archive Maintainer service inspection",
+      "notes": "Loopback app-server for the resident archive/index worker. Requires bearer token for authenticated API calls; token file stays outside registry data."
     }
   ]
 }

@@ -19,7 +19,7 @@ test("scan-project refuses to write reports outside reports by default", () => {
 test("scan-project refuses absolute output paths outside reports by default", () => {
   const result = spawnSync(
     process.execPath,
-    ["scripts/scan-project.mjs", "tests/fixtures/vite-project", "--out", join(tmpdir(), "dev-governance-kit-outside.md")],
+    ["scripts/scan-project.mjs", "tests/fixtures/vite-project", "--out", join(tmpdir(), "devgov-outside.md")],
     { encoding: "utf8" }
   );
 
@@ -30,7 +30,7 @@ test("scan-project refuses absolute output paths outside reports by default", ()
 test("scan-workspace refuses absolute output paths outside reports by default", () => {
   const result = spawnSync(
     process.execPath,
-    ["scripts/scan-workspace.mjs", "tests/fixtures", "--out", join(tmpdir(), "dev-governance-kit-workspace-outside.md")],
+    ["scripts/scan-workspace.mjs", "tests/fixtures", "--out", join(tmpdir(), "devgov-workspace-outside.md")],
     { encoding: "utf8" }
   );
 

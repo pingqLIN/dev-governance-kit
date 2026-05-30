@@ -73,7 +73,7 @@ export async function applyTerminalFixPlan(plan) {
   const backups = [];
   for (const [settingsPath, actions] of grouped) {
     const text = await fs.readFile(settingsPath, "utf8");
-    const backupPath = `${settingsPath}.backup-dev-governance-kit-${timestamp()}`;
+    const backupPath = `${settingsPath}.backup-devgov-${timestamp()}`;
     await fs.writeFile(backupPath, text, "utf8");
     backups.push(backupPath);
     const settings = JSON.parse(text);

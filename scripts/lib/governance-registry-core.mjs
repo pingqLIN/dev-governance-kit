@@ -4,9 +4,10 @@ import { validateRegistry as validatePortRegistry } from "./registry-core.mjs";
 
 const VALID_STATUS = new Set(["candidate", "approved", "blocked", "deprecated"]);
 const VALID_TERMINAL_ASSET_POLICY = new Set(["none", "resource-uri", "existing-file"]);
-const VALID_STARTUP_TRIGGER = new Set(["startup-folder", "registry-run", "scheduled-task", "windows-service"]);
+const VALID_STARTUP_TRIGGER = new Set(["startup-folder", "registry-run", "scheduled-task", "windows-service", "protocol-handler"]);
 const VALID_PUBLIC_EXPOSURE = new Set(["local-only", "staging-private", "prod-protected", "public-health", "public-api"]);
 const VALID_PROTOCOL = new Set(["http", "https", "tcp", "ws", "wss"]);
+const VALID_LOCAL_AGENT_KIND = new Set(["windows-service-agent", "scheduled-task-agent", "startup-folder-agent", "on-demand-agent"]);
 
 export async function loadJson(jsonPath) {
   const text = await fs.readFile(jsonPath, "utf8");
@@ -26,23 +27,26 @@ export async function loadRegistryFiles(targetPath) {
 }
 
 export function validateGovernanceRegistry(registry) {
-  if (registry.schema === "dev-governance-kit.ports.registry.v1") {
+  if (registry.schema === "devgov.ports.registry.v1") {
     return validatePortRegistry(registry);
   }
-  if (registry.schema === "dev-governance-kit.terminal-profiles.registry.v1") {
+  if (registry.schema === "devgov.terminal-profiles.registry.v1") {
     return validateTerminalProfilesRegistry(registry);
   }
-  if (registry.schema === "dev-governance-kit.startup.registry.v1") {
+  if (registry.schema === "devgov.startup.registry.v1") {
     return validateStartupRegistry(registry);
   }
-  if (registry.schema === "dev-governance-kit.public-routes.registry.v1") {
+  if (registry.schema === "devgov.public-routes.registry.v1") {
     return validatePublicRoutesRegistry(registry);
+  }
+  if (registry.schema === "devgov.local-agents.registry.v1") {
+    return validateLocalAgentsRegistry(registry);
   }
   return [`registry.schema is not supported: ${registry.schema ?? "<missing>"}`];
 }
 
 export function validateTerminalProfilesRegistry(registry) {
-  const errors = validateRegistryEnvelope(registry, "dev-governance-kit.terminal-profiles.registry.v1", "profiles");
+  const errors = validateRegistryEnvelope(registry, "devgov.terminal-profiles.registry.v1", "profiles");
   if (errors.length) return errors;
 
   const seen = new Set();
@@ -61,7 +65,7 @@ export function validateTerminalProfilesRegistry(registry) {
 }
 
 export function validateStartupRegistry(registry) {
-  const errors = validateRegistryEnvelope(registry, "dev-governance-kit.startup.registry.v1", "entries");
+  const errors = validateRegistryEnvelope(registry, "devgov.startup.registry.v1", "entries");
   if (errors.length) return errors;
 
   const seen = new Set();
@@ -81,7 +85,7 @@ export function validateStartupRegistry(registry) {
 }
 
 export function validatePublicRoutesRegistry(registry) {
-  const errors = validateRegistryEnvelope(registry, "dev-governance-kit.public-routes.registry.v1", "routes");
+  const errors = validateRegistryEnvelope(registry, "devgov.public-routes.registry.v1", "routes");
   if (errors.length) return errors;
 
   const seenHostnames = new Set();
@@ -115,6 +119,41 @@ export function validatePublicRoutesRegistry(registry) {
     if (route.exposureClass === "local-only") errors.push(`${label}.exposureClass cannot be local-only for a public route`);
     if (route.accessRequired && route.exposureClass === "public-api") {
       errors.push(`${label}.accessRequired public-api routes need a protected exposure class`);
+    }
+  }
+  return errors;
+}
+
+export function validateLocalAgentsRegistry(registry) {
+  const errors = validateRegistryEnvelope(registry, "devgov.local-agents.registry.v1", "agents");
+  if (errors.length) return errors;
+
+  const seen = new Set();
+  for (const [index, agent] of registry.agents.entries()) {
+    const label = `agents[${index}]`;
+    requireStrings(agent, [
+      "id",
+      "project",
+      "kind",
+      "serviceId",
+      "displayName",
+      "healthUrl",
+      "portRef",
+      "startupRef",
+      "status",
+      "source",
+      "notes"
+    ], label, errors);
+    rejectMachineLocalStrings(agent, label, errors);
+    if (seen.has(agent.id)) errors.push(`${label}.id duplicates another local agent`);
+    seen.add(agent.id);
+    if (!VALID_LOCAL_AGENT_KIND.has(agent.kind)) {
+      errors.push(`${label}.kind must be one of ${[...VALID_LOCAL_AGENT_KIND].join(", ")}`);
+    }
+    if (!VALID_STATUS.has(agent.status)) errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    if (typeof agent.managedByCodex !== "boolean") errors.push(`${label}.managedByCodex must be boolean`);
+    if (!String(agent.healthUrl).startsWith("http://127.0.0.1:")) {
+      errors.push(`${label}.healthUrl must be a loopback HTTP URL`);
     }
   }
   return errors;

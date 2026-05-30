@@ -4,7 +4,7 @@ import path from "node:path";
 const SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", "coverage", "reports"]);
 const TARGET_EXTENSIONS = new Set([".md", ".json", ".yml", ".yaml"]);
 const ALLOWED_TOP_LEVEL_DIRS = new Set(["docs", "registry", "templates"]);
-const ALLOWED_TOP_LEVEL_FILES = new Set(["README.md", "README.zh-TW.md", "AGENTS.md", "AGENTS.zh-TW.md", "package.json"]);
+const ALLOWED_TOP_LEVEL_FILES = new Set(["README.md", "README.zh-tw.md", "AGENTS.md", "AGENTS.zh-tw.md", "package.json"]);
 
 export async function buildDocsIndex(root = ".") {
   const resolvedRoot = path.resolve(root);
@@ -19,7 +19,7 @@ export async function buildDocsIndex(root = ".") {
     });
   }
   return {
-    schema: "dev-governance-kit.docs-index.v1",
+    schema: "devgov.docs-index.v1",
     generatedAt: new Date().toISOString(),
     root: resolvedRoot,
     documents
@@ -35,7 +35,7 @@ export function renderSearchHtml(indexSource = "search-index.json") {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>dev-governance-kit Search</title>
+  <title>DevGov Search</title>
   <style>
     body{font-family:Segoe UI,system-ui,sans-serif;margin:0;background:#f6f8fa;color:#20242a}
     main{max-width:980px;margin:0 auto;padding:32px 20px}
@@ -48,7 +48,7 @@ export function renderSearchHtml(indexSource = "search-index.json") {
 </head>
 <body>
 <main>
-  <h1>dev-governance-kit 文件檢索</h1>
+  <h1>DevGov 文件檢索</h1>
   <input id="q" autofocus placeholder="搜尋 registry、templates、docs">
   <section id="results"></section>
 </main>

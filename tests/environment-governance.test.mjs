@@ -5,7 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { buildDocsIndex } from "../scripts/lib/docs-index-core.mjs";
-import { validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
+import { loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
+import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
+import { validateLocalAgentsRegistry, validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
 import { scanStartupFolder } from "../scripts/lib/startup-core.mjs";
 import { buildTerminalFixPlan, scanTerminalSettingsObject } from "../scripts/lib/terminal-core.mjs";
@@ -71,12 +73,12 @@ test("public route scan flags duplicate hostnames across config files", async ()
 
 test("new governance registries validate canonical shared data only", () => {
   assert.deepEqual(validateTerminalProfilesRegistry({
-    schema: "dev-governance-kit.terminal-profiles.registry.v1",
+    schema: "devgov.terminal-profiles.registry.v1",
     profiles: [{ id: "codex", name: "Codex", status: "approved", assetPolicy: "none", source: "terminal audit", notes: "invalid icon removed" }]
   }), []);
 
   assert.deepEqual(validateStartupRegistry({
-    schema: "dev-governance-kit.startup.registry.v1",
+    schema: "devgov.startup.registry.v1",
     entries: [{
       id: "codex-remote-services",
       project: "codex-remote",
@@ -91,7 +93,7 @@ test("new governance registries validate canonical shared data only", () => {
   }), []);
 
   assert.deepEqual(validatePublicRoutesRegistry({
-    schema: "dev-governance-kit.public-routes.registry.v1",
+    schema: "devgov.public-routes.registry.v1",
     routes: [{
       id: "mcp-prod",
       serviceId: "mcp-prod",
@@ -106,6 +108,24 @@ test("new governance registries validate canonical shared data only", () => {
       status: "candidate",
       source: "public route audit",
       notes: "Access verification required"
+    }]
+  }), []);
+
+  assert.deepEqual(validateLocalAgentsRegistry({
+    schema: "devgov.local-agents.registry.v1",
+    agents: [{
+      id: "local-agent",
+      project: "local-agent",
+      kind: "windows-service-agent",
+      serviceId: "LocalAgentService",
+      displayName: "Local Agent",
+      healthUrl: "http://127.0.0.1:8787/health",
+      portRef: "local-agent:http",
+      startupRef: "local-agent-service",
+      status: "candidate",
+      source: "service audit",
+      notes: "loopback service agent",
+      managedByCodex: true
     }]
   }), []);
 });
@@ -157,4 +177,26 @@ test("scan-docs writes static search artifacts under reports", async () => {
   const html = await readFile(htmlOut, "utf8");
   assert.equal(index.documents[0].title, "Searchable");
   assert.match(html, /const docs = \[/);
+});
+
+test("dashboard renders canonical DevGov registry state", async () => {
+  const state = await loadDashboardState(".");
+  const html = renderDashboardHtml(state);
+
+  assert.equal(state.app.name, "DevGov");
+  assert.equal(state.dashboardPort.port, 3101);
+  assert.ok(state.localAgents.some((agent) => agent.id === "local-archive-maintainer"));
+  assert.match(html, /DevGov Dashboard/);
+  assert.match(html, /Local Service Agents/);
+  assert.match(html, /127\.0\.0\.1:3101/);
+});
+
+test("doctor verifies DevGov dashboard governance without modifying canonical registries", async () => {
+  const result = await runDoctorChecks(".");
+
+  assert.equal(result.ok, true, JSON.stringify(result.checks.filter((check) => !check.ok), null, 2));
+  assert.equal(result.repairs.length, 0);
+  assert.ok(result.checks.some((check) => check.id === "dashboard-port-registry" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "dashboard-startup-registry" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "local-agent-registry" && check.ok));
 });

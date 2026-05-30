@@ -1,5 +1,5 @@
 {
-  "schema": "dev-governance-kit.startup.registry.v1",
+  "schema": "devgov.startup.registry.v1",
   "description": "Canonical startup governance records for reviewed development automation. Machine-local launch paths stay in reports/.",
   "sourceOfTruth": "registry/startup.registry.json",
   "entries": [
@@ -57,6 +57,39 @@
       "source": "startup audit",
       "notes": "Development automation candidate from Registry Run; review before approval.",
       "managedByCodex": false
+    },
+    {
+      "id": "devgov-dashboard-login",
+      "project": "devgov",
+      "trigger": "startup-folder",
+      "purpose": "Start the DevGov dashboard on operator login after reviewed opt-in.",
+      "scriptRef": "devgov/scripts/register-dashboard-startup.ps1",
+      "status": "candidate",
+      "source": "DevGov dashboard governance",
+      "notes": "Reviewed opt-in startup mechanism. The registration script writes machine-local launch details only when explicitly run by an operator.",
+      "managedByCodex": true
+    },
+    {
+      "id": "devgov-dashboard-on-demand",
+      "project": "devgov",
+      "trigger": "protocol-handler",
+      "purpose": "Open DevGov on demand and auto-start the local dashboard server if it is not already running.",
+      "scriptRef": "devgov/scripts/open-dashboard.mjs",
+      "status": "candidate",
+      "source": "DevGov dashboard governance",
+      "notes": "No always-on service is required. The opener performs a health check and starts the loopback dashboard only when requested.",
+      "managedByCodex": true
+    },
+    {
+      "id": "local-archive-maintainer-app-server",
+      "project": "local-archive-maintainer",
+      "trigger": "windows-service",
+      "purpose": "Run the resident local archive/index worker and loopback app-server.",
+      "scriptRef": "local-archive-maintainer/scripts/install-app-server-service.ps1",
+      "status": "candidate",
+      "source": "Local Archive Maintainer service inspection",
+      "notes": "Windows service is automatic and uses a service-local deployment home. Full command line, token file, logs, and state data stay in generated evidence, not canonical registry data.",
+      "managedByCodex": true
     }
   ]
 }

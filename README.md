@@ -1,6 +1,6 @@
-# dev-governance-kit
+# DevGov
 
-`dev-governance-kit` is a local multi-project governance toolkit. It keeps development services, agents, Terminal profiles, startup automation, public routes, and local documentation search behind auditable sources of truth.
+`DevGov` is a memorable local multi-project governance toolkit and dashboard. It keeps development services, local service agents, Terminal profiles, startup automation, public routes, worktrees, self-checks, and local documentation search behind auditable sources of truth.
 
 The project follows a UniText-like layout:
 
@@ -15,11 +15,11 @@ The toolkit is audit-first. Scanners produce evidence in `reports/`; reviewed re
 
 Chinese key documents:
 
-- [README.zh-TW.md](README.zh-TW.md)
-- [AGENTS.zh-TW.md](AGENTS.zh-TW.md)
-- [docs/onboarding-existing-projects.zh-TW.md](docs/onboarding-existing-projects.zh-TW.md)
-- [templates/PORTS.zh-TW.md](templates/PORTS.zh-TW.md)
-- [templates/AGENTS.port-governance.zh-TW.md](templates/AGENTS.port-governance.zh-TW.md)
+- [README.zh-tw.md](README.zh-tw.md)
+- [AGENTS.zh-tw.md](AGENTS.zh-tw.md)
+- [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
+- [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
+- [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 
 Scan one project without changing it:
 
@@ -81,6 +81,30 @@ Build the local static document search artifacts:
 npm run scan:docs
 ```
 
+Start the local dashboard:
+
+```powershell
+npm run dashboard
+```
+
+Open the dashboard on demand and auto-start it if needed:
+
+```powershell
+npm run dashboard:open -- --open
+```
+
+Run the self-check and report system:
+
+```powershell
+npm run doctor
+```
+
+Regenerate repairable local report artifacts:
+
+```powershell
+npm run doctor:repair
+```
+
 Check declared ports before starting a service:
 
 ```powershell
@@ -96,6 +120,26 @@ node templates/check-ports.mjs 3101,3201
 | db/cache/queue | `3300-3399` |
 | preview/docs | `3400-3499` |
 | agent/MCP/local tools | `3500-3599` |
+
+Reserved DevGov service:
+
+| Service | Host | Port | Notes |
+|---|---|---:|---|
+| dashboard-http | `127.0.0.1` | `3101` | Long-lived loopback dashboard. The server fails fast if this port is occupied. |
+
+## Dashboard And Startup
+
+The dashboard entry point is `http://127.0.0.1:3101`. It reads canonical registry files directly and exposes `/health`, `/api/state`, `/api/local-agents`, and `/api/doctor` for local checks.
+
+Local service agents are tracked in `registry/local-agents.registry.json`. These records identify resident loopback services such as Local Archive Maintainer without storing service-local homes, token files, logs, generated data, or full command lines in canonical registry data.
+
+Startup registration is review-gated. `scripts/register-dashboard-startup.ps1` can create or remove the Windows Startup entry when an operator explicitly runs it. The default on-demand path is `npm run dashboard:open -- --open`, which health-checks the dashboard and starts the loopback server only when needed.
+
+## Doctor
+
+`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, required scripts, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
+
+`npm run doctor:repair` is intentionally limited to local generated artifacts under `reports/`; it regenerates the static document search files without changing canonical registry data.
 
 ## Worktree Governance
 
@@ -152,6 +196,7 @@ Additional registries use the same rule: canonical files contain stable identifi
 - `.env` reports redact non-port and non-host values.
 - `0.0.0.0` is treated as a visibility risk that must be documented.
 - Automatic port fallback is flagged because it makes agent startup behavior ambiguous.
+- DevGov dashboard startup is opt-in. The repo provides registration scripts, but audit commands do not silently modify Windows Startup settings.
 - Terminal settings are not modified by audit commands. `plan:terminal-fix` is dry-run unless explicitly run with `--apply`.
 - Worktree audits are read-only and only recommend cleanup candidates; removal and prune steps remain review-gated.
 - Generated reports are evidence, not canonical policy; promote intentional findings into `registry/*.registry.json` only after review.

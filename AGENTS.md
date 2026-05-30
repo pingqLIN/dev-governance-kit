@@ -2,7 +2,7 @@
 
 ## Project Role
 
-`dev-governance-kit` manages reusable development-environment governance assets.
+`DevGov` manages reusable development-environment governance assets.
 
 The current project scope covers local development-environment governance:
 
@@ -10,9 +10,12 @@ The current project scope covers local development-environment governance:
 - maintain a canonical port registry
 - audit Windows Terminal profile asset references
 - inventory Codex-created or development startup entries
+- inventory resident local service agents separately from ordinary services
 - inventory Git linked worktrees without double-counting repositories
 - manage Cloudflare/public route governance records
 - generate local static document-search artifacts
+- provide a local loopback dashboard on the reviewed long-lived `127.0.0.1:3101` port
+- run self-check, limited self-repair, and local report generation through the Doctor command
 - validate conflicts and required fields
 - generate templates that agents can follow before starting services
 
@@ -42,6 +45,8 @@ Use stable project identifiers rather than local machine paths. Put environment-
 
 Terminal profile, startup, and public-route registries follow the same rule: canonical records use stable IDs and reviewed policy fields only. Full Windows paths, Terminal settings paths, complete launch commands, Cloudflare credential paths, process IDs, and temporary discovery evidence belong in `reports/`.
 
+Local service agent registry records follow the same rule. Do not store service-local homes, bearer token paths, logs, generated indexes, or full commands in `registry/local-agents.registry.json`.
+
 Worktree reports also stay in `reports/`. They may include machine-local paths because they are local evidence, not canonical registry data.
 
 ## Port Governance Rules
@@ -49,11 +54,12 @@ Worktree reports also stay in `reports/`. They may include machine-local paths b
 1. Read `registry/ports.registry.json` before changing port allocation rules.
 2. Do not add random or auto-increment fallback ports.
 3. Default development host is `127.0.0.1`.
-4. Any `0.0.0.0` binding must be documented with `visibility` and `notes`.
-5. Do not run target project config files while scanning them.
-6. Do not print secrets from `.env` files; only port and host related values may appear in reports.
-7. Keep existing project scans read-only unless a future command explicitly supports reviewed patch generation.
-8. Version 1 does not include an `apply-project` command; all target-project edits remain manual and review-gated.
+4. The DevGov dashboard allocation is `127.0.0.1:3101`; do not silently choose another dashboard port.
+5. Any `0.0.0.0` binding must be documented with `visibility` and `notes`.
+6. Do not run target project config files while scanning them.
+7. Do not print secrets from `.env` files; only port and host related values may appear in reports.
+8. Keep existing project scans read-only unless a future command explicitly supports reviewed patch generation.
+9. Version 1 does not include an `apply-project` command; all target-project edits remain manual and review-gated.
 
 ## Terminal, Startup, Public Route, And Search Rules
 
@@ -63,6 +69,7 @@ Worktree reports also stay in `reports/`. They may include machine-local paths b
 4. Cloudflare route scans must not read or print credential JSON, certs, private keys, API tokens, or PEM contents.
 5. Public routes must document exposure class, Access requirement, health URL, and review status before promotion into `registry/public-routes.registry.json`.
 6. Static document search generation writes local artifacts under `reports/` and must not start a service or allocate a port.
+7. Dashboard startup is opt-in. Registration scripts may write Windows Startup entries only when explicitly run by an operator.
 
 ## Worktree Governance Rules
 
@@ -81,4 +88,5 @@ Run these before reporting a completed batch:
 ```powershell
 npm test
 npm run validate:registry
+npm run doctor
 ```

@@ -59,7 +59,7 @@ test("scan-worktrees reports linked worktrees without double-counting projects",
 test("scan-worktrees refuses to write reports outside reports by default", () => {
   const result = spawnSync(
     process.execPath,
-    ["scripts/scan-worktrees.mjs", "tests/fixtures", "--out", join(tmpdir(), "dev-governance-kit-worktrees-outside.md")],
+    ["scripts/scan-worktrees.mjs", "tests/fixtures", "--out", join(tmpdir(), "devgov-worktrees-outside.md")],
     { encoding: "utf8" }
   );
 

@@ -1,5 +1,5 @@
 {
-  "schema": "dev-governance-kit.public-routes.registry.v1",
+  "schema": "devgov.public-routes.registry.v1",
   "description": "Canonical public route governance records. Credential files and local tunnel config paths stay in reports/.",
   "sourceOfTruth": "registry/public-routes.registry.json",
   "routes": [

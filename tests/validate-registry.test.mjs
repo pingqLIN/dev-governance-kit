@@ -5,7 +5,7 @@ import { validateGovernanceRegistry } from "../scripts/lib/governance-registry-c
 
 function baseRegistry(entries) {
   return {
-    schema: "dev-governance-kit.ports.registry.v1",
+    schema: "devgov.ports.registry.v1",
     ranges: {
       frontend: { start: 3100, end: 3199 }
     },
@@ -111,7 +111,7 @@ test("validateRegistry rejects unknown ranges", () => {
 
 test("validateRegistry rejects overlapping ranges", () => {
   const errors = validateRegistry({
-    schema: "dev-governance-kit.ports.registry.v1",
+    schema: "devgov.ports.registry.v1",
     ranges: {
       frontend: { start: 3100, end: 3199 },
       api: { start: 3190, end: 3299 }

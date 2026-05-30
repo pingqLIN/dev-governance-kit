@@ -1,7 +1,7 @@
 {
-  "name": "dev-governance-kit",
+  "name": "devgov",
   "version": "0.1.0",
-  "description": "Multi-project development governance toolkit for ports, terminal profiles, startup entries, public routes, and local document search.",
+  "description": "Memorable local development governance dashboard and toolkit for ports, startup entries, public routes, worktrees, and self-checks.",
   "type": "module",
   "private": true,
   "scripts": {
@@ -14,6 +14,10 @@
     "scan:public-routes": "node scripts/scan-public-routes.mjs",
     "scan:worktrees": "node scripts/scan-worktrees.mjs",
     "scan:docs": "node scripts/scan-docs.mjs",
+    "dashboard": "node scripts/serve-dashboard.mjs",
+    "dashboard:open": "node scripts/open-dashboard.mjs",
+    "doctor": "node scripts/devgov-doctor.mjs",
+    "doctor:repair": "node scripts/devgov-doctor.mjs --repair",
     "test": "node --test"
   },
   "engines": {

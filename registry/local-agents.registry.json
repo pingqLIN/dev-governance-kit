@@ -1,0 +1,21 @@
+{
+  "schema": "devgov.local-agents.registry.v1",
+  "description": "Canonical local service agent governance records. Machine-local runtime homes, credentials, command lines, process IDs, logs, and generated data stay in reports/.",
+  "sourceOfTruth": "registry/local-agents.registry.json",
+  "agents": [
+    {
+      "id": "local-archive-maintainer",
+      "project": "local-archive-maintainer",
+      "kind": "windows-service-agent",
+      "serviceId": "LocalArchiveMaintainerAppServer",
+      "displayName": "Local Archive Maintainer",
+      "healthUrl": "http://127.0.0.1:8787/health",
+      "portRef": "local-archive-maintainer:app-server-http",
+      "startupRef": "local-archive-maintainer-app-server",
+      "status": "candidate",
+      "source": "Local Archive Maintainer service inspection",
+      "notes": "Resident loopback archive/index worker with agent-helper handoff. Keep bearer token, service home, logs, and generated index data out of canonical registry records.",
+      "managedByCodex": true
+    }
+  ]
+}
