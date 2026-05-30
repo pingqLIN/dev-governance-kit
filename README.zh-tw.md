@@ -11,6 +11,16 @@
 
 本工具包是 audit-first。掃描只產生 `reports/` evidence；經 review 的紀錄才提升到 `registry/`。
 
+## 重要文件
+
+- [README.md](README.md)
+- [AGENTS.md](AGENTS.md)
+- [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
+- [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
+- [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
+- [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
+- [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
+
 ## 快速開始
 
 只讀掃描單一專案：

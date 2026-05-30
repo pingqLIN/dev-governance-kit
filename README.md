@@ -18,6 +18,8 @@ Chinese key documents:
 - [README.zh-tw.md](README.zh-tw.md)
 - [AGENTS.zh-tw.md](AGENTS.zh-tw.md)
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
+- [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
+- [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
 - [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 
