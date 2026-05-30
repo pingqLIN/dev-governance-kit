@@ -1,6 +1,6 @@
 # DevGov
 
-`DevGov` 是容易記憶的本機多專案開發治理工具包與儀表板。它把開發服務、本地端服務 Agents、Windows Terminal profiles、開機啟動項、Cloudflare 對外路由、開發用 API key 存放位置、worktrees、自我檢測與本機文件檢索放在可稽核的 source of truth 後面管理。
+`DevGov` 是容易記憶的本機多專案開發治理工具包與儀表板。它把開發服務、本地端服務 Agents、Windows Terminal profiles、開機啟動項、Cloudflare 對外路由、開發用 API key 存放位置、AGENTS 指令治理、worktrees、自我檢測與本機文件檢索放在可稽核的 source of truth 後面管理。
 
 本專案採用類似 UniText 的資料管理分層：
 
@@ -14,7 +14,8 @@
 ## 重要文件
 
 - [README.md](README.md)
-- [AGENTS.md](AGENTS.md)
+- [AGENTS.md](AGENTS.md)：本 repo 唯一 authoritative agent-runtime instruction source
+- [AGENTS.zh-tw.md](AGENTS.zh-tw.md)：human-readable reference only，不是 runtime source
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
@@ -89,6 +90,12 @@ npm run scan:worktrees -- Q:\Projects --out reports\worktree-audit.md --max-age-
 npm run scan:docs
 ```
 
+產生本機 AGENTS instruction search artifacts：
+
+```powershell
+npm run scan:agents
+```
+
 啟動本機儀表板：
 
 ```powershell
@@ -147,7 +154,7 @@ DevGov 保留服務：
 
 ## Doctor
 
-`npm run doctor` 會驗證 package identity、registry schemas、dashboard port allocation、startup governance records、API key governance records、必要 scripts、dashboard port availability，以及文件索引能否建立。報告會寫入 `reports/devgov-doctor-report.json`。
+`npm run doctor` 會驗證 package identity、registry schemas、dashboard port allocation、startup governance records、API key governance records、AGENTS instruction governance records、必要 scripts、dashboard port availability，以及文件索引能否建立。報告會寫入 `reports/devgov-doctor-report.json`。
 
 `npm run doctor:repair` 只修復 `reports/` 底下的本機 generated artifacts；它會重新產生靜態文件檢索檔，不會修改 canonical registry data。
 
@@ -213,6 +220,8 @@ API key entries 必須包含：
 | `rules` | Handling、rotation 與 promotion rules |
 | `source` | 識別該紀錄的 audit 或 policy |
 | `notes` | 必要的人類脈絡 |
+
+AGENTS instruction records 放在 `registry/agent-instructions.registry.json`。這些 records 會依 scope layer 與 item type 分類長期有效的 AGENTS rules，讓規則可以被驗證，並匯出成 `reports/` 底下可查詢的本機 artifacts。
 
 ## 安全預設
 

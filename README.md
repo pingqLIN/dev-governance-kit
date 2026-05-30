@@ -1,6 +1,6 @@
 # DevGov
 
-`DevGov` is a memorable local multi-project governance toolkit and dashboard. It keeps development services, local service agents, Terminal profiles, startup automation, public routes, development API key locations, worktrees, self-checks, and local documentation search behind auditable sources of truth.
+`DevGov` is a memorable local multi-project governance toolkit and dashboard. It keeps development services, local service agents, Terminal profiles, startup automation, public routes, development API key locations, AGENTS instruction governance, worktrees, self-checks, and local documentation search behind auditable sources of truth.
 
 The project follows a UniText-like layout:
 
@@ -13,10 +13,10 @@ The toolkit is audit-first. Scanners produce evidence in `reports/`; reviewed re
 
 ## Quick Start
 
-Chinese key documents:
+Chinese companion and reference documents:
 
 - [README.zh-tw.md](README.zh-tw.md)
-- [AGENTS.zh-tw.md](AGENTS.zh-tw.md)
+- [AGENTS.zh-tw.md](AGENTS.zh-tw.md) is a human-readable reference only; [AGENTS.md](AGENTS.md) remains the authoritative agent-runtime instruction source.
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
@@ -89,6 +89,12 @@ Build the local static document search artifacts:
 npm run scan:docs
 ```
 
+Build the local AGENTS instruction search artifacts:
+
+```powershell
+npm run scan:agents
+```
+
 Start the local dashboard:
 
 ```powershell
@@ -147,7 +153,7 @@ Startup registration is review-gated. `scripts/register-dashboard-startup.ps1` c
 
 ## Doctor
 
-`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, API key governance records, required scripts, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
+`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, API key governance records, AGENTS instruction governance records, required scripts, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
 
 `npm run doctor:repair` is intentionally limited to local generated artifacts under `reports/`; it regenerates the static document search files without changing canonical registry data.
 
@@ -213,6 +219,8 @@ API key entries must include:
 | `rules` | Handling, rotation, and promotion rules |
 | `source` | Audit or policy that identified the record |
 | `notes` | Required human context |
+
+AGENTS instruction records live in `registry/agent-instructions.registry.json`. They classify durable AGENTS rules by scope layer and item type so they can be validated and exported into queryable local artifacts under `reports/`.
 
 ## Safety Defaults
 

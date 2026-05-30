@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { validateAgentInstructionsRegistry } from "./agent-instructions-core.mjs";
 import { validateRegistry as validatePortRegistry } from "./registry-core.mjs";
 
 const VALID_STATUS = new Set(["candidate", "approved", "blocked", "deprecated"]);
@@ -45,6 +46,9 @@ export function validateGovernanceRegistry(registry) {
   }
   if (registry.schema === "devgov.api-keys.registry.v1") {
     return validateApiKeysRegistry(registry);
+  }
+  if (registry.schema === "devgov.agent-instructions.registry.v1") {
+    return validateAgentInstructionsRegistry(registry);
   }
   return [`registry.schema is not supported: ${registry.schema ?? "<missing>"}`];
 }

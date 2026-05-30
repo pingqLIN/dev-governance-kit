@@ -15,6 +15,7 @@ The current project scope covers local development-environment governance:
 - inventory Git linked worktrees without double-counting repositories
 - manage Cloudflare/public route governance records
 - generate local static document-search artifacts
+- govern AGENTS instruction scope, item types, and queryable indexes
 - provide a local loopback dashboard on the reviewed long-lived `127.0.0.1:3101` port
 - run self-check, limited self-repair, and local report generation through the Doctor command
 - validate conflicts and required fields
@@ -26,8 +27,60 @@ The current project scope covers local development-environment governance:
 - Reusable generated/project-facing assets belong in `templates/`.
 - Runtime or scan evidence belongs in `reports/`.
 - Machine-local paths, personal notes, and unpublished plans must stay out of canonical registry data.
+- Canonical AGENTS item types and scope records belong in `registry/agent-instructions.registry.json`.
+- Generated AGENTS search/index artifacts belong in `reports/`.
+- `AGENTS.md` is the only authoritative agent-runtime instruction file in this repo.
+- `AGENTS.zh-tw.md`, if present, is a human-readable reference only and is not required by the bilingual publishable-document rule.
 
 This mirrors the UniText registry model: shared content is canonical, local overlays are separate, and verification scripts prove that artifacts remain usable.
+
+## Instruction Scope And Precedence
+
+DevGov can document and test observable file-based instructions, but agents must still honor higher runtime instructions first.
+
+Use these scope layers when classifying AGENTS rules:
+
+1. `platform-runtime`: platform, system, developer, runtime, and active tool instructions. These are authoritative even when not inspectable from repo files.
+2. `global-home`: user-level or home-level AGENTS instructions loaded by the runtime.
+3. `workspace`: workspace overlays such as shared storage topology, shell entry rules, and cross-repo conventions.
+4. `repo-local`: this repository's authoritative `AGENTS.md`, README, registry contracts, and docs. `AGENTS.zh-tw.md`, when present, is reference material only.
+5. `subtree`: future folder-local AGENTS overlays. These may narrow behavior for their subtree but must not bypass parent safety rules.
+6. `task-request`: the current operator request. It can select work and narrow scope, but it cannot override safety, secret, publication, or reversibility rules.
+
+When building an index or report, mark rules as `effective` only for paths inside their scope. Rules outside the target scope are `evidence-only`; missing or unreadable layers are `unresolved`, not invented.
+
+## AGENTS Runtime Source
+
+Agents must treat `AGENTS.md` as the single authoritative runtime instruction source for this repository.
+
+`AGENTS.zh-tw.md` may exist to help human operators review the policy in Traditional Chinese, but it must not introduce rules that are absent from `AGENTS.md`. If the two files drift, `AGENTS.md` wins and the Traditional Chinese reference should be corrected or removed.
+
+Do not require a Traditional Chinese companion for `AGENTS.md` in new repos by default. The bilingual public-document rule applies to human-facing operational or release documentation, not to agent-runtime instruction files unless a repo explicitly promotes such a companion as human reference material.
+
+## External Review Adoption
+
+This version adopts two external-review perspectives as durable policy:
+
+1. Scope and safety review: make non-file runtime authority explicit, keep read-only audit behavior as the default, and verify every scope layer instead of assuming repo-local AGENTS covers the full stack.
+2. Interoperability and search review: classify AGENTS rules by stable item type, generate a queryable text/JSON index, and keep UniText/project-map compatibility as an adapter concern rather than copying local-only evidence into canonical data.
+
+Review packets and raw reviewer notes, when generated, belong in `reports/`. Only accepted, durable recommendations should be promoted into this file or `registry/agent-instructions.registry.json`.
+
+## Execution Principles
+
+- Prefer the narrowest existing DevGov command, scanner, registry validator, or template that matches the task.
+- Keep scans and audits read-only unless an explicit reviewed apply path exists and the operator asked to use it.
+- Treat generated `reports/` artifacts as evidence, not canonical policy.
+- Promote only stable, reviewed records into `registry/`.
+- Ask for clarification only when ambiguity materially changes risk, behavior, or output.
+
+## Safety And Apply Gates
+
+- Registry promotion requires reviewed stable IDs, required fields, and no machine-local paths or secret values.
+- Terminal fixes, startup registration, public route promotion, and worktree cleanup require explicit operator intent before mutation.
+- Any apply path that touches user configuration must create or identify a reviewable backup or rollback path first.
+- Generated reports may contain machine-local evidence; canonical registry data must not.
+- Public or shared outputs must exclude private planning notes, raw reviewer transcripts, secrets, and local-only paths.
 
 ## Data Entry Contract
 
@@ -50,7 +103,27 @@ Local service agent registry records follow the same rule. Do not store service-
 
 API key registry records follow the same rule. Store only stable credential-location metadata such as service, environment variable name, storage location type, access method, rules, status, and provider settings URL. Do not store values, credential file contents, full local credential paths, shell history, or command lines in `registry/api-keys.registry.json`.
 
+AGENTS instruction registry records follow the same rule. Store stable scope IDs, item types, requirements, enforcement notes, evidence anchors, status, and source labels. Do not store machine-local AGENTS paths, raw reviewer transcripts, full local command lines, or temporary investigation evidence in `registry/agent-instructions.registry.json`.
+
 Worktree reports also stay in `reports/`. They may include machine-local paths because they are local evidence, not canonical registry data.
+
+## Agent Instruction Registry Contract
+
+Use these item types when promoting AGENTS rules into `registry/agent-instructions.registry.json`:
+
+- `scope-layer`: where the instruction applies in the stack.
+- `authority-order`: precedence, override limits, and conflict handling.
+- `safety-gate`: review, backup, read-only, or explicit-operator requirements.
+- `data-contract`: canonical fields, storage locations, and redaction boundaries.
+- `workflow-control`: ordered scan, apply, repair, cleanup, or publication steps.
+- `tool-entry`: correct tool or command entry path for a task class.
+- `verification`: tests, validators, doctors, or generated artifacts required before completion.
+- `interoperability`: alignment points with adjacent governance systems.
+- `external-review-input`: adopted recommendations that changed durable policy.
+
+Each promoted record must include a stable `id`, `type`, `layer`, `appliesTo`, `requirement`, `enforcement`, `evidence`, `status`, `source`, and `notes`.
+
+Run `npm run scan:agents` after changing AGENTS governance. The command writes generated search artifacts to `reports/agent-instructions-index.json` and `reports/agent-instructions-index.txt`.
 
 ## Port Governance Rules
 
@@ -75,6 +148,17 @@ Worktree reports also stay in `reports/`. They may include machine-local paths b
 7. Static document search generation writes local artifacts under `reports/` and must not start a service or allocate a port.
 8. Dashboard startup is opt-in. Registration scripts may write Windows Startup entries only when explicitly run by an operator.
 
+## UniText Coordination
+
+DevGov should coordinate with UniText when AGENTS governance needs shared visualization, shared adapter behavior, or cross-project source attribution. The current low-coupling path is:
+
+1. DevGov owns the canonical AGENTS taxonomy in `registry/agent-instructions.registry.json`.
+2. DevGov generates local query artifacts in `reports/`.
+3. UniText project-map or governance-folder adapters may ingest those generated artifacts or the canonical registry when an operator explicitly points the adapter at this repo.
+4. DevGov must not copy UniText local paths, generated browser state, or private planning notes into canonical registry records.
+
+Coordination is not required for ordinary DevGov AGENTS edits. It is required before changing shared adapter contracts, adding a UniText dependency, or publishing generated governance views outside the local machine.
+
 ## Worktree Governance Rules
 
 1. Worktree scans are read-only and must not remove, prune, stage, commit, reset, checkout, or discard files.
@@ -91,6 +175,7 @@ Run these before reporting a completed batch:
 
 ```powershell
 npm test
+npm run scan:agents
 npm run validate:registry
 npm run doctor
 ```
