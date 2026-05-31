@@ -149,7 +149,7 @@ Local service agents are tracked in `registry/local-agents.registry.json`. These
 
 Agent instruction governance is tracked in `registry/agent-instructions.registry.json`. The dashboard includes an Agent Instructions view, `/api/agent-instructions` returns the source-of-truth layers, item types, and entries, and `/api/unitext-agent-instructions` exposes a UniText-style query index for local integration.
 
-Network service status is available in the Service Status view and `/api/service-status`. The dashboard supports one-click quick health tests. One-click restart is intentionally disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.
+Network service status is available in the Service Status view and `/api/service-status`. The `Quick Test` table column runs safe health checks and reports whether each service has a detected Doctor mechanism and restart readiness. One-click restart is intentionally disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary. The standardized contract is documented in `docs/service-control-readiness-spec.md`, with the agent workflow in `registry/skills/service-control-readiness/SKILL.md`.
 
 Development API key locations are tracked in `registry/api-keys.registry.json`. These records identify the service, variable name, storage location type, access method, usage rules, review status, and provider settings page. Credential values, credential file contents, local secret paths, shell history, and full command lines must stay out of canonical registry data.
 

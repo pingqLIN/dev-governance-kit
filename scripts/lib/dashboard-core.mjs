@@ -56,44 +56,97 @@ export async function loadDashboardState(root = ".") {
     serviceTargets: buildServiceTargets({
       dashboardPort,
       publicRoutes: publicRoutes.routes,
-      localAgents: localAgents.agents
+      localAgents: localAgents.agents,
+      startupEntries: startup.entries
     })
   };
 }
 
-export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [] }) {
+export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [], startupEntries = [] }) {
   const targets = [];
+  const startupById = new Map(startupEntries.map((entry) => [entry.id, entry]));
+  const startupByProject = new Map(startupEntries.map((entry) => [entry.project, entry]));
+
   if (dashboardPort) {
-    targets.push({
+    const target = {
       id: "devgov-dashboard",
+      project: "devgov",
       label: "DevGov Dashboard",
       kind: "dashboard",
       registryStatus: "approved",
       url: `${dashboardPort.protocol}://${dashboardPort.host}:${dashboardPort.port}/health`,
-      target: `${dashboardPort.host}:${dashboardPort.port}`
-    });
+      target: `${dashboardPort.host}:${dashboardPort.port}`,
+      quickTest: buildQuickTest(`${dashboardPort.protocol}://${dashboardPort.host}:${dashboardPort.port}/health`),
+      doctor: {
+        state: "FOUND",
+        ref: "package.json#scripts.doctor",
+        notes: "DevGov Doctor is exposed through npm run doctor and /api/doctor."
+      },
+      restart: {
+        state: "FOUND",
+        ref: "scripts/open-dashboard.mjs",
+        notes: "Reviewed on-demand starter exists. Dashboard execution remains disabled."
+      }
+    };
+    targets.push(withControlReadiness(target));
   }
 
   for (const agent of localAgents) {
-    targets.push({
+    const startup = startupById.get(agent.startupRef) ?? startupByProject.get(agent.project);
+    const target = {
       id: `local-agent:${agent.id}`,
+      project: agent.project,
       label: agent.displayName,
       kind: "local-agent",
       registryStatus: agent.status,
       url: agent.healthUrl,
-      target: agent.serviceId
-    });
+      target: agent.serviceId,
+      quickTest: buildQuickTest(agent.healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: "No stable project Doctor mechanism is registered for this local agent."
+      },
+      restart: startup ? {
+        state: "REVIEW_REQUIRED",
+        ref: startup.scriptRef,
+        notes: "A startup/service reference exists, but it is not approved for dashboard restart execution."
+      } : {
+        state: "MISSING",
+        ref: "",
+        notes: "No stable startup or restart reference is registered."
+      }
+    };
+    targets.push(withControlReadiness(target));
   }
 
   for (const route of publicRoutes) {
-    targets.push({
+    const startup = startupByProject.get(route.serviceId);
+    const target = {
       id: `public-route:${route.id}`,
+      project: route.serviceId,
       label: route.hostname,
       kind: "public-route",
       registryStatus: route.status,
       url: route.healthUrl,
-      target: `${route.localHost}:${route.localPort}`
-    });
+      target: `${route.localHost}:${route.localPort}`,
+      quickTest: buildQuickTest(route.healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: "Public-route health URL is a quick test, not a registered project Doctor."
+      },
+      restart: startup ? {
+        state: "REVIEW_REQUIRED",
+        ref: startup.scriptRef,
+        notes: "Startup governance exists for this service, but dashboard restart execution is not approved."
+      } : {
+        state: "MISSING",
+        ref: "",
+        notes: "No stable startup or restart reference is registered for this public route."
+      }
+    };
+    targets.push(withControlReadiness(target));
   }
 
   return targets;
@@ -102,10 +155,17 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
 export async function checkServiceStatuses(root = ".", options = {}) {
   const state = await loadDashboardState(root);
   const timeoutMs = options.timeoutMs ?? 2500;
-  const statuses = await Promise.all(state.serviceTargets.map(async (target) => ({
-    ...target,
-    live: await checkUrl(target.url, timeoutMs)
-  })));
+  const statuses = await Promise.all(state.serviceTargets.map(async (target) => {
+    const live = await checkUrl(target.url, timeoutMs);
+    return {
+      ...target,
+      live,
+      quickTest: {
+        ...target.quickTest,
+        ...live
+      }
+    };
+  }));
 
   return {
     schema: "devgov.service-status.v1",
@@ -113,6 +173,34 @@ export async function checkServiceStatuses(root = ".", options = {}) {
     timeoutMs,
     services: statuses
   };
+}
+
+function buildQuickTest(url) {
+  return {
+    state: url ? "CHECKING" : "MISSING",
+    url,
+    notes: url ? "Safe HTTP health check only." : "No health URL is registered."
+  };
+}
+
+function withControlReadiness(target) {
+  return {
+    ...target,
+    controlReadiness: deriveControlReadiness(target)
+  };
+}
+
+function deriveControlReadiness(target) {
+  const hasQuickTest = Boolean(target.quickTest?.url);
+  if (hasQuickTest && target.doctor?.state === "FOUND" && target.restart?.state === "FOUND") {
+    return "READY";
+  }
+
+  if (hasQuickTest && [target.doctor?.state, target.restart?.state].some((state) => ["FOUND", "REVIEW_REQUIRED"].includes(state))) {
+    return "PARTIAL";
+  }
+
+  return "BLOCKED";
 }
 
 export function buildUniTextAgentInstructionIndex(agentInstructions) {
@@ -395,6 +483,21 @@ export function renderDashboardHtml(state) {
     .OFFLINE { background: #ffd7d2; }
     .ERROR { background: #fff0c2; }
     .CHECKING { background: #e8edf5; }
+    .online, .found, .ready { background: #d8f3ec; }
+    .offline, .missing, .blocked { background: #ffd7d2; }
+    .error, .review_required, .partial { background: #fff0c2; }
+    .checking, .disabled, .not_applicable { background: #e8edf5; }
+    .control-stack {
+      display: grid;
+      gap: 5px;
+      min-width: 170px;
+    }
+    .inline-meta {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      margin-top: 2px;
+    }
     @media (max-width: 820px) {
       .mast, main { grid-template-columns: 1fr; }
       nav { position: static; }
@@ -467,12 +570,10 @@ export function renderDashboardHtml(state) {
         <h2>Network Service Status</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
           <input data-filter="service-status" placeholder="Filter services">
-          <button class="action-button" id="refresh-status" type="button">Quick Test</button>
-          <button class="action-button" type="button" disabled title="Restart requires a reviewed apply path for each service.">Restart Disabled</button>
         </div>
       </div>
       <div class="guidance">
-        <div><strong>Restart policy:</strong> quick health tests are safe here. One-click restart stays disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.</div>
+        <div><strong>Restart policy:</strong> the Quick Test column runs safe health checks and reports Doctor/restart readiness. One-click restart stays disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.</div>
       </div>
       <table data-table="service-status"></table>
     </section>
@@ -504,7 +605,7 @@ renderTerminal('');
 renderApiKeys('');
 renderAgentInstructions('');
 renderAgentStorageGuidance();
-renderServiceStatusTable('', state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' } })));
+renderServiceStatusTable('', state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' }, quickTest: { ...target.quickTest, state: 'CHECKING' } })));
 refreshServiceStatus();
 document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
@@ -519,7 +620,6 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
     if (input.dataset.filter === 'service-status') renderServiceStatusTable(value, serviceStatusRows);
   });
 });
-document.getElementById('refresh-status').addEventListener('click', refreshServiceStatus);
 function renderDashboardPort() {
   const entry = state.dashboardPort;
   document.getElementById('dashboard-port').innerHTML = entry
@@ -566,10 +666,11 @@ function renderAgentStorageGuidance() {
 }
 function renderServiceStatusTable(query, rows) {
   const filtered = rows.filter(row => match(row, query));
-  renderTable('service-status', ['State', 'Service', 'Kind', 'URL', 'Target', 'Registry', 'Last Check'], filtered.map(row => [
+  renderTable('service-status', ['State', 'Service', 'Kind', 'Quick Test', 'URL', 'Target', 'Registry', 'Last Check'], filtered.map(row => [
     pill(row.live?.state || 'CHECKING'),
     textCell(row.label),
     textCell(row.kind),
+    renderQuickTestCell(row),
     linkify(row.url),
     textCell(row.target),
     pill(row.registryStatus),
@@ -577,9 +678,6 @@ function renderServiceStatusTable(query, rows) {
   ]));
 }
 async function refreshServiceStatus() {
-  const button = document.getElementById('refresh-status');
-  button.disabled = true;
-  button.textContent = 'Checking';
   try {
     const response = await fetch('/api/service-status');
     const payload = await response.json();
@@ -588,9 +686,18 @@ async function refreshServiceStatus() {
     serviceStatusRows = state.serviceTargets.map(target => ({ ...target, live: { state: 'ERROR', error: error.message } }));
   } finally {
     renderServiceStatusTable(document.querySelector('input[data-filter="service-status"]').value.toLowerCase(), serviceStatusRows);
-    button.disabled = false;
-    button.textContent = 'Quick Test';
   }
+}
+function renderQuickTestCell(row) {
+  return '<div class="control-stack">'
+    + '<span>Health ' + pill(row.quickTest?.state || row.live?.state || 'CHECKING') + '</span>'
+    + '<span>Doctor ' + pill(row.doctor?.state || 'MISSING') + refMeta(row.doctor?.ref) + '</span>'
+    + '<span>Restart ' + pill(row.restart?.state || 'MISSING') + refMeta(row.restart?.ref) + '</span>'
+    + '<span>Readiness ' + pill(row.controlReadiness || 'BLOCKED') + '</span>'
+    + '</div>';
+}
+function refMeta(value) {
+  return value ? '<span class="inline-meta">' + fileRef(value) + '</span>' : '';
 }
 function renderTable(name, headers, rows) {
   document.querySelector('[data-table="' + name + '"]').innerHTML = '<tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>' + rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('');

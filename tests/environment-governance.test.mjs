@@ -268,7 +268,8 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /API Key Governance/);
   assert.match(html, /Agent Instructions/);
   assert.match(html, /Service Status/);
-  assert.match(html, /Restart Disabled/);
+  assert.match(html, /Quick Test/);
+  assert.doesNotMatch(html, /id="refresh-status"/);
   assert.match(html, /\/file\?path=/);
   assert.match(html, /\/api\/unitext-agent-instructions/);
   assert.match(html, /agent\.authority\.single-runtime-source/);
@@ -281,14 +282,23 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const targets = buildServiceTargets({
     dashboardPort: state.dashboardPort,
     publicRoutes: state.publicRoutes,
-    localAgents: state.localAgents
+    localAgents: state.localAgents,
+    startupEntries: state.startupEntries
   });
+  const dashboardTarget = targets.find((target) => target.id === "devgov-dashboard");
+  const localAgentTarget = targets.find((target) => target.id === "local-agent:local-archive-maintainer");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
   assert.ok(unitext.edges.some((edge) => edge.kind === "classifies"));
   assert.ok(targets.some((target) => target.kind === "dashboard" && target.url.endsWith("/health")));
   assert.ok(targets.some((target) => target.kind === "public-route"));
+  assert.equal(dashboardTarget.doctor.state, "FOUND");
+  assert.equal(dashboardTarget.restart.state, "FOUND");
+  assert.equal(dashboardTarget.controlReadiness, "READY");
+  assert.equal(localAgentTarget.doctor.state, "MISSING");
+  assert.equal(localAgentTarget.restart.state, "REVIEW_REQUIRED");
+  assert.equal(localAgentTarget.controlReadiness, "PARTIAL");
 });
 
 test("doctor verifies DevGov dashboard governance without modifying canonical registries", async () => {
