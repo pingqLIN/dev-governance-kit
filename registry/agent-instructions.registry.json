@@ -1,0 +1,329 @@
+{
+  "schema": "devgov.agent-instructions.registry.v1",
+  "description": "Canonical taxonomy for DevGov AGENTS governance, scope coverage, and queryable instruction indexing.",
+  "sourceOfTruth": "AGENTS.md",
+  "layers": [
+    {
+      "id": "platform-runtime",
+      "scope": "platform-runtime",
+      "precedence": 0,
+      "appliesTo": "All agent sessions before file-based instructions are considered.",
+      "source": "platform-system-developer-runtime",
+      "status": "approved",
+      "notes": "Recorded as a non-file authority boundary for coverage tests and handoff clarity."
+    },
+    {
+      "id": "global-home",
+      "scope": "global-home",
+      "precedence": 1,
+      "appliesTo": "User-level AGENTS instructions outside a specific workspace.",
+      "source": "home-agents",
+      "status": "approved",
+      "notes": "Applies before workspace and repo-local files when available to the agent runtime."
+    },
+    {
+      "id": "workspace",
+      "scope": "workspace",
+      "precedence": 2,
+      "appliesTo": "Shared workspace overlays above individual repositories.",
+      "source": "workspace-agents",
+      "status": "approved",
+      "notes": "Used for storage topology, common workspace behavior, and cross-repo conventions."
+    },
+    {
+      "id": "repo-local",
+      "scope": "repo-local",
+      "precedence": 3,
+      "appliesTo": "This DevGov repository and files below its root.",
+      "source": "AGENTS.md",
+      "status": "approved",
+      "notes": "Nearest canonical project policy for DevGov changes."
+    },
+    {
+      "id": "subtree",
+      "scope": "subtree",
+      "precedence": 4,
+      "appliesTo": "Future nested instructions for specific folders or generated assets.",
+      "source": "subtree-agents",
+      "status": "approved",
+      "notes": "Reserved so folder-local policy can be modeled without changing the schema."
+    },
+    {
+      "id": "task-request",
+      "scope": "task-request",
+      "precedence": 5,
+      "appliesTo": "The current user request after higher-priority safety and scope rules are satisfied.",
+      "source": "user-request",
+      "status": "approved",
+      "notes": "Request intent can narrow work but cannot override safety, secrets, or publication boundaries."
+    }
+  ],
+  "itemTypes": [
+    {
+      "id": "scope-layer",
+      "label": "Scope Layer",
+      "description": "Defines where an instruction applies in the agent governance stack.",
+      "governanceUse": "Coverage tests and effective-rule resolution.",
+      "status": "approved",
+      "notes": "Every durable instruction should be attributable to one layer."
+    },
+    {
+      "id": "authority-order",
+      "label": "Authority Order",
+      "description": "Explains precedence, override limits, and conflict handling.",
+      "governanceUse": "Prevents repo-local policy from claiming higher authority than runtime instructions.",
+      "status": "approved",
+      "notes": "Use for priority and conflict-resolution rules."
+    },
+    {
+      "id": "safety-gate",
+      "label": "Safety Gate",
+      "description": "Requires review, backup, read-only handling, or explicit operator intent before risky action.",
+      "governanceUse": "Controls destructive, irreversible, secret-bearing, or public-exposure workflows.",
+      "status": "approved",
+      "notes": "Safety gates should name the evidence or confirmation expected."
+    },
+    {
+      "id": "data-contract",
+      "label": "Data Contract",
+      "description": "Defines canonical fields, storage locations, and redaction boundaries.",
+      "governanceUse": "Keeps registry data stable and reports separated from machine-local evidence.",
+      "status": "approved",
+      "notes": "Use for registry fields, source-of-truth policy, and secret handling."
+    },
+    {
+      "id": "workflow-control",
+      "label": "Workflow Control",
+      "description": "Defines ordered operational steps for scans, applies, repair, cleanup, or publication.",
+      "governanceUse": "Makes agent execution predictable and review-gated where needed.",
+      "status": "approved",
+      "notes": "Use for process rules that are not registry field contracts."
+    },
+    {
+      "id": "tool-entry",
+      "label": "Tool Entry",
+      "description": "Defines the correct tool or command entry path for a task class.",
+      "governanceUse": "Prevents accidental use of a broad or unauthenticated tool when a narrower entry exists.",
+      "status": "approved",
+      "notes": "Use for browser, shell, scanner, and dashboard command entry rules."
+    },
+    {
+      "id": "verification",
+      "label": "Verification",
+      "description": "Defines tests, validators, doctors, or generated artifacts required before completion.",
+      "governanceUse": "Turns policy changes into observable checks.",
+      "status": "approved",
+      "notes": "Use for required commands and generated evidence."
+    },
+    {
+      "id": "interoperability",
+      "label": "Interoperability",
+      "description": "Defines alignment points with external governance surfaces such as UniText project-map adapters.",
+      "governanceUse": "Keeps DevGov records parseable by adjacent tooling without coupling canonical state to another repo.",
+      "status": "approved",
+      "notes": "Use for adapter compatibility and handoff records."
+    },
+    {
+      "id": "external-review-input",
+      "label": "External Review Input",
+      "description": "Captures adopted recommendations from independent reviewers or review perspectives.",
+      "governanceUse": "Preserves review provenance without turning prose notes into registry policy.",
+      "status": "approved",
+      "notes": "Use only for accepted recommendations that changed a durable rule or verification path."
+    }
+  ],
+  "entries": [
+    {
+      "id": "agent.scope.platform-runtime",
+      "type": "scope-layer",
+      "layer": "platform-runtime",
+      "appliesTo": "All DevGov agent work.",
+      "requirement": "Treat platform, system, developer, and runtime instructions as higher authority than file-based AGENTS content.",
+      "enforcement": "Document the boundary in AGENTS and keep generated indexes from claiming runtime instructions are fully inspectable.",
+      "evidence": "AGENTS.md#Instruction Scope And Precedence",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "This is a coverage marker for non-file authority."
+    },
+    {
+      "id": "agent.scope.global-home",
+      "type": "scope-layer",
+      "layer": "global-home",
+      "appliesTo": "User-level AGENTS files when loaded by the runtime.",
+      "requirement": "Classify global-home rules as applicable context before workspace and repo-local rules.",
+      "enforcement": "Index as a layer and mark unavailable sources as unresolved rather than inventing rules.",
+      "evidence": "AGENTS.md#Instruction Scope And Precedence",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Records the global file layer without storing host-specific paths."
+    },
+    {
+      "id": "agent.scope.workspace",
+      "type": "scope-layer",
+      "layer": "workspace",
+      "appliesTo": "Workspace-level overlays for shared storage and cross-repo conventions.",
+      "requirement": "Resolve workspace instructions after global-home and before repo-local rules.",
+      "enforcement": "Keep workspace-derived facts outside DevGov canonical registry unless explicitly promoted as stable policy.",
+      "evidence": "AGENTS.md#Instruction Scope And Precedence",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Supports cross-repo governance without copying local-only evidence."
+    },
+    {
+      "id": "agent.scope.repo-local",
+      "type": "scope-layer",
+      "layer": "repo-local",
+      "appliesTo": "This repository and its canonical DevGov assets.",
+      "requirement": "Apply DevGov repo-local instructions to registry, templates, scripts, tests, docs, and reports generated here.",
+      "enforcement": "Validate repository changes with test and registry checks before reporting completion.",
+      "evidence": "AGENTS.md#Verification",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Primary durable policy layer for this project."
+    },
+    {
+      "id": "agent.scope.subtree",
+      "type": "scope-layer",
+      "layer": "subtree",
+      "appliesTo": "Future nested AGENTS files or folder-specific governance documents.",
+      "requirement": "Let subtree instructions narrow behavior for their folder only and keep parent safety and data contracts active.",
+      "enforcement": "Model subtree records as narrower layers when they are added.",
+      "evidence": "AGENTS.md#Instruction Scope And Precedence",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Reserved layer for future folder-local policy."
+    },
+    {
+      "id": "agent.scope.task-request",
+      "type": "scope-layer",
+      "layer": "task-request",
+      "appliesTo": "The current operator request.",
+      "requirement": "Use direct requests to select work and narrow scope, not to bypass higher-priority safety or publication controls.",
+      "enforcement": "Ask only when ambiguity materially changes risk, behavior, or output.",
+      "evidence": "AGENTS.md#Execution Principles",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Connects user intent to the rest of the policy stack."
+    },
+    {
+      "id": "agent.authority.conflict-resolution",
+      "type": "authority-order",
+      "layer": "repo-local",
+      "appliesTo": "Conflicts between DevGov files and higher-priority instructions.",
+      "requirement": "Prefer safety, correctness, reversibility, user intent, then speed when rules conflict.",
+      "enforcement": "Do not encode a repo-local rule that instructs agents to override platform, global, or workspace safety boundaries.",
+      "evidence": "AGENTS.md#Instruction Scope And Precedence",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Accepted from the scope and safety review perspective."
+    },
+    {
+      "id": "agent.authority.single-runtime-source",
+      "type": "authority-order",
+      "layer": "repo-local",
+      "appliesTo": "AGENTS runtime instructions and optional translated references.",
+      "requirement": "Treat AGENTS.md as the only authoritative agent-runtime source; AGENTS.zh-tw.md, if present, is human-readable reference only.",
+      "enforcement": "Do not require a Traditional Chinese companion for AGENTS.md and do not promote translated reference text into canonical runtime policy.",
+      "evidence": "AGENTS.md#AGENTS Runtime Source",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Adopts the operator recommendation that AGENTS files are agent-specialized and should not require a translated authoritative copy."
+    },
+    {
+      "id": "agent.safety.review-gates",
+      "type": "safety-gate",
+      "layer": "repo-local",
+      "appliesTo": "Registry promotion, apply commands, startup writes, public route promotion, and worktree cleanup.",
+      "requirement": "Keep audit and scan commands read-only unless a reviewed apply path is explicitly requested.",
+      "enforcement": "Require backups, reports, or explicit operator intent before mutation paths.",
+      "evidence": "AGENTS.md#Safety And Apply Gates",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Prevents governance tools from becoming silent mutation paths."
+    },
+    {
+      "id": "agent.data.registry-boundary",
+      "type": "data-contract",
+      "layer": "repo-local",
+      "appliesTo": "All DevGov canonical registries.",
+      "requirement": "Store stable policy and reviewed records in registry while keeping machine-local evidence in reports.",
+      "enforcement": "Reject machine-local paths, secret values, full commands, and temporary evidence from canonical registry data.",
+      "evidence": "AGENTS.md#Data Entry Contract",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Extends the existing registry model to agent instruction records."
+    },
+    {
+      "id": "agent.workflow.external-review-adoption",
+      "type": "external-review-input",
+      "layer": "repo-local",
+      "appliesTo": "AGENTS governance changes that affect broad agent behavior.",
+      "requirement": "Record accepted review recommendations as actionable policy, not long prose notes.",
+      "enforcement": "Add only durable conclusions to AGENTS or the registry; keep transient review packets in reports when generated.",
+      "evidence": "AGENTS.md#External Review Adoption",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Keeps review provenance concise and parseable."
+    },
+    {
+      "id": "agent.tool.narrow-entry",
+      "type": "tool-entry",
+      "layer": "repo-local",
+      "appliesTo": "Local scans, browser checks, dashboard startup, and AGENTS index generation.",
+      "requirement": "Use the narrowest audited command or tool entry that matches the task.",
+      "enforcement": "Prefer existing npm scripts and DevGov scanners before ad hoc inspection paths.",
+      "evidence": "AGENTS.md#Execution Principles",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Aligns command entry with audit-first behavior."
+    },
+    {
+      "id": "agent.verify.batch-completion",
+      "type": "verification",
+      "layer": "repo-local",
+      "appliesTo": "Completed DevGov batches and AGENTS governance edits.",
+      "requirement": "Run test, registry validation, doctor, and AGENTS index generation when the change touches agent governance.",
+      "enforcement": "Report any skipped command and residual risk.",
+      "evidence": "AGENTS.md#Verification",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Turns layered policy into executable checks."
+    },
+    {
+      "id": "agent.interop.unitext-project-map",
+      "type": "interoperability",
+      "layer": "repo-local",
+      "appliesTo": "Coordination with UniText project-map and governance-folder adapters.",
+      "requirement": "Generate a queryable text and JSON index that UniText-style tooling can ingest without reading local-only evidence.",
+      "enforcement": "Keep generated AGENTS indexes in reports and keep canonical item types in this registry.",
+      "evidence": "AGENTS.md#UniText Coordination",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Adopts the interoperability review recommendation without coupling DevGov to UniText runtime state."
+    },
+    {
+      "id": "agent.review.scope-safety",
+      "type": "external-review-input",
+      "layer": "repo-local",
+      "appliesTo": "This AGENTS revision.",
+      "requirement": "Make the non-file authority boundary and review gates explicit before adding automation.",
+      "enforcement": "Keep scope-layer records and safety-gate records separate so tests can verify both.",
+      "evidence": "AGENTS.md#External Review Adoption",
+      "status": "approved",
+      "source": "external-audit-orchestrator",
+      "notes": "Reviewer 1 perspective: instruction boundary, reversibility, and testability."
+    },
+    {
+      "id": "agent.review.unitext-index",
+      "type": "external-review-input",
+      "layer": "repo-local",
+      "appliesTo": "This AGENTS revision.",
+      "requirement": "Regularize AGENTS item types so project-map-style tools can query requirements by type, scope, and evidence.",
+      "enforcement": "Maintain this registry and regenerate the text index after AGENTS governance changes.",
+      "evidence": "AGENTS.md#Agent Instruction Registry Contract",
+      "status": "approved",
+      "source": "external-audit-orchestrator",
+      "notes": "Reviewer 2 perspective: parseability, stable taxonomy, and UniText coordination."
+    }
+  ]
+}

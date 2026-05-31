@@ -1,6 +1,6 @@
 # DevGov
 
-`DevGov` 是容易記憶的本機多專案開發治理工具包與儀表板。它把開發服務、本地端服務 Agents、Windows Terminal profiles、開機啟動項、Cloudflare 對外路由、開發用 API key 存放位置、worktrees、自我檢測與本機文件檢索放在可稽核的 source of truth 後面管理。
+`DevGov` 是容易記憶的本機多專案開發治理工具包與儀表板。它把開發服務、本地端服務 Agents、Windows Terminal profiles、開機啟動項、Cloudflare 對外路由、開發用 API key 存放位置、AGENTS 指令治理、worktrees、自我檢測與本機文件檢索放在可稽核的 source of truth 後面管理。
 
 本專案採用類似 UniText 的資料管理分層：
 
@@ -14,7 +14,8 @@
 ## 重要文件
 
 - [README.md](README.md)
-- [AGENTS.md](AGENTS.md)
+- [AGENTS.md](AGENTS.md)：本 repo 唯一 authoritative agent-runtime instruction source
+- [AGENTS.zh-tw.md](AGENTS.zh-tw.md)：human-readable reference only，不是 runtime source
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
@@ -89,6 +90,12 @@ npm run scan:worktrees -- Q:\Projects --out reports\worktree-audit.md --max-age-
 npm run scan:docs
 ```
 
+產生本機 AGENTS instruction search artifacts：
+
+```powershell
+npm run scan:agents
+```
+
 啟動本機儀表板：
 
 ```powershell
@@ -141,13 +148,17 @@ DevGov 保留服務：
 
 本地端服務 Agents 會記錄在 `registry/local-agents.registry.json`。這些 records 用來識別 Local Archive Maintainer 這類常駐 loopback services，但不會把 service-local home、token files、logs、generated data 或完整 command lines 放進 canonical registry data。
 
+Agent instruction governance 會記錄在 `registry/agent-instructions.registry.json`。儀表板包含 Agent Instructions view，`/api/agent-instructions` 會回傳 source-of-truth layers、item types 與 entries，`/api/unitext-agent-instructions` 則提供 UniText-style query index，供本機整合使用。
+
+Network service status 可在 Service Status view 與 `/api/service-status` 查看。`Quick Test` table column 會執行安全 health check，並回報每個 service 是否偵測到 Doctor mechanism 與 restart readiness。一鍵 restart 目前刻意停用，直到每個 service 都有已審查的 restart command、backup / rollback expectation 與 permission boundary。標準化合約記錄在 `docs/service-control-readiness-spec.zh-tw.md`，agent workflow 則在 `registry/skills/service-control-readiness/SKILL.md`。
+
 開發用 API key 存放位置由 `registry/api-keys.registry.json` 追蹤。這些 records 保存 service、variable name、storage location type、access method、usage rules、review status 與 provider settings page。Credential values、credential file contents、本機 secret paths、shell history 與完整 command lines 都不得放進 canonical registry data。
 
 開機啟動註冊採 review-gated。`scripts/register-dashboard-startup.ps1` 可以在操作者明確執行時建立或移除 Windows Startup entry。預設的隨服務開啟路徑是 `npm run dashboard:open -- --open`，它會先做 health check，只有在儀表板尚未啟動時才啟動 loopback server。
 
 ## Doctor
 
-`npm run doctor` 會驗證 package identity、registry schemas、dashboard port allocation、startup governance records、API key governance records、必要 scripts、dashboard port availability，以及文件索引能否建立。報告會寫入 `reports/devgov-doctor-report.json`。
+`npm run doctor` 會驗證 package identity、registry schemas、dashboard port allocation、startup governance records、API key governance records、AGENTS instruction governance records、必要 scripts、dashboard port availability，以及文件索引能否建立。報告會寫入 `reports/devgov-doctor-report.json`。
 
 `npm run doctor:repair` 只修復 `reports/` 底下的本機 generated artifacts；它會重新產生靜態文件檢索檔，不會修改 canonical registry data。
 
@@ -213,6 +224,8 @@ API key entries 必須包含：
 | `rules` | Handling、rotation 與 promotion rules |
 | `source` | 識別該紀錄的 audit 或 policy |
 | `notes` | 必要的人類脈絡 |
+
+AGENTS instruction records 放在 `registry/agent-instructions.registry.json`。這些 records 會依 scope layer 與 item type 分類長期有效的 AGENTS rules，讓規則可以被驗證，並匯出成 `reports/` 底下可查詢的本機 artifacts。
 
 ## 安全預設
 

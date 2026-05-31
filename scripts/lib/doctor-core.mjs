@@ -18,6 +18,7 @@ export async function runDoctorChecks(root = ".", options = {}) {
     "ports.registry.json",
     "local-agents.registry.json",
     "api-keys.registry.json",
+    "agent-instructions.registry.json",
     "startup.registry.json",
     "public-routes.registry.json",
     "terminal-profiles.registry.json"
@@ -60,7 +61,7 @@ export async function runDoctorChecks(root = ".", options = {}) {
     `${apiKeys.entries.length} credential-location records`
   );
 
-  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/scan-api-keys.mjs"]) {
+  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs"]) {
     add(`script-${scriptPath}`, await fileExists(path.join(root, scriptPath)), scriptPath);
   }
 
