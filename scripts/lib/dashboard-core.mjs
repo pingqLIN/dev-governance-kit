@@ -273,23 +273,93 @@ export function renderDashboardHtml(state) {
   <title>DevGov Dashboard</title>
   <style>
     :root {
-      --ink: #15171a;
-      --muted: #66717f;
-      --line: #cbd5df;
-      --paper: #f7f5ef;
-      --panel: #fffdfa;
-      --accent: #0f766e;
-      --blue: #285bb8;
-      --ok: #0f766e;
-      --warn: #b7791f;
-      --bad: #b42318;
+      color-scheme: light;
+      --ink: oklch(23% 0.018 248);
+      --muted: oklch(47% 0.035 248);
+      --line: oklch(82% 0.027 240);
+      --paper: oklch(96% 0.01 86);
+      --panel: oklch(99% 0.007 86);
+      --panel-raised: oklch(94% 0.015 145);
+      --input: oklch(99% 0.007 86);
+      --accent: oklch(47% 0.106 183);
+      --accent-ink: oklch(99% 0.007 86);
+      --blue: oklch(45% 0.13 261);
+      --ok-bg: oklch(90% 0.067 170);
+      --warn-bg: oklch(91% 0.08 86);
+      --bad-bg: oklch(90% 0.07 27);
+      --neutral-bg: oklch(92% 0.021 248);
+      --grid-line: oklch(23% 0.018 248 / .045);
+      --header-bg: oklch(99% 0.007 86 / .94);
+      --focus: oklch(58% 0.13 183);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --ink: oklch(92% 0.012 248);
+        --muted: oklch(72% 0.03 248);
+        --line: oklch(37% 0.03 248);
+        --paper: oklch(18% 0.018 248);
+        --panel: oklch(22% 0.02 248);
+        --panel-raised: oklch(28% 0.035 178);
+        --input: oklch(18% 0.018 248);
+        --accent: oklch(70% 0.116 176);
+        --accent-ink: oklch(16% 0.018 248);
+        --blue: oklch(76% 0.102 253);
+        --ok-bg: oklch(34% 0.063 170);
+        --warn-bg: oklch(36% 0.064 86);
+        --bad-bg: oklch(35% 0.064 27);
+        --neutral-bg: oklch(30% 0.025 248);
+        --grid-line: oklch(92% 0.012 248 / .045);
+        --header-bg: oklch(20% 0.018 248 / .94);
+        --focus: oklch(77% 0.13 176);
+      }
+    }
+    [data-theme="light"] {
+      color-scheme: light;
+      --ink: oklch(23% 0.018 248);
+      --muted: oklch(47% 0.035 248);
+      --line: oklch(82% 0.027 240);
+      --paper: oklch(96% 0.01 86);
+      --panel: oklch(99% 0.007 86);
+      --panel-raised: oklch(94% 0.015 145);
+      --input: oklch(99% 0.007 86);
+      --accent: oklch(47% 0.106 183);
+      --accent-ink: oklch(99% 0.007 86);
+      --blue: oklch(45% 0.13 261);
+      --ok-bg: oklch(90% 0.067 170);
+      --warn-bg: oklch(91% 0.08 86);
+      --bad-bg: oklch(90% 0.07 27);
+      --neutral-bg: oklch(92% 0.021 248);
+      --grid-line: oklch(23% 0.018 248 / .045);
+      --header-bg: oklch(99% 0.007 86 / .94);
+      --focus: oklch(58% 0.13 183);
+    }
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --ink: oklch(92% 0.012 248);
+      --muted: oklch(72% 0.03 248);
+      --line: oklch(37% 0.03 248);
+      --paper: oklch(18% 0.018 248);
+      --panel: oklch(22% 0.02 248);
+      --panel-raised: oklch(28% 0.035 178);
+      --input: oklch(18% 0.018 248);
+      --accent: oklch(70% 0.116 176);
+      --accent-ink: oklch(16% 0.018 248);
+      --blue: oklch(76% 0.102 253);
+      --ok-bg: oklch(34% 0.063 170);
+      --warn-bg: oklch(36% 0.064 86);
+      --bad-bg: oklch(35% 0.064 27);
+      --neutral-bg: oklch(30% 0.025 248);
+      --grid-line: oklch(92% 0.012 248 / .045);
+      --header-bg: oklch(20% 0.018 248 / .94);
+      --focus: oklch(77% 0.13 176);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       background:
-        linear-gradient(90deg, rgba(21,23,26,.04) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(21,23,26,.04) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(0deg, var(--grid-line) 1px, transparent 1px),
         var(--paper);
       background-size: 28px 28px;
       color: var(--ink);
@@ -297,11 +367,12 @@ export function renderDashboardHtml(state) {
     }
     header {
       border-bottom: 2px solid var(--ink);
-      background: rgba(255,253,250,.92);
+      background: var(--header-bg);
       padding: 18px clamp(16px, 3vw, 34px);
       position: sticky;
       top: 0;
       z-index: 2;
+      backdrop-filter: saturate(1.15) blur(8px);
     }
     .mast {
       align-items: end;
@@ -318,13 +389,21 @@ export function renderDashboardHtml(state) {
       line-height: .9;
       margin: 0;
     }
+    .header-actions {
+      align-items: end;
+      display: grid;
+      gap: 10px;
+      justify-items: end;
+      min-width: 230px;
+    }
     .status {
       align-items: center;
       display: flex;
       gap: 8px;
       font-size: 14px;
       justify-content: end;
-      min-width: 180px;
+      max-width: 34ch;
+      overflow-wrap: anywhere;
     }
     .dot {
       background: var(--accent);
@@ -332,6 +411,21 @@ export function renderDashboardHtml(state) {
       border-radius: 999px;
       height: 14px;
       width: 14px;
+    }
+    .theme-toggle {
+      border: 2px solid var(--ink);
+      background: var(--panel);
+      justify-content: center;
+      min-height: 38px;
+      padding: 7px 12px;
+      width: auto;
+    }
+    .theme-toggle:hover, .action-button:hover, nav button:hover {
+      background: var(--panel-raised);
+    }
+    .theme-toggle:focus-visible, button:focus-visible, input:focus-visible, a:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
     }
     main {
       display: grid;
@@ -365,7 +459,7 @@ export function renderDashboardHtml(state) {
     }
     button[aria-selected="true"] {
       background: var(--ink);
-      color: white;
+      color: var(--paper);
     }
     .action-button {
       border: 2px solid var(--ink);
@@ -421,7 +515,7 @@ export function renderDashboardHtml(state) {
     }
     input {
       border: 2px solid var(--ink);
-      background: white;
+      background: var(--input);
       color: var(--ink);
       font: inherit;
       max-width: 420px;
@@ -460,9 +554,12 @@ export function renderDashboardHtml(state) {
       vertical-align: top;
     }
     th {
-      background: #e7ece8;
+      background: var(--panel-raised);
       font-size: 12px;
       text-transform: uppercase;
+    }
+    td {
+      overflow-wrap: anywhere;
     }
     code {
       color: var(--blue);
@@ -473,20 +570,22 @@ export function renderDashboardHtml(state) {
       border: 1px solid var(--ink);
       display: inline-block;
       font-size: 12px;
+      line-height: 1.35;
       padding: 2px 7px;
+      white-space: nowrap;
     }
-    .local { background: #d8f3ec; }
-    .public, .candidate { background: #fff0c2; }
-    .blocked { background: #ffd7d2; }
-    .approved { background: #d8f3ec; }
-    .ONLINE { background: #d8f3ec; }
-    .OFFLINE { background: #ffd7d2; }
-    .ERROR { background: #fff0c2; }
-    .CHECKING { background: #e8edf5; }
-    .online, .found, .ready { background: #d8f3ec; }
-    .offline, .missing, .blocked { background: #ffd7d2; }
-    .error, .review_required, .partial { background: #fff0c2; }
-    .checking, .disabled, .not_applicable { background: #e8edf5; }
+    .local { background: var(--ok-bg); }
+    .public, .candidate { background: var(--warn-bg); }
+    .blocked { background: var(--bad-bg); }
+    .approved { background: var(--ok-bg); }
+    .ONLINE { background: var(--ok-bg); }
+    .OFFLINE { background: var(--bad-bg); }
+    .ERROR { background: var(--warn-bg); }
+    .CHECKING { background: var(--neutral-bg); }
+    .online, .found, .ready { background: var(--ok-bg); }
+    .offline, .missing, .blocked { background: var(--bad-bg); }
+    .error, .review_required, .partial { background: var(--warn-bg); }
+    .checking, .disabled, .not_applicable { background: var(--neutral-bg); }
     .control-stack {
       display: grid;
       gap: 5px;
@@ -500,12 +599,19 @@ export function renderDashboardHtml(state) {
     }
     @media (max-width: 820px) {
       .mast, main { grid-template-columns: 1fr; }
+      .header-actions { justify-items: start; min-width: 0; }
       nav { position: static; }
       .strip { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
       .status { justify-content: start; }
       .toolbar { align-items: stretch; flex-direction: column; }
       .guidance-row { grid-template-columns: 1fr; }
-      table { font-size: 14px; }
+      table {
+        display: block;
+        font-size: 14px;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      th, td { white-space: normal; }
     }
   </style>
 </head>
@@ -516,7 +622,10 @@ export function renderDashboardHtml(state) {
       <h1>DevGov</h1>
       <div class="muted">Local governance console for ports, startup automation, public routes, and workspace readiness.</div>
     </div>
-    <div class="status"><span class="dot"></span><span>${escapeHtml(state.app.url)}</span></div>
+    <div class="header-actions">
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode</button>
+      <div class="status"><span class="dot"></span><span>${escapeHtml(state.app.url)}</span></div>
+    </div>
   </div>
 </header>
 <main>
@@ -581,6 +690,19 @@ export function renderDashboardHtml(state) {
 </main>
 <script>
 const state = ${stateJson};
+const themeButton = document.getElementById('theme-toggle');
+const savedTheme = localStorage.getItem('devgov-theme');
+if (savedTheme === 'light' || savedTheme === 'dark') {
+  document.documentElement.dataset.theme = savedTheme;
+}
+syncThemeButton();
+themeButton.addEventListener('click', () => {
+  const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('devgov-theme', next);
+  syncThemeButton();
+});
 const views = [...document.querySelectorAll('section')];
 const buttons = [...document.querySelectorAll('nav button')];
 buttons.forEach(button => button.addEventListener('click', () => {
@@ -729,6 +851,11 @@ function fileRef(value) {
 }
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+}
+function syncThemeButton() {
+  const effective = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  themeButton.setAttribute('aria-pressed', String(effective === 'dark'));
+  themeButton.textContent = effective === 'dark' ? 'Light mode' : 'Dark mode';
 }
 </script>
 </body>
