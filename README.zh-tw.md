@@ -16,6 +16,8 @@
 - [README.md](README.md)
 - [AGENTS.md](AGENTS.md)：本 repo 唯一 authoritative agent-runtime instruction source
 - [AGENTS.zh-tw.md](AGENTS.zh-tw.md)：human-readable reference only，不是 runtime source
+- [PRODUCT.md](PRODUCT.md)：design 與 UI agents 使用的產品脈絡
+- [DESIGN.md](DESIGN.md)：DevGov design system；[registry/design-system.registry.json](registry/design-system.registry.json) 是可重用的 token sidecar
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
@@ -162,7 +164,7 @@ Network service status 可在 Service Status view 與 `/api/service-status` 查�
 
 `npm run doctor:repair` 只修復 `reports/` 底下的本機 generated artifacts；它會重新產生靜態文件檢索檔，不會修改 canonical registry data。
 
-## Worktree Governance
+## Worktree 治理
 
 Linked worktree 使用 repo-specific container：
 

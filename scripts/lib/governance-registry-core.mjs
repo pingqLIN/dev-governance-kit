@@ -10,6 +10,9 @@ const VALID_PUBLIC_EXPOSURE = new Set(["local-only", "staging-private", "prod-pr
 const VALID_PROTOCOL = new Set(["http", "https", "tcp", "ws", "wss"]);
 const VALID_LOCAL_AGENT_KIND = new Set(["windows-service-agent", "scheduled-task-agent", "startup-folder-agent", "on-demand-agent"]);
 const VALID_CREDENTIAL_KIND = new Set(["api-key", "token", "secret", "password", "credential", "account-identity"]);
+const DESIGN_THEMES = ["light", "dark"];
+const DESIGN_THEME_TOKENS = ["ink", "muted", "line", "paper", "panel", "panelRaised", "input", "accent", "accentInk", "link", "okBg", "warnBg", "badBg", "neutralBg", "gridLine", "headerBg", "focus"];
+const DESIGN_TYPOGRAPHY_ROLES = ["display", "headline", "title", "body", "label", "mono"];
 
 export async function loadJson(jsonPath) {
   const text = await fs.readFile(jsonPath, "utf8");
@@ -49,6 +52,9 @@ export function validateGovernanceRegistry(registry) {
   }
   if (registry.schema === "devgov.agent-instructions.registry.v1") {
     return validateAgentInstructionsRegistry(registry);
+  }
+  if (registry.schema === "devgov.design-system.registry.v1") {
+    return validateDesignSystemRegistry(registry);
   }
   return [`registry.schema is not supported: ${registry.schema ?? "<missing>"}`];
 }
@@ -205,6 +211,58 @@ export function validateApiKeysRegistry(registry) {
   return errors;
 }
 
+export function validateDesignSystemRegistry(registry) {
+  const errors = [];
+  if (registry.schema !== "devgov.design-system.registry.v1") errors.push("registry.schema must be devgov.design-system.registry.v1");
+  requireStrings(registry, ["description", "sourceOfTruth", "status", "colorFormat"], "registry", errors);
+  if (!VALID_STATUS.has(registry.status)) errors.push(`registry.status must be one of ${[...VALID_STATUS].join(", ")}`);
+  if (registry.colorFormat !== "oklch") errors.push("registry.colorFormat must be oklch");
+  if (looksMachineLocal(registry.description ?? "") || looksMachineLocal(registry.sourceOfTruth ?? "")) {
+    errors.push("registry envelope must not contain machine-local paths or MCP aliases");
+  }
+
+  if (!registry.themes || typeof registry.themes !== "object" || Array.isArray(registry.themes)) {
+    errors.push("registry.themes must be an object");
+  } else {
+    for (const themeName of DESIGN_THEMES) {
+      const theme = registry.themes[themeName];
+      if (!theme || typeof theme !== "object" || Array.isArray(theme)) {
+        errors.push(`registry.themes.${themeName} must be an object`);
+        continue;
+      }
+      for (const tokenName of DESIGN_THEME_TOKENS) {
+        if (typeof theme[tokenName] !== "string" || !theme[tokenName].startsWith("oklch(")) {
+          errors.push(`registry.themes.${themeName}.${tokenName} must be an OKLCH string`);
+        }
+      }
+    }
+  }
+
+  if (!registry.typography || typeof registry.typography !== "object" || Array.isArray(registry.typography)) {
+    errors.push("registry.typography must be an object");
+  } else {
+    for (const role of DESIGN_TYPOGRAPHY_ROLES) {
+      const typography = registry.typography[role];
+      if (!typography || typeof typography !== "object" || Array.isArray(typography)) {
+        errors.push(`registry.typography.${role} must be an object`);
+        continue;
+      }
+      requireStrings(typography, ["fontFamily", "fontSize", "letterSpacing"], `typography.${role}`, errors);
+      if (typeof typography.fontWeight !== "number") errors.push(`typography.${role}.fontWeight must be a number`);
+      if (typeof typography.lineHeight !== "number") errors.push(`typography.${role}.lineHeight must be a number`);
+    }
+  }
+
+  for (const objectName of ["rounded", "spacing", "layout", "components", "statusSemantics"]) {
+    if (!registry[objectName] || typeof registry[objectName] !== "object" || Array.isArray(registry[objectName])) {
+      errors.push(`registry.${objectName} must be an object`);
+    }
+  }
+  if (!Array.isArray(registry.rules) || registry.rules.length === 0) errors.push("registry.rules must be a non-empty array");
+  rejectMachineLocalStrings(deepStringValues(registry), "registry", errors);
+  return errors;
+}
+
 function validateRegistryEnvelope(registry, expectedSchema, collectionName) {
   const errors = [];
   if (registry.schema !== expectedSchema) errors.push(`registry.schema must be ${expectedSchema}`);
@@ -238,4 +296,20 @@ function looksMachineLocal(value) {
 function looksSecretValue(value) {
   const text = String(value ?? "");
   return /\b(?:sk-[A-Za-z0-9_-]{16,}|xox[baprs]-[A-Za-z0-9-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|hf_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,})\b/.test(text);
+}
+
+function deepStringValues(value, prefix = "value", output = {}) {
+  if (typeof value === "string") {
+    output[prefix] = value;
+    return output;
+  }
+  if (!value || typeof value !== "object") return output;
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => deepStringValues(entry, `${prefix}[${index}]`, output));
+    return output;
+  }
+  for (const [key, entry] of Object.entries(value)) {
+    deepStringValues(entry, `${prefix}.${key}`, output);
+  }
+  return output;
 }

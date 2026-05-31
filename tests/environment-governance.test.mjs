@@ -8,7 +8,7 @@ import { buildDocsIndex, renderSearchHtml } from "../scripts/lib/docs-index-core
 import { buildServiceTargets, buildUniTextAgentInstructionIndex, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
-import { validateApiKeysRegistry, validateLocalAgentsRegistry, validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
+import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
 import { scanStartupFolder } from "../scripts/lib/startup-core.mjs";
 import { buildTerminalFixPlan, scanTerminalSettingsObject } from "../scripts/lib/terminal-core.mjs";
@@ -146,6 +146,67 @@ test("new governance registries validate canonical shared data only", () => {
       source: "API key environment audit",
       notes: "Stores only the variable name and policy."
     }]
+  }), []);
+
+  assert.deepEqual(validateDesignSystemRegistry({
+    schema: "devgov.design-system.registry.v1",
+    description: "Reusable design tokens.",
+    sourceOfTruth: "DESIGN.md",
+    status: "candidate",
+    colorFormat: "oklch",
+    themes: {
+      light: {
+        ink: "oklch(23% 0.018 248)",
+        muted: "oklch(47% 0.035 248)",
+        line: "oklch(82% 0.027 240)",
+        paper: "oklch(96% 0.01 86)",
+        panel: "oklch(99% 0.007 86)",
+        panelRaised: "oklch(94% 0.015 145)",
+        input: "oklch(99% 0.007 86)",
+        accent: "oklch(47% 0.106 183)",
+        accentInk: "oklch(99% 0.007 86)",
+        link: "oklch(45% 0.13 261)",
+        okBg: "oklch(90% 0.067 170)",
+        warnBg: "oklch(91% 0.08 86)",
+        badBg: "oklch(90% 0.07 27)",
+        neutralBg: "oklch(92% 0.021 248)",
+        gridLine: "oklch(23% 0.018 248 / .045)",
+        headerBg: "oklch(99% 0.007 86 / .94)",
+        focus: "oklch(58% 0.13 183)"
+      },
+      dark: {
+        ink: "oklch(92% 0.012 248)",
+        muted: "oklch(72% 0.03 248)",
+        line: "oklch(37% 0.03 248)",
+        paper: "oklch(18% 0.018 248)",
+        panel: "oklch(22% 0.02 248)",
+        panelRaised: "oklch(28% 0.035 178)",
+        input: "oklch(18% 0.018 248)",
+        accent: "oklch(70% 0.116 176)",
+        accentInk: "oklch(16% 0.018 248)",
+        link: "oklch(76% 0.102 253)",
+        okBg: "oklch(34% 0.063 170)",
+        warnBg: "oklch(36% 0.064 86)",
+        badBg: "oklch(35% 0.064 27)",
+        neutralBg: "oklch(30% 0.025 248)",
+        gridLine: "oklch(92% 0.012 248 / .045)",
+        headerBg: "oklch(20% 0.018 248 / .94)",
+        focus: "oklch(77% 0.13 176)"
+      }
+    },
+    typography: Object.fromEntries(["display", "headline", "title", "body", "label", "mono"].map((role) => [role, {
+      fontFamily: "Aptos, Segoe UI, system-ui, sans-serif",
+      fontSize: "14px",
+      fontWeight: 400,
+      lineHeight: 1.45,
+      letterSpacing: "0"
+    }])),
+    rounded: { none: "0" },
+    spacing: { sm: "8px" },
+    layout: { narrowBreakpoint: "820px" },
+    components: { table: { border: "2px solid {themes.light.ink}" } },
+    statusSemantics: { ok: ["approved"] },
+    rules: ["Keep status words visible."]
   }), []);
 });
 

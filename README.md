@@ -17,6 +17,8 @@ Chinese companion and reference documents:
 
 - [README.zh-tw.md](README.zh-tw.md)
 - [AGENTS.zh-tw.md](AGENTS.zh-tw.md) is a human-readable reference only; [AGENTS.md](AGENTS.md) remains the authoritative agent-runtime instruction source.
+- [PRODUCT.md](PRODUCT.md) captures the product context used by design and UI agents.
+- [DESIGN.md](DESIGN.md) defines the DevGov design system; [registry/design-system.registry.json](registry/design-system.registry.json) is the reusable token sidecar.
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
