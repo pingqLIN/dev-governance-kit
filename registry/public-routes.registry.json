@@ -44,9 +44,9 @@
       "exposureClass": "prod-protected",
       "accessRequired": true,
       "healthUrl": "https://mcp.colorgeek.co/health",
-      "status": "candidate",
-      "source": "public route audit",
-      "notes": "Duplicate hostname was observed across scanned cloudflared configs. Current health response is not TB2, so ownership must be reviewed before approval."
+      "status": "deprecated",
+      "source": "public route audit; local-files MCP retirement",
+      "notes": "Retired with the ChatGPT Local-Files MCP path. Do not approve or recreate; removing the actual Cloudflare tunnel route requires a separate operator-approved cleanup step."
     },
     {
       "id": "tb2-health-prod",

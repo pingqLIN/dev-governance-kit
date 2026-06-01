@@ -7,11 +7,11 @@
       "id": "chatgpt-local-files-mcp-windows-runtime",
       "project": "chatgpt-local-files-mcp",
       "trigger": "startup-folder",
-      "purpose": "Start the Windows-host ChatGPT local-files MCP runtime on login.",
+      "purpose": "Retired Windows-host ChatGPT local-files MCP runtime startup entry.",
       "scriptRef": "chatgpt-local-files-mcp/scripts/startup-production.ps1",
-      "status": "candidate",
-      "source": "startup audit",
-      "notes": "Detected as Codex-created startup automation. Keep full local command line in reports only.",
+      "status": "deprecated",
+      "source": "startup audit; local-files MCP retirement",
+      "notes": "Do not approve or recreate. Keep full local command line in reports only; removing the actual Windows startup entry requires a separate operator-approved cleanup step.",
       "managedByCodex": true
     },
     {

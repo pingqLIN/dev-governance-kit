@@ -21,16 +21,6 @@
       "notes": "Durable TB2 loopback origin for MCP HTTP and health routes. Public ingress must stay through reviewed tunnel routes."
     },
     {
-      "project": "chatgpt-local-files-mcp",
-      "service": "mcp-http",
-      "port": 43189,
-      "host": "127.0.0.1",
-      "visibility": "public",
-      "protocol": "http",
-      "source": "workspace port audit; public route audit",
-      "notes": "Active public-route audit maps mcp.colorgeek.co here. Keep under review because TB2 source configs also declare the same hostname."
-    },
-    {
       "project": "codex-calendar-todo",
       "service": "staging-http",
       "port": 9190,
@@ -105,7 +95,7 @@
     {
       "project": "color-management-Shader",
       "service": "display-shader-control-lab-http",
-      "port": 4173,
+      "port": 4174,
       "host": "127.0.0.1",
       "visibility": "local",
       "protocol": "http",
