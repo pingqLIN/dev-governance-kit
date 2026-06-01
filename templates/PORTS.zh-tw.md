@@ -16,3 +16,4 @@
 - Docker internal services 應使用 `expose`；只有需要 host access 時才使用 `ports`。
 - 如果 port 已被占用，停止並回報 requested port、可偵測到的 owning process，以及 proposed fix。
 - Generated scan reports 只是 evidence；有意義的變更必須 review 後，再提升到此檔案與 registry。
+- Startup commands 應先呼叫 `require-governed-port.mjs`，再執行 raw server command，確保服務 bind 前已通過 registry 檢查。

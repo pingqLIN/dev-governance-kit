@@ -374,6 +374,7 @@ test("doctor verifies DevGov dashboard governance without modifying canonical re
   assert.ok(result.checks.some((check) => check.id === "script-scripts/register-dashboard-protocol.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/start-gov-public-route.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/register-gov-public-route-startup.ps1" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "script-scripts/require-governed-port.mjs" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "local-agent-registry" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "api-key-registry" && check.ok));
 });

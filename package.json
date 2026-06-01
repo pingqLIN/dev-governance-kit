@@ -16,6 +16,7 @@
     "scan:docs": "node scripts/scan-docs.mjs",
     "scan:agents": "node scripts/scan-agent-instructions.mjs",
     "scan:api-keys": "node scripts/scan-api-keys.mjs",
+    "port:preflight": "node scripts/require-governed-port.mjs",
     "dashboard": "node scripts/serve-dashboard.mjs",
     "dashboard:open": "node scripts/open-dashboard.mjs",
     "dashboard:protocol:register": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/register-dashboard-protocol.ps1",

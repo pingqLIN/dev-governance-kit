@@ -16,3 +16,4 @@ This file is the target-project read model for approved registry entries. Do not
 - Docker internal services should use `expose`; use `ports` only when host access is required.
 - If a port is occupied, stop and report the requested port, owning process if detectable, and proposed fix.
 - Generated scan reports are evidence only; promote intentional changes into this file and the registry after review.
+- Startup commands should call `require-governed-port.mjs` before the raw server command so the registry entry is checked before binding.

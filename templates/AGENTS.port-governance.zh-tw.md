@@ -12,7 +12,8 @@
 8. 任何新服務都必須更新 `PORTS.md`、`.env.example`、startup scripts 與 global port registry。
 9. 將 generated scan reports 視為 evidence，不要視為 policy。
 10. 除非專案明確提供已 review 的 command，否則不要執行 automatic patch/apply flow。
-11. 可重複使用的 `check-ports.mjs` template 只檢查 TCP availability；UDP allocations 必須使用 protocol-specific command 驗證。
+11. 若有 governed-port preflight command，啟動服務必須先走它，例如 `node Q:/Projects/dev-governance-kit/scripts/require-governed-port.mjs --project <project> --service <service> -- <raw-command>`。
+12. 可重複使用的 `check-ports.mjs` template 只檢查 TCP availability；UDP allocations 必須使用 protocol-specific command 驗證。
 
 Docker services：
 

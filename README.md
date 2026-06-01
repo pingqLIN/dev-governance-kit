@@ -1,6 +1,8 @@
 # DevGov
 
-`DevGov` is a memorable local multi-project governance toolkit and dashboard. It keeps development services, local service agents, Terminal profiles, startup automation, public routes, development API key locations, AGENTS instruction governance, worktrees, self-checks, and local documentation search behind auditable sources of truth.
+`DevGov` is a memorable user/home-level governance toolkit and dashboard. It keeps Global AGENTS planning, development services, local service agents, Terminal profiles, startup automation, public routes, development API key locations, AGENTS instruction governance, worktrees, self-checks, and local documentation search behind auditable sources of truth.
+
+The repository is designed to live in user/home-level Codex storage rather than inside a single workspace project tree. It manages Global-layer planning, indexing, validation, and coordination; it does not silently rewrite the live Global AGENTS file or override platform/runtime instructions.
 
 The project follows a UniText-like layout:
 
@@ -121,7 +123,19 @@ Regenerate repairable local report artifacts:
 npm run doctor:repair
 ```
 
-Check declared ports before starting a service:
+Require a service to use its governed registry port before starting it:
+
+```powershell
+npm run port:preflight -- --project devgov --service dashboard-http --host 127.0.0.1 --port 3101 --protocol http
+```
+
+Use the same gate to launch a reviewed raw command only after the registry and TCP availability checks pass. The child process receives `HOST`, `PORT`, `DEVGOV_HOST`, `DEVGOV_PORT`, and related metadata from the registry:
+
+```powershell
+npm run port:preflight -- --project my-app --service web-http -- npm run dev:raw
+```
+
+Check ad hoc TCP availability when no registry entry is being launched:
 
 ```powershell
 node templates/check-ports.mjs 3101,3201
@@ -142,6 +156,7 @@ Reserved DevGov service:
 | Service | Host | Port | Notes |
 |---|---|---:|---|
 | dashboard-http | `127.0.0.1` | `3101` | Long-lived loopback dashboard. The server fails fast if this port is occupied. |
+| governance-public-http | `127.0.0.1` | `3000` | Zero Trust protected `gov.colorgeek.co` origin. Startup uses a reviewed on-demand helper. |
 
 ## Dashboard And Startup
 
@@ -156,6 +171,8 @@ Network service status is available in the Service Status view and `/api/service
 Development API key locations are tracked in `registry/api-keys.registry.json`. These records identify the service, variable name, storage location type, access method, usage rules, review status, and provider settings page. Credential values, credential file contents, local secret paths, shell history, and full command lines must stay out of canonical registry data.
 
 Startup registration is review-gated. `scripts/register-dashboard-startup.ps1` can create or remove the Windows Startup entry when an operator explicitly runs it. The default on-demand path is `npm run dashboard:open -- --open`, which health-checks the dashboard and starts the loopback server only when needed.
+
+The public `gov.colorgeek.co` route is also review-gated. `npm run gov:route:register` creates the user Startup entry that keeps the `127.0.0.1:3000` origin and dedicated Cloudflare Tunnel connector available after login; `npm run gov:route:remove` removes that entry.
 
 ## Doctor
 
@@ -227,6 +244,8 @@ API key entries must include:
 | `notes` | Required human context |
 
 AGENTS instruction records live in `registry/agent-instructions.registry.json`. They classify durable AGENTS rules by scope layer and item type so they can be validated and exported into queryable local artifacts under `reports/`.
+
+Global-layer management is a planning responsibility. DevGov may define taxonomy, readiness checks, query indexes, and reviewed promotion workflows for global-home instructions. Direct edits to the live Global AGENTS file remain explicit operator actions with a reviewed diff and rollback evidence.
 
 ## Safety Defaults
 

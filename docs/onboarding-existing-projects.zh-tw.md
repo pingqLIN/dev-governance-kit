@@ -52,6 +52,17 @@ node scripts/scan-project.mjs Q:\Projects\example --out reports\example-port-aud
 - dev startup scripts
 - repo-local `AGENTS.md` 或 included port-governance section
 
+Dev startup scripts 應該先經過 `scripts/require-governed-port.mjs`，再啟動 raw server command。Raw command 保持獨立，preflight gate 才能先驗證 registry entry，並注入 `HOST` / `PORT`：
+
+```json
+{
+  "scripts": {
+    "dev": "node Q:/Projects/dev-governance-kit/scripts/require-governed-port.mjs --project example --service web-http -- npm run dev:raw",
+    "dev:raw": "vite --host 127.0.0.1 --port 3100 --strictPort"
+  }
+}
+```
+
 ## Phase 4: 驗證
 
 執行：
@@ -60,6 +71,7 @@ node scripts/scan-project.mjs Q:\Projects\example --out reports\example-port-aud
 npm test
 npm run validate:registry
 node scripts/scan-project.mjs <target-project>
+npm run port:preflight -- --project <project> --service <service>
 ```
 
 `templates/check-ports.mjs` 只用於 TCP port availability checks。UDP registry entries 需要 protocol-specific verification command。

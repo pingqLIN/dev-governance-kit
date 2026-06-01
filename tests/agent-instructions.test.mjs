@@ -51,6 +51,7 @@ test("agent instruction text index is queryable by scope, type, and evidence", a
   assert.match(text, /scope=subtree/);
   assert.match(text, /scope=task-request/);
   assert.match(text, /type=external-review-input/);
+  assert.match(text, /agent\.tool\.governed-port-preflight/);
   assert.match(text, /evidence=AGENTS\.md#UniText Coordination/);
 });
 
@@ -73,6 +74,19 @@ test("AGENTS.md remains the single authoritative runtime source", async () => {
   assert.ok(registry.entries.some((entry) => entry.id === "agent.authority.single-runtime-source"));
   assert.ok(registry.entries.every((entry) => entry.source !== "AGENTS.zh-tw.md"));
   assert.ok(registry.entries.every((entry) => !entry.evidence.startsWith("AGENTS.zh-tw.md#")));
+});
+
+test("global-home planning responsibility is explicit and review-gated", async () => {
+  const registry = await loadRegistry();
+  const planning = registry.entries.find((entry) => entry.id === "agent.workflow.global-management-planning");
+  const boundary = registry.entries.find((entry) => entry.id === "agent.data.global-home-boundary");
+
+  assert.equal(planning?.layer, "global-home");
+  assert.equal(planning?.type, "workflow-control");
+  assert.match(planning?.requirement ?? "", /Global-layer planning surface/);
+  assert.match(planning?.enforcement ?? "", /reviewed diff/);
+  assert.equal(boundary?.layer, "global-home");
+  assert.match(boundary?.requirement ?? "", /without copying host-specific/);
 });
 
 test("agent instruction registry rejects machine-local paths", async () => {

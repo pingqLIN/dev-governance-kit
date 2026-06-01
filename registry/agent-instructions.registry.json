@@ -19,7 +19,7 @@
       "appliesTo": "User-level AGENTS instructions outside a specific workspace.",
       "source": "home-agents",
       "status": "approved",
-      "notes": "Applies before workspace and repo-local files when available to the agent runtime."
+      "notes": "DevGov owns planning, indexing, and validation for this layer while the live Global AGENTS file remains an external runtime input."
     },
     {
       "id": "workspace",
@@ -158,6 +158,30 @@
       "notes": "Records the global file layer without storing host-specific paths."
     },
     {
+      "id": "agent.workflow.global-management-planning",
+      "type": "workflow-control",
+      "layer": "global-home",
+      "appliesTo": "Planning, indexing, validation, and reviewed promotion workflows for Global AGENTS governance.",
+      "requirement": "Let DevGov manage the Global-layer planning surface while keeping live Global AGENTS edits explicit and review-gated.",
+      "enforcement": "Generate plans and query artifacts first; require explicit operator intent, reviewed diff, and rollback evidence before changing the live Global AGENTS file.",
+      "evidence": "AGENTS.md#Global Management Planning",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Promotes DevGov from project-local AGENTS taxonomy owner to home-level Global governance planner."
+    },
+    {
+      "id": "agent.data.global-home-boundary",
+      "type": "data-contract",
+      "layer": "global-home",
+      "appliesTo": "Canonical records that describe Global AGENTS governance.",
+      "requirement": "Store stable taxonomy, readiness checks, and evidence anchors without copying host-specific Global AGENTS paths or full runtime instruction contents.",
+      "enforcement": "Keep raw global-home inspection evidence in reports and promote only reviewed stable records into registry data.",
+      "evidence": "AGENTS.md#Global Management Planning",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Separates Global-layer management responsibility from ownership of live runtime files."
+    },
+    {
       "id": "agent.scope.workspace",
       "type": "scope-layer",
       "layer": "workspace",
@@ -276,6 +300,18 @@
       "status": "approved",
       "source": "AGENTS.md",
       "notes": "Aligns command entry with audit-first behavior."
+    },
+    {
+      "id": "agent.tool.governed-port-preflight",
+      "type": "tool-entry",
+      "layer": "repo-local",
+      "appliesTo": "Service startup commands that bind development, dashboard, public-route, or local-tool ports.",
+      "requirement": "Use a governed-port preflight entry before binding reviewed ports.",
+      "enforcement": "Prefer scripts/require-governed-port.mjs for startup wrappers so project, service, host, port, protocol, and TCP availability are checked before launch.",
+      "evidence": "AGENTS.md#Port Governance Rules",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Turns the port registry from documentation into an executable startup gate."
     },
     {
       "id": "agent.verify.batch-completion",

@@ -12,7 +12,8 @@ Before starting any dev server:
 8. Any new service must update `PORTS.md`, `.env.example`, startup scripts, and the global port registry.
 9. Treat generated scan reports as evidence, not policy.
 10. Do not run an automatic patch/apply flow unless the project explicitly provides a reviewed command for it.
-11. The reusable `check-ports.mjs` template checks TCP availability only; verify UDP allocations with a protocol-specific command.
+11. Start services through a governed-port preflight command when available, for example `node Q:/Projects/dev-governance-kit/scripts/require-governed-port.mjs --project <project> --service <service> -- <raw-command>`.
+12. The reusable `check-ports.mjs` template checks TCP availability only; verify UDP allocations with a protocol-specific command.
 
 Docker services:
 

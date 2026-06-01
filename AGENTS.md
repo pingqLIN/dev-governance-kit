@@ -2,10 +2,15 @@
 
 ## Project Role
 
-`DevGov` manages reusable development-environment governance assets.
+`DevGov` manages reusable user/home-level development-governance assets.
 
-The current project scope covers local development-environment governance:
+This repository is intended to live under the operator's user/home-level Codex storage, such as a home-level governance folder. Its role is broader than one workspace repository but still below platform, system, developer, and runtime instructions.
 
+The current project scope covers global-home and local development-environment governance:
+
+- plan, classify, and audit Global AGENTS responsibilities
+- maintain Global-layer governance records without copying machine-local instruction paths into canonical registry data
+- provide queryable indexes for user/home-level instruction scope, item types, and evidence anchors
 - discover project port usage
 - maintain a canonical port registry
 - audit Windows Terminal profile asset references
@@ -31,6 +36,7 @@ The current project scope covers local development-environment governance:
 - Generated AGENTS search/index artifacts belong in `reports/`.
 - `AGENTS.md` is the only authoritative agent-runtime instruction file in this repo.
 - `AGENTS.zh-tw.md`, if present, is a human-readable reference only and is not required by the bilingual publishable-document rule.
+- The live user/home-level Global AGENTS file remains an external runtime input. DevGov may plan, index, validate, and coordinate it, but must not claim ownership over platform/runtime authority or silently rewrite it.
 
 This mirrors the UniText registry model: shared content is canonical, local overlays are separate, and verification scripts prove that artifacts remain usable.
 
@@ -48,6 +54,17 @@ Use these scope layers when classifying AGENTS rules:
 6. `task-request`: the current operator request. It can select work and narrow scope, but it cannot override safety, secret, publication, or reversibility rules.
 
 When building an index or report, mark rules as `effective` only for paths inside their scope. Rules outside the target scope are `evidence-only`; missing or unreadable layers are `unresolved`, not invented.
+
+## Global Management Planning
+
+DevGov owns the planning surface for Global-layer AGENTS governance. That means it may:
+
+- define the Global-layer taxonomy, readiness checks, and promotion workflow
+- compare global-home rules against workspace, repo-local, subtree, and task-request layers
+- generate local query artifacts that help operators inspect effective instruction scope
+- recommend updates to the live Global AGENTS file through reviewed plans
+
+DevGov must not silently edit the live Global AGENTS file, duplicate its full contents into canonical registry data, or treat Global-layer plans as higher authority than platform/runtime instructions. Any update to the live Global AGENTS file requires explicit operator intent, a reviewed diff, and rollback evidence.
 
 ## AGENTS Runtime Source
 
@@ -131,11 +148,12 @@ Run `npm run scan:agents` after changing AGENTS governance. The command writes g
 2. Do not add random or auto-increment fallback ports.
 3. Default development host is `127.0.0.1`.
 4. The DevGov dashboard allocation is `127.0.0.1:3101`; do not silently choose another dashboard port.
-5. Any `0.0.0.0` binding must be documented with `visibility` and `notes`.
-6. Do not run target project config files while scanning them.
-7. Do not print secrets from `.env` files; only port and host related values may appear in reports.
-8. Keep existing project scans read-only unless a future command explicitly supports reviewed patch generation.
-9. Version 1 does not include an `apply-project` command; all target-project edits remain manual and review-gated.
+5. Service startup commands should use a governed-port preflight entry such as `scripts/require-governed-port.mjs` before binding a reviewed port.
+6. Any `0.0.0.0` binding must be documented with `visibility` and `notes`.
+7. Do not run target project config files while scanning them.
+8. Do not print secrets from `.env` files; only port and host related values may appear in reports.
+9. Keep existing project scans read-only unless a future command explicitly supports reviewed patch generation.
+10. Version 1 does not include an `apply-project` command; all target-project edits remain manual and review-gated.
 
 ## Terminal, Startup, Public Route, API Key, And Search Rules
 

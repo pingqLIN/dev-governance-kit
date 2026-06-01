@@ -52,6 +52,17 @@ Add or update the target project files:
 - dev startup scripts
 - repo-local `AGENTS.md` or included port-governance section
 
+Dev startup scripts should route through `scripts/require-governed-port.mjs` before the raw server command. Keep the raw command separate so the preflight gate can enforce the registry entry and inject `HOST`/`PORT`:
+
+```json
+{
+  "scripts": {
+    "dev": "node Q:/Projects/dev-governance-kit/scripts/require-governed-port.mjs --project example --service web-http -- npm run dev:raw",
+    "dev:raw": "vite --host 127.0.0.1 --port 3100 --strictPort"
+  }
+}
+```
+
 ## Phase 4: Verify
 
 Run:
@@ -60,6 +71,7 @@ Run:
 npm test
 npm run validate:registry
 node scripts/scan-project.mjs <target-project>
+npm run port:preflight -- --project <project> --service <service>
 ```
 
 Use `templates/check-ports.mjs` only for TCP port availability checks. UDP registry entries need a protocol-specific verification command.
