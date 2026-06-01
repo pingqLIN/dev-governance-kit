@@ -4,6 +4,21 @@
   "sourceOfTruth": "registry/public-routes.registry.json",
   "routes": [
     {
+      "id": "devgov-gov",
+      "serviceId": "devgov-governance-public-http",
+      "hostname": "gov.colorgeek.co",
+      "tunnelId": "2fae5864-7df3-494f-aa92-5c34f5ffdbfd",
+      "localHost": "127.0.0.1",
+      "localPort": 3000,
+      "protocol": "http",
+      "exposureClass": "prod-protected",
+      "accessRequired": true,
+      "healthUrl": "https://gov.colorgeek.co/health",
+      "status": "candidate",
+      "source": "operator request; public route governance",
+      "notes": "Zero Trust Access app 260c1806-a0ae-491d-96c1-70f45df74cd7 protects this hostname. Origin health remains dependent on the local 127.0.0.1:3000 service being online."
+    },
+    {
       "id": "codex-remote",
       "serviceId": "codex-remote",
       "hostname": "codex-remote.colorgeek.co",

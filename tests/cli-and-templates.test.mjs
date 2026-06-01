@@ -91,3 +91,10 @@ test("PORTS template uses placeholders instead of approved allocations", async (
   assert.match(text, /`<service>`/);
   assert.doesNotMatch(text, /\|\s*frontend\s*\|\s*3101\s*\|/);
 });
+
+test("dashboard bookmark template targets the on-demand protocol handler", async () => {
+  const text = await readFile("templates/devgov-dashboard-bookmark.html", "utf8");
+
+  assert.match(text, /href="devgov:\/\/open"/);
+  assert.match(text, /Open DevGov Dashboard/);
+});

@@ -59,6 +59,17 @@
       "managedByCodex": false
     },
     {
+      "id": "devgov-gov-public-route-login",
+      "project": "devgov",
+      "trigger": "startup-folder",
+      "purpose": "Start the gov.colorgeek.co tunnel connector and 127.0.0.1:3000 origin on operator login.",
+      "scriptRef": "devgov/scripts/register-gov-public-route-startup.ps1",
+      "status": "candidate",
+      "source": "DevGov public route governance",
+      "notes": "Reviewed opt-in startup mechanism for the Zero Trust protected gov.colorgeek.co route. The start script checks existing health and process state before starting hidden background helpers.",
+      "managedByCodex": true
+    },
+    {
       "id": "devgov-dashboard-login",
       "project": "devgov",
       "trigger": "startup-folder",
@@ -74,10 +85,10 @@
       "project": "devgov",
       "trigger": "protocol-handler",
       "purpose": "Open DevGov on demand and auto-start the local dashboard server if it is not already running.",
-      "scriptRef": "devgov/scripts/open-dashboard.mjs",
+      "scriptRef": "devgov/scripts/register-dashboard-protocol.ps1",
       "status": "candidate",
       "source": "DevGov dashboard governance",
-      "notes": "No always-on service is required. The opener performs a health check and starts the loopback dashboard only when requested.",
+      "notes": "No always-on service is required. The devgov://open handler launches the opener, which performs a health check and starts the loopback dashboard only when requested.",
       "managedByCodex": true
     },
     {

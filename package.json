@@ -18,6 +18,11 @@
     "scan:api-keys": "node scripts/scan-api-keys.mjs",
     "dashboard": "node scripts/serve-dashboard.mjs",
     "dashboard:open": "node scripts/open-dashboard.mjs",
+    "dashboard:protocol:register": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/register-dashboard-protocol.ps1",
+    "dashboard:protocol:remove": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/register-dashboard-protocol.ps1 -Remove",
+    "gov:route:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-gov-public-route.ps1",
+    "gov:route:register": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/register-gov-public-route-startup.ps1",
+    "gov:route:remove": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/register-gov-public-route-startup.ps1 -Remove",
     "doctor": "node scripts/devgov-doctor.mjs",
     "doctor:repair": "node scripts/devgov-doctor.mjs --repair",
     "test": "node --test"

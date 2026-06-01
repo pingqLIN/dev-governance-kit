@@ -42,7 +42,9 @@ export async function runDoctorChecks(root = ".", options = {}) {
   const startupIds = new Set(startup.entries.map((entry) => entry.id));
   add(
     "dashboard-startup-registry",
-    startupIds.has("devgov-dashboard-login") && startupIds.has("devgov-dashboard-on-demand"),
+    startupIds.has("devgov-dashboard-login")
+      && startupIds.has("devgov-dashboard-on-demand")
+      && startupIds.has("devgov-gov-public-route-login"),
     [...startupIds].filter((id) => id.startsWith("devgov-")).join(", ") || "missing"
   );
 
@@ -61,7 +63,7 @@ export async function runDoctorChecks(root = ".", options = {}) {
     `${apiKeys.entries.length} credential-location records`
   );
 
-  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs"]) {
+  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/register-dashboard-protocol.ps1", "scripts/start-gov-public-route.ps1", "scripts/register-gov-public-route-startup.ps1", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs"]) {
     add(`script-${scriptPath}`, await fileExists(path.join(root, scriptPath)), scriptPath);
   }
 
