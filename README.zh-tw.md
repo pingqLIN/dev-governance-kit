@@ -25,6 +25,8 @@
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
 - [docs/context-budget-governance.md](docs/context-budget-governance.md)
 - [docs/context-budget-governance.zh-tw.md](docs/context-budget-governance.zh-tw.md)
+- [docs/local-antivirus-governance.md](docs/local-antivirus-governance.md)
+- [docs/local-antivirus-governance.zh-tw.md](docs/local-antivirus-governance.zh-tw.md)
 - [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 
@@ -76,6 +78,18 @@ npm run scan:public-routes -- --out reports\public-routes-audit.md
 
 ```powershell
 npm run scan:api-keys -- --project . --out reports\api-key-audit.md
+```
+
+在不修改 security settings 的前提下 triage 本機防毒阻擋：
+
+```powershell
+npm run av:triage -- -Path "Q:\Projects\some-project\dist\app.exe" -ProjectRoot "Q:\Projects\some-project" -RebuildCommand "npm run build" -IncludeDefenderPreview
+```
+
+當觸發來源是 alert text 或 failed command output 時，使用 Codex hook wrapper：
+
+```powershell
+npm run codex:av-hook -- -Product "Bitdefender" -Path "Q:\Projects\some-project\dist\app.exe" -ProjectRoot "Q:\Projects\some-project" -AlertText "Bitdefender blocked generated build output" -RebuildCommand "npm run build"
 ```
 
 掃描 Git worktree inventory，並以 common repo 去重：
@@ -190,7 +204,7 @@ Network service status 可在 Service Status view 與 `/api/service-status` 查�
 
 ## Doctor
 
-`npm run doctor` 會驗證 package identity、registry schemas、dashboard port allocation、startup governance records、API key governance records、AGENTS instruction governance records、必要 scripts、dashboard port availability，以及文件索引能否建立。報告會寫入 `reports/devgov-doctor-report.json`。
+`npm run doctor` 會驗證 package identity、registry schemas、dashboard port allocation、startup governance records、API key governance records、AGENTS instruction governance records、包含防毒 dry-run 入口在內的必要 scripts、dashboard port availability，以及文件索引能否建立。報告會寫入 `reports/devgov-doctor-report.json`。
 
 `npm run doctor:repair` 只修復 `reports/` 底下的本機 generated artifacts；它會重新產生靜態文件檢索檔，不會修改 canonical registry data。
 

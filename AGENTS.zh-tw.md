@@ -191,6 +191,17 @@ Skill routing records 應標示 trigger、最小 instruction path 或 registry e
 7. 靜態文件檢索只寫入 `reports/` 本機 artifacts，不得啟動 service 或配置 port。
 8. Dashboard startup 採 opt-in。Registration scripts 只有在 operator 明確執行時，才可寫入 Windows Startup entries。
 
+## 本機防毒治理
+
+1. 本機防毒與 endpoint-protection 阻擋必須先使用 `npm run av:triage` 作為 DevGov 入口，再考慮任何 exclusion。
+2. Codex 與 agent workflows 可使用 `npm run codex:av-hook` 作為 trigger wrapper，當 alert text、command output 或 supplied paths 顯示防毒阻擋時轉入 triage。
+3. Antivirus triage 與 hook handling 預設都是 dry-run，不得關閉 protection、清除 quarantine、還原檔案、加入 exclusions、修改 firewall rules，或修改 browser / OS security settings。
+4. Triage evidence 可以包含 Defender threat detections、Defender exclusion preferences、file hashes、本機路徑、command logs 與 generated report details；這些 evidence 屬於 `reports/`，不得放入 canonical registry data。
+5. Candidate exclusions 必須是 exact generated files 或窄範圍 generated artifact folders；可用時應附 rebuild evidence。
+6. 預設拒絕 drive roots、user profiles、project roots、source folders、`.git`、整個 `node_modules`、browser profiles、credential stores，以及 common interpreter 或 browser process exclusions。
+7. 如果 alert 提到 credential theft、ransomware、backdoor、persistence、obfuscation、injection、tampering 或 suspicious network behavior，必須留在 security triage，不得產生 allowlist candidates。
+8. 真正套用 antivirus exclusion 不屬於 v1 command surface，必須有另一個明確 operator request 與 fresh evidence check。
+
 ## UniText 協調
 
 當 AGENTS governance 需要共享視覺化、共享 adapter behavior 或跨專案 source attribution 時，DevGov 應與 UniText 協調。目前低耦合路徑如下：
