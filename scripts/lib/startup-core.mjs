@@ -36,7 +36,7 @@ export async function scanStartupFolder(startupDir) {
 export function classifyStartupEntry(entry) {
   const haystack = `${entry.name}\n${entry.command}`.toLowerCase();
   const codexManaged = /\bcodex\b|chatgpt local files mcp/.test(haystack);
-  const candidate = codexManaged || /cloudflare|cloudflared|terminal|dev/.test(haystack);
+  const candidate = codexManaged || /cloudflare|cloudflared|terminal|dev|ps3 eye|ps3eye|vcam|virtual camera|system camera/.test(haystack);
   return {
     ...entry,
     classification: codexManaged ? "codex-created" : candidate ? "candidate" : "unrelated",

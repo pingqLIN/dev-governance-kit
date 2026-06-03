@@ -483,6 +483,11 @@ export function renderDashboardHtml(state) {
     }
     section { display: none; }
     section.active { display: block; }
+    section.table-view.active {
+      align-content: start;
+      display: grid;
+      gap: 12px;
+    }
     .strip {
       display: grid;
       gap: 12px;
@@ -511,7 +516,11 @@ export function renderDashboardHtml(state) {
       display: flex;
       gap: 10px;
       justify-content: space-between;
-      margin: 8px 0 12px;
+      margin: 0;
+    }
+    .toolbar h2 {
+      line-height: 1.2;
+      margin: 0;
     }
     input {
       border: 2px solid var(--ink);
@@ -540,6 +549,56 @@ export function renderDashboardHtml(state) {
       display: grid;
       gap: 8px;
       grid-template-columns: 180px minmax(0, 1fr);
+    }
+    table[data-table="service-status"] {
+      table-layout: fixed;
+    }
+    table[data-table="service-status"] th:nth-child(1) { width: 24%; }
+    table[data-table="service-status"] th:nth-child(3) { width: 28%; }
+    table[data-table="service-status"] th:nth-child(4) { width: 19%; }
+    table[data-table="service-status"] td {
+      overflow-wrap: normal;
+    }
+    .service-cell, .endpoint-cell, .last-check-cell {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+    .service-badges {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .service-name {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .endpoint-cell a {
+      display: block;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .last-check-cell {
+      overflow-wrap: anywhere;
+    }
+    .check-grid {
+      display: grid;
+      gap: 6px;
+      min-width: 220px;
+    }
+    .check-row {
+      align-items: start;
+      display: grid;
+      gap: 4px 8px;
+      grid-template-columns: 84px minmax(0, 1fr);
+    }
+    .check-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.6;
+      text-transform: uppercase;
     }
     table {
       background: var(--panel);
@@ -574,6 +633,12 @@ export function renderDashboardHtml(state) {
       padding: 2px 7px;
       white-space: nowrap;
     }
+    a.pill-link {
+      color: var(--ink);
+      font-family: inherit;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
     .local { background: var(--ok-bg); }
     .public, .candidate { background: var(--warn-bg); }
     .blocked { background: var(--bad-bg); }
@@ -586,11 +651,6 @@ export function renderDashboardHtml(state) {
     .offline, .missing, .blocked { background: var(--bad-bg); }
     .error, .review_required, .partial { background: var(--warn-bg); }
     .checking, .disabled, .not_applicable { background: var(--neutral-bg); }
-    .control-stack {
-      display: grid;
-      gap: 5px;
-      min-width: 170px;
-    }
     .inline-meta {
       color: var(--muted);
       display: block;
@@ -645,36 +705,36 @@ export function renderDashboardHtml(state) {
       <div class="strip" id="metrics"></div>
       <table id="dashboard-port"></table>
     </section>
-    <section id="ports">
+    <section id="ports" class="table-view">
       <div class="toolbar"><h2>Port Registry</h2><input data-filter="ports" placeholder="Filter ports"></div>
       <table data-table="ports"></table>
     </section>
-    <section id="agents">
+    <section id="agents" class="table-view">
       <div class="toolbar"><h2>Local Service Agents</h2><input data-filter="agents" placeholder="Filter local agents"></div>
       <table data-table="agents"></table>
     </section>
-    <section id="startup">
+    <section id="startup" class="table-view">
       <div class="toolbar"><h2>Startup Governance</h2><input data-filter="startup" placeholder="Filter startup"></div>
       <table data-table="startup"></table>
     </section>
-    <section id="routes">
+    <section id="routes" class="table-view">
       <div class="toolbar"><h2>Public Routes</h2><input data-filter="routes" placeholder="Filter routes"></div>
       <table data-table="routes"></table>
     </section>
-    <section id="terminal">
+    <section id="terminal" class="table-view">
       <div class="toolbar"><h2>Terminal Profiles</h2><input data-filter="terminal" placeholder="Filter terminal"></div>
       <table data-table="terminal"></table>
     </section>
-    <section id="api-keys">
+    <section id="api-keys" class="table-view">
       <div class="toolbar"><h2>API Key Governance</h2><input data-filter="api-keys" placeholder="Filter API keys"></div>
       <table data-table="api-keys"></table>
     </section>
-    <section id="agent-instructions">
+    <section id="agent-instructions" class="table-view">
       <div class="toolbar"><h2>Agent Instructions</h2><input data-filter="agent-instructions" placeholder="Filter agent instructions"></div>
       <div class="guidance" id="agent-storage-guidance"></div>
       <table data-table="agent-instructions"></table>
     </section>
-    <section id="service-status">
+    <section id="service-status" class="table-view">
       <div class="toolbar">
         <h2>Network Service Status</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
@@ -788,15 +848,11 @@ function renderAgentStorageGuidance() {
 }
 function renderServiceStatusTable(query, rows) {
   const filtered = rows.filter(row => match(row, query));
-  renderTable('service-status', ['State', 'Service', 'Kind', 'Quick Test', 'URL', 'Target', 'Registry', 'Last Check'], filtered.map(row => [
-    pill(row.live?.state || 'CHECKING'),
-    textCell(row.label),
-    textCell(row.kind),
+  renderTable('service-status', ['Service', 'Endpoint', 'Quick Test', 'Last Check'], filtered.map(row => [
+    renderServiceCell(row),
+    renderEndpointCell(row),
     renderQuickTestCell(row),
-    linkify(row.url),
-    textCell(row.target),
-    pill(row.registryStatus),
-    row.live?.checkedAt ? textCell(row.live.checkedAt + (row.live.statusCode ? ' status=' + row.live.statusCode : '') + (row.live.error ? ' ' + row.live.error : '')) : textCell('pending')
+    renderLastCheckCell(row)
   ]));
 }
 async function refreshServiceStatus() {
@@ -811,21 +867,52 @@ async function refreshServiceStatus() {
   }
 }
 function renderQuickTestCell(row) {
-  return '<div class="control-stack">'
-    + '<span>Health ' + pill(row.quickTest?.state || row.live?.state || 'CHECKING') + '</span>'
-    + '<span>Doctor ' + pill(row.doctor?.state || 'MISSING') + refMeta(row.doctor?.ref) + '</span>'
-    + '<span>Restart ' + pill(row.restart?.state || 'MISSING') + refMeta(row.restart?.ref) + '</span>'
-    + '<span>Readiness ' + pill(row.controlReadiness || 'BLOCKED') + '</span>'
+  return '<div class="check-grid">'
+    + checkRow('Health', row.quickTest?.state || row.live?.state || 'CHECKING')
+    + checkRow('Doctor', row.doctor?.state || 'MISSING', row.doctor?.ref)
+    + checkRow('Restart', row.restart?.state || 'MISSING', row.restart?.ref)
+    + checkRow('Readiness', row.controlReadiness || 'BLOCKED')
     + '</div>';
 }
-function refMeta(value) {
-  return value ? '<span class="inline-meta">' + fileRef(value) + '</span>' : '';
+function checkRow(label, state, ref) {
+  return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span>' + (ref ? linkedPill(state, ref, label) : pill(state)) + '</span></div>';
+}
+function renderServiceCell(row) {
+  return '<div class="service-cell">'
+    + '<div class="service-badges">' + pill(row.live?.state || 'CHECKING') + pill(row.registryStatus) + '</div>'
+    + '<span class="service-name">' + esc(row.label) + '</span>'
+    + '<span class="inline-meta">' + esc(row.kind) + '</span>'
+    + '</div>';
+}
+function renderEndpointCell(row) {
+  return '<div class="endpoint-cell">' + linkify(row.url) + '<span class="inline-meta">' + esc(row.target) + '</span></div>';
+}
+function renderLastCheckCell(row) {
+  if (!row.live?.checkedAt) {
+    return '<div class="last-check-cell"><span>pending</span></div>';
+  }
+  return '<div class="last-check-cell"><span>' + esc(row.live.checkedAt) + '</span>'
+    + (row.live.statusCode ? '<span class="inline-meta">status=' + esc(row.live.statusCode) + '</span>' : '')
+    + (row.live.error ? '<span class="inline-meta">' + esc(row.live.error) + '</span>' : '')
+    + '</div>';
 }
 function renderTable(name, headers, rows) {
   document.querySelector('[data-table="' + name + '"]').innerHTML = '<tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>' + rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('');
 }
 function pill(value) {
   return '<span class="pill ' + esc(String(value).toLowerCase()) + '">' + esc(value) + '</span>';
+}
+function linkedPill(value, ref, label) {
+  const target = localFileTarget(ref) || registryReferenceTarget(label, ref);
+  if (!target) return pill(value);
+  return '<a class="pill pill-link ' + esc(String(value).toLowerCase()) + '" href="' + esc(target.href) + '" target="_blank" rel="noreferrer" title="' + esc(target.text) + '" aria-label="' + esc(label + ' reference: ' + target.text) + '">' + esc(value) + '</a>';
+}
+function registryReferenceTarget(label, ref) {
+  if (label !== 'Restart' || !ref) return null;
+  return {
+    href: '/file?path=registry%2Fstartup.registry.json',
+    text: String(ref)
+  };
 }
 function match(row, query) {
   return !query || JSON.stringify(row).toLowerCase().includes(query);
@@ -841,13 +928,23 @@ function internalLink(value) {
   return '<a href="' + esc(value) + '" target="_blank" rel="noreferrer"><code>' + esc(value) + '</code></a>';
 }
 function fileRef(value) {
+  const target = localFileTarget(value);
+  if (target) {
+    return '<a href="' + esc(target.href) + '" target="_blank" rel="noreferrer"><code>' + esc(target.text) + '</code></a>';
+  }
+  return '<code>' + esc(String(value ?? '')) + '</code>';
+}
+function localFileTarget(value) {
   const text = String(value ?? '');
   let pathPart = text.split('#')[0];
   if (pathPart.startsWith('devgov/')) pathPart = pathPart.slice('devgov/'.length);
   if (/^(?:AGENTS|README)\\.zh-tw\\.md$|^(?:AGENTS|README)\\.md$|^package\\.json$|^(?:registry|scripts|templates|docs|reports)\\/[A-Za-z0-9._\\/-]+\\.(?:md|json|txt|yml|yaml|mjs|ps1|html)$/.test(pathPart)) {
-    return '<a href="/file?path=' + encodeURIComponent(pathPart) + '" target="_blank" rel="noreferrer"><code>' + esc(text) + '</code></a>';
+    return {
+      href: '/file?path=' + encodeURIComponent(pathPart),
+      text
+    };
   }
-  return '<code>' + esc(text) + '</code>';
+  return null;
 }
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));

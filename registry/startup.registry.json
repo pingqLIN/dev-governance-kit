@@ -101,6 +101,17 @@
       "source": "Local Archive Maintainer service inspection",
       "notes": "Windows service is automatic and uses a service-local deployment home. Full command line, token file, logs, and state data stay in generated evidence, not canonical registry data.",
       "managedByCodex": true
+    },
+    {
+      "id": "ps3eye-system-camera-login",
+      "project": "ps3eye-windows-virtual-camera",
+      "trigger": "startup-folder",
+      "purpose": "Start the PS3 Eye frame feeder and Windows virtual camera on operator login.",
+      "scriptRef": "ps3eye-windows-virtual-camera/scripts/Register-Ps3EyeCameraStartup.ps1",
+      "status": "candidate",
+      "source": "PS3 Eye virtual camera startup and doctor design review",
+      "notes": "Reviewed current-user startup mechanism. The runtime wrapper calls the repo doctor repair mode, checks stale feeder PID state, and keeps machine-local launch details in generated evidence only.",
+      "managedByCodex": true
     }
   ]
 }
