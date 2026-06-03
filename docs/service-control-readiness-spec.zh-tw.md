@@ -42,7 +42,18 @@ Service control readiness 是觀測模型。它用來告訴 operator 某個 serv
 
 - `/api/service-status` 可以執行 health check 並回傳 readiness metadata。
 - `/api/service-status` 不得執行 restart command。
+- `/api/service-onboarding` 可以執行既有已登記服務的唯讀補充稽核。
 - machine-local paths、完整 launch commands、credential paths、tokens、process IDs、logs 與暫時 evidence 不得進入 canonical registry data。
+
+## Existing Project Supplementation
+
+使用 `npm run scan:service-onboarding` 或 dashboard 的 Onboarding 視圖，稽核已經登記過的服務。這份補充 audit 應交叉檢查：
+
+- `registry/ports.registry.json`
+- `registry/startup.registry.json`
+- `registry/public-routes.registry.json`
+- `registry/local-agents.registry.json`
+- 已露出的 Service Status rows 與其 readiness 欄位
 
 ## 驗證
 

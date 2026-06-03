@@ -9,6 +9,21 @@
 - `reports/` 是產生出的 evidence，不應被視為 policy。
 - Version 1 中，目標專案修改維持 manual。
 
+## Phase 0: 既有已登記服務補充稽核
+
+在動手修改 target project 之前，先跑一次已登記服務的補充稽核：
+
+```powershell
+npm run scan:service-onboarding
+```
+
+接著檢查 `reports/service-onboarding-audit.md` 或 dashboard 的 Onboarding 視圖。這份 audit 會列出哪些已登記服務還缺：
+
+- 安全可執行的 Quick Test health URL
+- 穩定的 Doctor 參照
+- startup 或經審查的 restart 參照
+- 已在 DevGov dashboard Service Status 中露出的服務列
+
 ## Phase 1: 只讀稽核
 
 執行 read-only scan：
@@ -70,6 +85,7 @@ Dev startup scripts 應該先經過 `scripts/require-governed-port.mjs`，再啟
 ```powershell
 npm test
 npm run validate:registry
+npm run scan:service-onboarding
 node scripts/scan-project.mjs <target-project>
 npm run port:preflight -- --project <project> --service <service>
 ```

@@ -42,7 +42,18 @@ Each service status row must expose:
 
 - `/api/service-status` may run health checks and return readiness metadata.
 - `/api/service-status` must not execute restart commands.
+- `/api/service-onboarding` may run a read-only supplementation audit for already-registered services.
 - Machine-local paths, complete launch commands, credential paths, tokens, process IDs, logs, and temporary evidence remain outside canonical registry data.
+
+## Existing Project Supplementation
+
+Use `npm run scan:service-onboarding` or the dashboard Onboarding view to audit already-registered services. The supplementation audit should cross-check:
+
+- `registry/ports.registry.json`
+- `registry/startup.registry.json`
+- `registry/public-routes.registry.json`
+- `registry/local-agents.registry.json`
+- surfaced Service Status rows and their readiness fields
 
 ## Verification
 

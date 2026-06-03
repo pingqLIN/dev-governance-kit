@@ -16,6 +16,7 @@
     "scan:docs": "node scripts/scan-docs.mjs",
     "scan:agents": "node scripts/scan-agent-instructions.mjs",
     "scan:api-keys": "node scripts/scan-api-keys.mjs",
+    "scan:service-onboarding": "node scripts/scan-service-onboarding.mjs",
     "port:preflight": "node scripts/require-governed-port.mjs",
     "dashboard": "node scripts/serve-dashboard.mjs",
     "dashboard:open": "node scripts/open-dashboard.mjs",

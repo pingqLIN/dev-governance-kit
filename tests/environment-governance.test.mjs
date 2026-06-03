@@ -7,6 +7,7 @@ import { test } from "node:test";
 import { buildDocsIndex, renderSearchHtml } from "../scripts/lib/docs-index-core.mjs";
 import { buildServiceTargets, buildUniTextAgentInstructionIndex, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
+import { buildServiceOnboardingAudit } from "../scripts/lib/service-onboarding-core.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
 import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
@@ -335,6 +336,7 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /API Key Governance/);
   assert.match(html, /Agent Instructions/);
   assert.match(html, /Service Status/);
+  assert.match(html, /service-onboarding/);
   assert.match(html, /Web 入口/);
   assert.match(html, /tb2\.colorgeek\.co\/health/);
   assert.match(html, /Quick Test/);
@@ -368,6 +370,22 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(localAgentTarget.doctor.state, "MISSING");
   assert.equal(localAgentTarget.restart.state, "REVIEW_REQUIRED");
   assert.equal(localAgentTarget.controlReadiness, "PARTIAL");
+});
+
+test("service onboarding audit summarizes registered service gaps", async () => {
+  const state = await loadDashboardState(".");
+  const audit = buildServiceOnboardingAudit(state);
+  const devgov = audit.services.find((row) => row.id === "devgov:dashboard-http");
+  const archive = audit.services.find((row) => row.id === "local-archive-maintainer:app-server-http");
+
+  assert.equal(audit.schema, "devgov.service-onboarding-audit.v1");
+  assert.ok(audit.summary.services >= state.ports.length);
+  assert.equal(devgov.readiness, "READY");
+  assert.equal(devgov.flags.missingDoctor, false);
+  assert.equal(archive.readiness, "PARTIAL");
+  assert.equal(archive.flags.missingDoctor, true);
+  assert.ok(archive.gaps.some((gap) => /Doctor/.test(gap)));
+  assert.ok(archive.quickLinks.some((link) => link.label === "Health"));
 });
 
 test("doctor verifies DevGov dashboard governance without modifying canonical registries", async () => {

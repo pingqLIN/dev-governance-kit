@@ -481,6 +481,7 @@ export function renderDashboardHtml(state) {
       border: 2px solid var(--ink);
       border-radius: 999px;
       height: 14px;
+      transform-origin: center;
       width: 14px;
     }
     .header-buttons {
@@ -532,6 +533,7 @@ export function renderDashboardHtml(state) {
       min-height: 44px;
       padding: 10px 14px;
       text-align: left;
+      transform-origin: left center;
       width: 100%;
     }
     button[aria-selected="true"] {
@@ -556,9 +558,10 @@ export function renderDashboardHtml(state) {
       font-size: 12px;
       height: 22px;
       place-items: center;
+      transform-origin: center;
       width: 22px;
     }
-    section { display: none; }
+    section { display: none; transform-origin: top center; }
     section.active { display: block; }
     section.table-view.active {
       align-content: start;
@@ -576,6 +579,7 @@ export function renderDashboardHtml(state) {
       background: var(--panel);
       min-height: 96px;
       padding: 12px;
+      transform-origin: center bottom;
     }
     .metric strong {
       display: block;
@@ -681,6 +685,7 @@ export function renderDashboardHtml(state) {
       background: var(--panel);
       border: 2px solid var(--ink);
       border-collapse: collapse;
+      transform-origin: top center;
       width: 100%;
     }
     th, td {
@@ -708,7 +713,37 @@ export function renderDashboardHtml(state) {
       font-size: 12px;
       line-height: 1.35;
       padding: 2px 7px;
+      transform-origin: center;
       white-space: nowrap;
+    }
+    .inline-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .dot {
+        animation: status-pulse 2.8s ease-in-out infinite;
+      }
+      button, .metric, .pill, tr {
+        will-change: transform, opacity;
+      }
+      nav button:hover .glyph {
+        transform: translateX(2px);
+      }
+      nav button .glyph {
+        transition: transform 160ms ease-out;
+      }
+      .theme-toggle, .language-toggle, .action-button, nav button {
+        transition: background-color 160ms ease-out, color 160ms ease-out, transform 160ms ease-out;
+      }
+      .theme-toggle:active, .language-toggle:active, .action-button:active, nav button:active {
+        transform: translateY(1px);
+      }
+    }
+    @keyframes status-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.28); }
     }
     a.pill-link {
       color: var(--ink);
@@ -781,6 +816,7 @@ export function renderDashboardHtml(state) {
     <button data-view="agent-instructions"><span class="glyph">08</span> <span data-i18n="nav.agentInstructions">Agent Instructions</span></button>
     <button data-view="web-entrypoints"><span class="glyph">09</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
     <button data-view="service-status"><span class="glyph">10</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
+    <button data-view="service-onboarding"><span class="glyph">11</span> <span data-i18n="nav.serviceOnboarding">補充程序</span></button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -835,6 +871,19 @@ export function renderDashboardHtml(state) {
       </div>
       <table data-table="service-status"></table>
     </section>
+    <section id="service-onboarding" class="table-view">
+      <div class="toolbar">
+        <h2 data-i18n="sections.serviceOnboarding">Existing Project Onboarding</h2>
+        <div class="inline-actions">
+          <button class="action-button" type="button" id="refresh-service-onboarding" data-i18n="serviceOnboarding.runAudit">Run audit</button>
+          <input data-filter="service-onboarding" placeholder="篩選補充程序">
+        </div>
+      </div>
+      <div class="guidance">
+        <div><strong data-i18n="serviceOnboarding.label">Procedure:</strong> <span data-i18n="serviceOnboarding.body">This audit cross-checks the port registry, startup registry, public routes, local agents, and Service Status readiness so we can see which registered projects still need Doctor, Quick Test, or startup supplementation.</span></div>
+      </div>
+      <table data-table="service-onboarding"></table>
+    </section>
   </div>
 </main>
 <script>
@@ -854,7 +903,8 @@ const messages = {
       apiKeys: 'API Keys',
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web Entrypoints',
-      serviceStatus: 'Service Status'
+      serviceStatus: 'Service Status',
+      serviceOnboarding: 'Onboarding'
     },
     sections: {
       ports: 'Port Registry',
@@ -865,7 +915,8 @@ const messages = {
       apiKeys: 'API Key Governance',
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web Entrypoints',
-      serviceStatus: 'Network Service Status'
+      serviceStatus: 'Network Service Status',
+      serviceOnboarding: 'Existing Project Onboarding'
     },
     placeholders: {
       ports: 'Filter ports',
@@ -876,7 +927,8 @@ const messages = {
       apiKeys: 'Filter API keys',
       agentInstructions: 'Filter agent instructions',
       webEntrypoints: 'Filter web entrypoints',
-      serviceStatus: 'Filter services'
+      serviceStatus: 'Filter services',
+      serviceOnboarding: 'Filter onboarding rows'
     },
     metrics: {
       ports: 'Ports',
@@ -895,6 +947,11 @@ const messages = {
     restartPolicy: {
       label: 'Restart policy:',
       body: 'the Quick Test column runs safe health checks and reports Doctor/restart readiness. One-click restart stays disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.'
+    },
+    serviceOnboarding: {
+      label: 'Procedure:',
+      body: 'This audit cross-checks the port registry, startup registry, public routes, local agents, and Service Status readiness so we can see which registered projects still need Doctor, Quick Test, or startup supplementation.',
+      runAudit: 'Run audit'
     },
     labels: {
       dashboard: 'Dashboard',
@@ -943,7 +1000,10 @@ const messages = {
       pending: 'pending',
       doctor: 'Doctor',
       restart: 'Restart',
-      readiness: 'Readiness'
+      readiness: 'Readiness',
+      gaps: 'Gaps',
+      links: 'Quick Links',
+      noGaps: 'none'
     }
   },
   zhTw: {
@@ -960,7 +1020,8 @@ const messages = {
       apiKeys: 'API Key 治理',
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web 入口',
-      serviceStatus: '服務狀態'
+      serviceStatus: '服務狀態',
+      serviceOnboarding: '補充程序'
     },
     sections: {
       ports: 'Port Registry',
@@ -971,7 +1032,8 @@ const messages = {
       apiKeys: 'API Key 治理',
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web 入口',
-      serviceStatus: 'Network Service Status'
+      serviceStatus: 'Network Service Status',
+      serviceOnboarding: '既有專案補充程序'
     },
     placeholders: {
       ports: '篩選 ports',
@@ -982,7 +1044,8 @@ const messages = {
       apiKeys: '篩選 API keys',
       agentInstructions: '篩選 agent instructions',
       webEntrypoints: '篩選 web 入口',
-      serviceStatus: '篩選服務'
+      serviceStatus: '篩選服務',
+      serviceOnboarding: '篩選補充程序'
     },
     metrics: {
       ports: 'Ports',
@@ -1001,6 +1064,11 @@ const messages = {
     restartPolicy: {
       label: 'Restart policy:',
       body: 'Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。一鍵 restart 會維持停用，直到每個 service 都有已審查的 restart command、backup/rollback expectation 與 permission boundary。'
+    },
+    serviceOnboarding: {
+      label: 'Procedure:',
+      body: '這份 audit 會交叉比對 port registry、startup registry、public routes、local agents 與 Service Status readiness，快速找出哪些已登記專案還缺 Doctor、Quick Test 或 startup 補件。',
+      runAudit: '重跑 audit'
     },
     labels: {
       dashboard: 'Dashboard',
@@ -1049,14 +1117,20 @@ const messages = {
       pending: 'pending',
       doctor: 'Doctor',
       restart: 'Restart',
-      readiness: 'Readiness'
+      readiness: 'Readiness',
+      gaps: 'Gaps',
+      links: 'Quick Links',
+      noGaps: 'none'
     }
   }
 };
 let currentLanguage = localStorage.getItem('devgov-language') === 'en' ? 'en' : 'zhTw';
 let serviceStatusRows = [];
+let serviceOnboardingRows = [];
+const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 const themeButton = document.getElementById('theme-toggle');
 const languageButton = document.getElementById('language-toggle');
+const onboardingButton = document.getElementById('refresh-service-onboarding');
 const savedTheme = localStorage.getItem('devgov-theme');
 if (savedTheme === 'light' || savedTheme === 'dark') {
   document.documentElement.dataset.theme = savedTheme;
@@ -1081,9 +1155,8 @@ const buttons = [...document.querySelectorAll('nav button')];
 buttons.forEach(button => button.addEventListener('click', () => {
   buttons.forEach(item => item.setAttribute('aria-selected', String(item === button)));
   views.forEach(view => view.classList.toggle('active', view.id === button.dataset.view));
+  Motion.switchView(document.getElementById(button.dataset.view), button);
 }));
-renderAll();
-refreshServiceStatus();
 document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase();
@@ -1096,6 +1169,7 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
     if (input.dataset.filter === 'agent-instructions') renderAgentInstructions(value);
     if (input.dataset.filter === 'web-entrypoints') renderWebEntrypoints(value);
     if (input.dataset.filter === 'service-status') renderServiceStatusTable(value, serviceStatusRows);
+    if (input.dataset.filter === 'service-onboarding') renderServiceOnboardingTable(value, serviceOnboardingRows);
   });
 });
 function renderAll() {
@@ -1109,6 +1183,7 @@ function renderAll() {
     [t('metrics.instructions'), state.summary.agentInstructions],
     [t('metrics.webEntrypoints'), state.summary.webEntrypoints]
   ].map(([label, value]) => '<div class="metric"><strong>' + esc(value) + '</strong><span>' + esc(label) + '</span></div>').join('');
+  Motion.metrics();
   renderDashboardPort();
   renderPorts(filterValue('ports'));
   renderAgents(filterValue('agents'));
@@ -1123,6 +1198,7 @@ function renderAll() {
     ? serviceStatusRows
     : state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' }, quickTest: { ...target.quickTest, state: 'CHECKING' } }));
   renderServiceStatusTable(filterValue('service-status'), rows);
+  renderServiceOnboardingTable(filterValue('service-onboarding'), serviceOnboardingRows);
 }
 function filterValue(name) {
   return document.querySelector('input[data-filter="' + name + '"]')?.value.toLowerCase() || '';
@@ -1191,6 +1267,17 @@ function renderServiceStatusTable(query, rows) {
     renderLastCheckCell(row)
   ]));
 }
+function renderServiceOnboardingTable(query, rows) {
+  const filtered = rows.filter(row => match(row, query));
+  renderTable('service-onboarding', [t('labels.project'), t('labels.service'), t('labels.socket'), t('labels.readiness'), t('labels.gaps'), t('labels.links')], filtered.map(row => [
+    textCell(row.project),
+    textCell(row.service),
+    '<code>' + esc(row.socket) + '</code>',
+    pill(row.readiness),
+    renderGapCell(row),
+    renderOnboardingLinks(row)
+  ]));
+}
 async function refreshServiceStatus() {
   try {
     const response = await fetch('/api/service-status');
@@ -1200,6 +1287,19 @@ async function refreshServiceStatus() {
     serviceStatusRows = state.serviceTargets.map(target => ({ ...target, live: { state: 'ERROR', error: error.message } }));
   } finally {
     renderServiceStatusTable(document.querySelector('input[data-filter="service-status"]').value.toLowerCase(), serviceStatusRows);
+  }
+}
+async function refreshServiceOnboarding() {
+  onboardingButton.disabled = true;
+  try {
+    const response = await fetch('/api/service-onboarding');
+    const payload = await response.json();
+    serviceOnboardingRows = payload.services || [];
+  } catch (error) {
+    serviceOnboardingRows = [];
+  } finally {
+    onboardingButton.disabled = false;
+    renderServiceOnboardingTable(filterValue('service-onboarding'), serviceOnboardingRows);
   }
 }
 function renderQuickTestCell(row) {
@@ -1232,8 +1332,26 @@ function renderLastCheckCell(row) {
     + (row.live.error ? '<span class="inline-meta">' + esc(row.live.error) + '</span>' : '')
     + '</div>';
 }
+function renderGapCell(row) {
+  if (!row.gaps?.length) {
+    return '<span>' + tEsc('labels.noGaps') + '</span>';
+  }
+  return row.gaps.map(gap => '<span class="inline-meta">' + esc(gap) + '</span>').join('');
+}
+function renderOnboardingLinks(row) {
+  const links = row.quickLinks || [];
+  if (!links.length) return '<span class="inline-meta">' + tEsc('labels.pending') + '</span>';
+  return '<div class="inline-actions">' + links.map(renderOnboardingLink).join('') + '</div>';
+}
+function renderOnboardingLink(link) {
+  if (link.type === 'url') {
+    return '<a class="pill pill-link" href="' + esc(link.target) + '" target="_blank" rel="noreferrer">' + esc(link.label) + '</a>';
+  }
+  return fileRefLink(link.label, link.target);
+}
 function renderTable(name, headers, rows) {
   document.querySelector('[data-table="' + name + '"]').innerHTML = '<tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>' + rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('');
+  Motion.rows(name);
 }
 function pill(value) {
   return '<span class="pill ' + esc(String(value).toLowerCase()) + '">' + esc(value) + '</span>';
@@ -1264,11 +1382,17 @@ function internalLink(value) {
   return '<a href="' + esc(value) + '" target="_blank" rel="noreferrer"><code>' + esc(value) + '</code></a>';
 }
 function fileRef(value) {
+  const linked = fileRefLink('', value);
+  if (linked) return linked;
+  return '<code>' + esc(String(value ?? '')) + '</code>';
+}
+function fileRefLink(label, value) {
   const target = localFileTarget(value);
   if (target) {
-    return '<a href="' + esc(target.href) + '" target="_blank" rel="noreferrer"><code>' + esc(target.text) + '</code></a>';
+    const text = label ? label + ': ' + target.text : target.text;
+    return '<a href="' + esc(target.href) + '" target="_blank" rel="noreferrer"><code>' + esc(text) + '</code></a>';
   }
-  return '<code>' + esc(String(value ?? '')) + '</code>';
+  return label ? '<code>' + esc(label + ': ' + String(value ?? '')) + '</code>' : '';
 }
 function localFileTarget(value) {
   const text = String(value ?? '');
@@ -1316,7 +1440,8 @@ function syncI18n() {
     'api-keys': placeholders.apiKeys,
     'agent-instructions': placeholders.agentInstructions,
     'web-entrypoints': placeholders.webEntrypoints,
-    'service-status': placeholders.serviceStatus
+    'service-status': placeholders.serviceStatus,
+    'service-onboarding': placeholders.serviceOnboarding
   })) {
     const input = document.querySelector('input[data-filter="' + name + '"]');
     if (input) input.placeholder = text;
@@ -1328,6 +1453,83 @@ function syncThemeButton() {
   themeButton.setAttribute('aria-pressed', String(effective === 'dark'));
   themeButton.textContent = effective === 'dark' ? t('theme.light') : t('theme.dark');
 }
+const Motion = {
+  enabled() {
+    return !motionQuery.matches && 'animate' in Element.prototype;
+  },
+  intro() {
+    if (!this.enabled()) return;
+    const items = [...document.querySelectorAll('header, nav, section.active')];
+    items.forEach((item, index) => {
+      item.animate([
+        { opacity: 0, transform: 'translateY(' + (index === 1 ? 10 : 16) + 'px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], {
+        duration: 420,
+        delay: index * 70,
+        easing: 'cubic-bezier(.2,.8,.2,1)',
+        fill: 'backwards'
+      });
+    });
+  },
+  metrics() {
+    if (!this.enabled()) return;
+    document.querySelectorAll('.metric').forEach((item, index) => {
+      item.animate([
+        { opacity: 0, transform: 'translateY(14px) scale(.985)' },
+        { opacity: 1, transform: 'translateY(0) scale(1)' }
+      ], {
+        duration: 320,
+        delay: index * 26,
+        easing: 'cubic-bezier(.2,.8,.2,1)',
+        fill: 'backwards'
+      });
+    });
+  },
+  rows(name) {
+    if (!this.enabled()) return;
+    const table = document.querySelector('[data-table="' + name + '"]');
+    const active = table?.closest('section')?.classList.contains('active');
+    if (!active) return;
+    table.querySelectorAll('tr').forEach((row, index) => {
+      row.animate([
+        { opacity: 0, transform: 'translateY(8px)' },
+        { opacity: 1, transform: 'translateY(0)' }
+      ], {
+        duration: 220,
+        delay: Math.min(index, 12) * 18,
+        easing: 'cubic-bezier(.2,.8,.2,1)',
+        fill: 'backwards'
+      });
+    });
+  },
+  switchView(view, button) {
+    if (!this.enabled()) return;
+    button?.animate([
+      { transform: 'translateX(0)' },
+      { transform: 'translateX(4px)' },
+      { transform: 'translateX(0)' }
+    ], {
+      duration: 260,
+      easing: 'cubic-bezier(.2,.8,.2,1)'
+    });
+    view?.animate([
+      { opacity: 0, transform: 'translateY(12px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], {
+      duration: 280,
+      easing: 'cubic-bezier(.2,.8,.2,1)',
+      fill: 'backwards'
+    });
+    const table = view?.querySelector('table[data-table]');
+    if (table) this.rows(table.dataset.table);
+  }
+};
+renderAll();
+Motion.intro();
+refreshServiceStatus();
+refreshServiceOnboarding();
+onboardingButton.addEventListener('click', () => refreshServiceOnboarding());
 </script>
 </body>
 </html>`;

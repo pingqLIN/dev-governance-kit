@@ -9,6 +9,21 @@ This mirrors the UniText-style data flow:
 - `reports/` is generated evidence and should not be treated as policy.
 - target project edits are manual in v1.
 
+## Phase 0: Existing Registered Service Audit
+
+Before touching a target project, run the registered-service supplementation audit:
+
+```powershell
+npm run scan:service-onboarding
+```
+
+Review `reports/service-onboarding-audit.md` or the dashboard Onboarding view. The audit shows which already-registered services are still missing:
+
+- a safe Quick Test health URL
+- a stable Doctor reference
+- a startup or reviewed restart reference
+- a surfaced Service Status row in the DevGov dashboard
+
 ## Phase 1: Audit Only
 
 Run a read-only scan:
@@ -70,6 +85,7 @@ Run:
 ```powershell
 npm test
 npm run validate:registry
+npm run scan:service-onboarding
 node scripts/scan-project.mjs <target-project>
 npm run port:preflight -- --project <project> --service <service>
 ```

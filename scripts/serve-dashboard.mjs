@@ -5,6 +5,7 @@ import path, { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildUniTextAgentInstructionIndex, checkServiceStatuses, DASHBOARD_HOST, DASHBOARD_PORT, loadDashboardState, renderDashboardHtml } from "./lib/dashboard-core.mjs";
 import { runDoctorChecks } from "./lib/doctor-core.mjs";
+import { loadServiceOnboardingAudit } from "./lib/service-onboarding-core.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = parseArgs(process.argv.slice(2));
@@ -44,6 +45,10 @@ const server = http.createServer(async (request, response) => {
     }
     if (url.pathname === "/api/service-status") {
       sendJson(response, await checkServiceStatuses(root));
+      return;
+    }
+    if (url.pathname === "/api/service-onboarding") {
+      sendJson(response, await loadServiceOnboardingAudit(root));
       return;
     }
     if (url.pathname === "/api/doctor") {

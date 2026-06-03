@@ -99,6 +99,12 @@ Build the local AGENTS instruction search artifacts:
 npm run scan:agents
 ```
 
+Audit supplementation gaps for already-registered services:
+
+```powershell
+npm run scan:service-onboarding
+```
+
 Start the local dashboard:
 
 ```powershell
@@ -166,6 +172,8 @@ Local service agents are tracked in `registry/local-agents.registry.json`. These
 Agent instruction governance is tracked in `registry/agent-instructions.registry.json`. The dashboard includes an Agent Instructions view, `/api/agent-instructions` returns the source-of-truth layers, item types, and entries, and `/api/unitext-agent-instructions` exposes a UniText-style query index for local integration.
 
 Network service status is available in the Service Status view and `/api/service-status`. The `Quick Test` table column runs safe health checks and reports whether each service has a detected Doctor mechanism and restart readiness. One-click restart is intentionally disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary. The standardized contract is documented in `docs/service-control-readiness-spec.md`, with the agent workflow in `registry/skills/service-control-readiness/SKILL.md`.
+
+Existing-project supplementation is available in the Onboarding view and `/api/service-onboarding`. The read-only audit cross-checks `registry/ports.registry.json`, `registry/startup.registry.json`, `registry/public-routes.registry.json`, `registry/local-agents.registry.json`, and dashboard service-status rows so operators can quickly see which registered services still need Quick Test, Doctor, or startup supplementation.
 
 Development API key locations are tracked in `registry/api-keys.registry.json`. These records identify the service, variable name, storage location type, access method, usage rules, review status, and provider settings page. Credential values, credential file contents, local secret paths, shell history, and full command lines must stay out of canonical registry data.
 

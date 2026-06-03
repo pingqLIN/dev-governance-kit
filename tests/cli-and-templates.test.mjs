@@ -49,6 +49,17 @@ test("scan-api-keys refuses absolute output paths outside reports by default", (
   assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
 });
 
+test("scan-service-onboarding refuses absolute output paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/scan-service-onboarding.mjs", "--out", join(tmpdir(), "devgov-onboarding-outside.md")],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
 test("scan CLIs fail when the requested root is missing", () => {
   const projectResult = spawnSync(
     process.execPath,
