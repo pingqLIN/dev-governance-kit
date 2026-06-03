@@ -314,6 +314,42 @@
       "notes": "Turns the port registry from documentation into an executable startup gate."
     },
     {
+      "id": "agent.tool.antivirus-triage",
+      "type": "tool-entry",
+      "layer": "repo-local",
+      "appliesTo": "Local antivirus and endpoint-protection blocks during development builds, tests, dev servers, browser automation, generated binaries, and subprocess spawning.",
+      "requirement": "Use npm run av:triage as the DevGov entry point before considering any antivirus exclusion.",
+      "enforcement": "Keep the command dry-run, write evidence to reports, and reject broad scopes or high-risk alert text before producing allowlist candidates.",
+      "evidence": "AGENTS.md#Local Antivirus Governance",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Gives agents and operators one narrow entry for local antivirus triage instead of ad hoc security setting changes."
+    },
+    {
+      "id": "agent.tool.codex-antivirus-hook",
+      "type": "tool-entry",
+      "layer": "repo-local",
+      "appliesTo": "Codex and agent workflows that need a standard trigger wrapper for suspected antivirus blocks.",
+      "requirement": "Use npm run codex:av-hook when alert text, failed command output, or supplied paths indicate antivirus or endpoint-protection blocking.",
+      "enforcement": "The hook may run the triage command and write command logs under reports, but it must not apply exclusions or change security settings.",
+      "evidence": "AGENTS.md#Local Antivirus Governance",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Provides a Codex-friendly hook without installing global shell, Git, or antivirus integrations."
+    },
+    {
+      "id": "agent.safety.antivirus-apply-gate",
+      "type": "safety-gate",
+      "layer": "repo-local",
+      "appliesTo": "Any real antivirus exclusion or endpoint protection setting change after triage.",
+      "requirement": "Do not apply antivirus exclusions through the v1 triage command; applying a real exclusion requires a separate explicit operator request and fresh evidence check.",
+      "enforcement": "Triage output may show commented preview commands only and must not disable protection, clear quarantine, restore files, add exclusions, change firewall rules, or modify browser or OS security settings.",
+      "evidence": "AGENTS.md#Local Antivirus Governance",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Keeps antivirus handling audit-first and prevents dry-run tooling from becoming a silent mutation path."
+    },
+    {
       "id": "agent.verify.batch-completion",
       "type": "verification",
       "layer": "repo-local",

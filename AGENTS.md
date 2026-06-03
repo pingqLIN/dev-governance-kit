@@ -166,6 +166,17 @@ Run `npm run scan:agents` after changing AGENTS governance. The command writes g
 7. Static document search generation writes local artifacts under `reports/` and must not start a service or allocate a port.
 8. Dashboard startup is opt-in. Registration scripts may write Windows Startup entries only when explicitly run by an operator.
 
+## Local Antivirus Governance
+
+1. Local antivirus and endpoint-protection blocks must use `npm run av:triage` as the DevGov entry point before considering any exclusion.
+2. Codex and agent workflows may use `npm run codex:av-hook` as the trigger wrapper when alert text, command output, or supplied paths indicate an antivirus block.
+3. Antivirus triage and hook handling are dry-run by default and must not disable protection, clear quarantine, restore files, add exclusions, change firewall rules, or modify browser or OS security settings.
+4. Triage evidence may include Defender threat detections, Defender exclusion preferences, file hashes, local paths, command logs, and generated report details; this evidence belongs in `reports/`, not canonical registry data.
+5. Candidate exclusions must be exact generated files or narrow generated artifact folders with rebuild evidence when available.
+6. Reject drive roots, user profiles, project roots, source folders, `.git`, entire `node_modules`, browser profiles, credential stores, and common interpreter or browser process exclusions.
+7. Alerts naming credential theft, ransomware, backdoor, persistence, obfuscation, injection, tampering, or suspicious network behavior must stay in security triage and must not produce allowlist candidates.
+8. Applying a real antivirus exclusion is outside the v1 command surface and requires a separate explicit operator request plus a fresh evidence check.
+
 ## UniText Coordination
 
 DevGov should coordinate with UniText when AGENTS governance needs shared visualization, shared adapter behavior, or cross-project source attribution. The current low-coupling path is:

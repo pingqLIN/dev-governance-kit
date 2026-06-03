@@ -24,6 +24,8 @@ Chinese companion and reference documents:
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
+- [docs/local-antivirus-governance.md](docs/local-antivirus-governance.md)
+- [docs/local-antivirus-governance.zh-tw.md](docs/local-antivirus-governance.zh-tw.md)
 - [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 
@@ -73,6 +75,18 @@ Audit development API key variable names and storage scopes without printing val
 
 ```powershell
 npm run scan:api-keys -- --project . --out reports\api-key-audit.md
+```
+
+Triage a local antivirus block without changing security settings:
+
+```powershell
+npm run av:triage -- -Path "Q:\Projects\some-project\dist\app.exe" -ProjectRoot "Q:\Projects\some-project" -RebuildCommand "npm run build" -IncludeDefenderPreview
+```
+
+Use the Codex hook wrapper when the trigger comes from alert text or failed command output:
+
+```powershell
+npm run codex:av-hook -- -Product "Bitdefender" -Path "Q:\Projects\some-project\dist\app.exe" -ProjectRoot "Q:\Projects\some-project" -AlertText "Bitdefender blocked generated build output" -RebuildCommand "npm run build"
 ```
 
 Audit Git worktree inventory without double-counting linked worktrees:
@@ -175,7 +189,7 @@ The public `gov.colorgeek.co` and `dev.colorgeek.co` routes are also review-gate
 
 ## Doctor
 
-`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, API key governance records, AGENTS instruction governance records, required scripts, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
+`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, API key governance records, AGENTS instruction governance records, required scripts including the antivirus dry-run entry, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
 
 `npm run doctor:repair` is intentionally limited to local generated artifacts under `reports/`; it regenerates the static document search files without changing canonical registry data.
 

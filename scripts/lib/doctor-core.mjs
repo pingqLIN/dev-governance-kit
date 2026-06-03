@@ -63,7 +63,7 @@ export async function runDoctorChecks(root = ".", options = {}) {
     `${apiKeys.entries.length} credential-location records`
   );
 
-  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/register-dashboard-protocol.ps1", "scripts/start-gov-public-route.ps1", "scripts/register-gov-public-route-startup.ps1", "scripts/require-governed-port.mjs", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs"]) {
+  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/register-dashboard-protocol.ps1", "scripts/start-gov-public-route.ps1", "scripts/register-gov-public-route-startup.ps1", "scripts/require-governed-port.mjs", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs", "scripts/Invoke-AntivirusTriage.ps1", "scripts/Invoke-CodexAntivirusHook.ps1"]) {
     add(`script-${scriptPath}`, await fileExists(path.join(root, scriptPath)), scriptPath);
   }
 

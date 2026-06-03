@@ -16,6 +16,8 @@
     "scan:docs": "node scripts/scan-docs.mjs",
     "scan:agents": "node scripts/scan-agent-instructions.mjs",
     "scan:api-keys": "node scripts/scan-api-keys.mjs",
+    "av:triage": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Invoke-AntivirusTriage.ps1",
+    "codex:av-hook": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Invoke-CodexAntivirusHook.ps1",
     "port:preflight": "node scripts/require-governed-port.mjs",
     "dashboard": "node scripts/serve-dashboard.mjs",
     "dashboard:open": "node scripts/open-dashboard.mjs",
