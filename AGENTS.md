@@ -21,6 +21,7 @@ The current project scope covers global-home and local development-environment g
 - manage Cloudflare/public route governance records
 - generate local static document-search artifacts
 - govern AGENTS instruction scope, item types, and queryable indexes
+- audit observable Codex context-budget sources and route tools or skills through compact indexes
 - provide a local loopback dashboard on the reviewed long-lived `127.0.0.1:3000` port
 - run self-check, limited self-repair, and local report generation through the Doctor command
 - validate conflicts and required fields
@@ -34,6 +35,7 @@ The current project scope covers global-home and local development-environment g
 - Machine-local paths, personal notes, and unpublished plans must stay out of canonical registry data.
 - Canonical AGENTS item types and scope records belong in `registry/agent-instructions.registry.json`.
 - Generated AGENTS search/index artifacts belong in `reports/`.
+- Generated context-budget audit artifacts belong in `reports/`.
 - `AGENTS.md` is the only authoritative agent-runtime instruction file in this repo.
 - `AGENTS.zh-tw.md`, if present, is a human-readable reference only and is not required by the bilingual publishable-document rule.
 - The live user/home-level Global AGENTS file remains an external runtime input. DevGov may plan, index, validate, and coordinate it, but must not claim ownership over platform/runtime authority or silently rewrite it.
@@ -134,6 +136,7 @@ Use these item types when promoting AGENTS rules into `registry/agent-instructio
 - `data-contract`: canonical fields, storage locations, and redaction boundaries.
 - `workflow-control`: ordered scan, apply, repair, cleanup, or publication steps.
 - `tool-entry`: correct tool or command entry path for a task class.
+- `context-budget`: prompt, tool, skill, memory, and file-context loading rules that reduce startup or per-task context without weakening safety.
 - `verification`: tests, validators, doctors, or generated artifacts required before completion.
 - `interoperability`: alignment points with adjacent governance systems.
 - `external-review-input`: adopted recommendations that changed durable policy.
@@ -141,6 +144,24 @@ Use these item types when promoting AGENTS rules into `registry/agent-instructio
 Each promoted record must include a stable `id`, `type`, `layer`, `appliesTo`, `requirement`, `enforcement`, `evidence`, `status`, `source`, and `notes`.
 
 Run `npm run scan:agents` after changing AGENTS governance. The command writes generated search artifacts to `reports/agent-instructions-index.json` and `reports/agent-instructions-index.txt`.
+
+## Context Budget Governance
+
+Default task routing should start in no-tool mode. Escalate only when the request cannot be completed from the current task text plus already-loaded safe context.
+
+Use these budget levels when designing or reviewing Global AGENTS, workspace overlays, UniText adapters, and skill routing:
+
+1. `L0-no-tool`: natural-language answers, rewriting, translation, ordinary brainstorming, and static reasoning.
+2. `L1-light-retrieval`: file names, metadata, local registry summaries, or short snippets.
+3. `L2-targeted-retrieval`: specific file answers, limited comparisons, or exact evidence chunks.
+4. `L3-artifact`: PDF, DOCX, slide, spreadsheet, image, or other artifact creation and editing that requires a matching skill or connector.
+5. `L4-complex`: multi-file synthesis, large transformations, data-heavy analysis, or tasks where higher context is explicitly justified.
+
+Keep the always-loaded surface limited to safety rules, authority order, credential handling, Git and deletion safety, and a compact routing map. Tool schemas, connector details, skill bodies, project histories, and long background notes should stay lazy-loaded behind task triggers.
+
+Skill routing records should name the trigger, the minimal instruction path or registry entry, and the avoid-when cases. Do not paste full skill bodies, full platform tool descriptions, local machine paths, private planning notes, or raw conversation archives into canonical registry records.
+
+Run `npm run scan:context-budget` when auditing local prompt overhead. The command writes local evidence to `reports/context-budget-audit.md` and `reports/context-budget-audit.json`. Treat the report as an estimate: platform system prompts, developer instructions, native tool schemas, and connector schemas are runtime-owned and only partially observable from local files.
 
 ## Port Governance Rules
 

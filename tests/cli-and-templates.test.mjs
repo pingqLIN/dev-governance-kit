@@ -49,6 +49,28 @@ test("scan-api-keys refuses absolute output paths outside reports by default", (
   assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
 });
 
+test("scan-context-budget refuses absolute output paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/scan-context-budget.mjs", "--out", join(tmpdir(), "devgov-context-budget.md")],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
+test("scan-context-budget refuses absolute JSON output paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/scan-context-budget.mjs", "--json-out", join(tmpdir(), "devgov-context-budget.json")],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
 test("scan CLIs fail when the requested root is missing", () => {
   const projectResult = spawnSync(
     process.execPath,
@@ -65,6 +87,31 @@ test("scan CLIs fail when the requested root is missing", () => {
   assert.notEqual(workspaceResult.status, 0);
   assert.match(`${projectResult.stderr}\n${projectResult.stdout}`, /projectPath does not exist/);
   assert.match(`${workspaceResult.stderr}\n${workspaceResult.stdout}`, /workspaceRoot does not exist/);
+});
+
+test("scan-context-budget fails when explicit input roots are missing", () => {
+  const rootResult = spawnSync(
+    process.execPath,
+    ["scripts/scan-context-budget.mjs", "--root", "tests/fixtures/missing-context-root"],
+    { encoding: "utf8" }
+  );
+  const codexHomeResult = spawnSync(
+    process.execPath,
+    ["scripts/scan-context-budget.mjs", "--codex-home", "tests/fixtures/missing-codex-home"],
+    { encoding: "utf8" }
+  );
+  const skillRootResult = spawnSync(
+    process.execPath,
+    ["scripts/scan-context-budget.mjs", "--skill-root", "tests/fixtures/missing-skill-root"],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(rootResult.status, 0);
+  assert.notEqual(codexHomeResult.status, 0);
+  assert.notEqual(skillRootResult.status, 0);
+  assert.match(`${rootResult.stderr}\n${rootResult.stdout}`, /root does not exist or is not a directory/);
+  assert.match(`${codexHomeResult.stderr}\n${codexHomeResult.stdout}`, /codexHome does not exist or is not a directory/);
+  assert.match(`${skillRootResult.stderr}\n${skillRootResult.stdout}`, /skillRoot does not exist or is not a directory/);
 });
 
 test("scan-workspace validates missing --out value", () => {

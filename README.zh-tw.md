@@ -23,6 +23,8 @@
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
+- [docs/context-budget-governance.md](docs/context-budget-governance.md)
+- [docs/context-budget-governance.zh-tw.md](docs/context-budget-governance.zh-tw.md)
 - [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 
@@ -98,6 +100,12 @@ npm run scan:docs
 
 ```powershell
 npm run scan:agents
+```
+
+稽核可觀察的本機 context-budget 來源：
+
+```powershell
+npm run scan:context-budget
 ```
 
 啟動本機儀表板：
