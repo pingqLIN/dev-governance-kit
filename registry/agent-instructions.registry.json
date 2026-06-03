@@ -108,6 +108,14 @@
       "notes": "Use for browser, shell, scanner, and dashboard command entry rules."
     },
     {
+      "id": "context-budget",
+      "label": "Context Budget",
+      "description": "Defines prompt, tool, skill, memory, and file-context loading rules that reduce startup or per-task context without weakening safety.",
+      "governanceUse": "Keeps always-loaded rules small and makes escalation to files, tools, connectors, or skill bodies explicit.",
+      "status": "approved",
+      "notes": "Use for lazy-loading, routing, budget levels, and local context-overhead audits."
+    },
+    {
       "id": "verification",
       "label": "Verification",
       "description": "Defines tests, validators, doctors, or generated artifacts required before completion.",
@@ -312,6 +320,42 @@
       "status": "approved",
       "source": "AGENTS.md",
       "notes": "Turns the port registry from documentation into an executable startup gate."
+    },
+    {
+      "id": "agent.context.default-no-tool",
+      "type": "context-budget",
+      "layer": "global-home",
+      "appliesTo": "Global AGENTS, workspace overlays, UniText routing adapters, and ordinary task startup.",
+      "requirement": "Default to no-tool task routing and escalate only when the current request cannot be completed from safe already-loaded context.",
+      "enforcement": "Classify tasks into L0 through L4 budget levels before loading files, tools, connectors, or full skill bodies.",
+      "evidence": "AGENTS.md#Context Budget Governance",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Keeps the live global-home surface small while preserving safety and authority rules."
+    },
+    {
+      "id": "agent.context.skill-lazy-loading",
+      "type": "context-budget",
+      "layer": "global-home",
+      "appliesTo": "Skill manifests, artifact workflows, connector routing, and generated UniText read models.",
+      "requirement": "Expose compact skill trigger metadata by default and load full skill instructions only after a task matches the trigger.",
+      "enforcement": "Store stable trigger, instruction reference, and avoid-when cases; do not copy full skill bodies or local paths into canonical registry data.",
+      "evidence": "AGENTS.md#Context Budget Governance",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Turns skill inventories into a routing index instead of a startup prompt dump."
+    },
+    {
+      "id": "agent.verify.context-budget-audit",
+      "type": "verification",
+      "layer": "repo-local",
+      "appliesTo": "Context budget governance changes and local prompt-overhead reviews.",
+      "requirement": "Run the context-budget scanner when auditing observable local prompt overhead.",
+      "enforcement": "Use npm run scan:context-budget and keep generated context-budget reports under reports as estimate evidence.",
+      "evidence": "AGENTS.md#Context Budget Governance",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Separates measurable local files from runtime-owned platform and connector schema costs."
     },
     {
       "id": "agent.verify.batch-completion",

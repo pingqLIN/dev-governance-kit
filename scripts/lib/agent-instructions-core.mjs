@@ -15,6 +15,7 @@ const REQUIRED_ITEM_TYPES = new Set([
   "data-contract",
   "workflow-control",
   "tool-entry",
+  "context-budget",
   "verification",
   "interoperability",
   "external-review-input"

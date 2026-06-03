@@ -15,6 +15,7 @@
     "scan:worktrees": "node scripts/scan-worktrees.mjs",
     "scan:docs": "node scripts/scan-docs.mjs",
     "scan:agents": "node scripts/scan-agent-instructions.mjs",
+    "scan:context-budget": "node scripts/scan-context-budget.mjs",
     "scan:api-keys": "node scripts/scan-api-keys.mjs",
     "scan:service-onboarding": "node scripts/scan-service-onboarding.mjs",
     "port:preflight": "node scripts/require-governed-port.mjs",

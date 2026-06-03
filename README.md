@@ -24,6 +24,8 @@ Chinese companion and reference documents:
 - [docs/onboarding-existing-projects.zh-tw.md](docs/onboarding-existing-projects.zh-tw.md)
 - [docs/codex-local-state-governance.md](docs/codex-local-state-governance.md)
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
+- [docs/context-budget-governance.md](docs/context-budget-governance.md)
+- [docs/context-budget-governance.zh-tw.md](docs/context-budget-governance.zh-tw.md)
 - [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 
@@ -97,6 +99,12 @@ Build the local AGENTS instruction search artifacts:
 
 ```powershell
 npm run scan:agents
+```
+
+Audit observable local context-budget sources:
+
+```powershell
+npm run scan:context-budget
 ```
 
 Audit supplementation gaps for already-registered services:

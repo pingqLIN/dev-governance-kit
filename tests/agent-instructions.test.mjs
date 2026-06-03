@@ -51,8 +51,10 @@ test("agent instruction text index is queryable by scope, type, and evidence", a
   assert.match(text, /scope=subtree/);
   assert.match(text, /scope=task-request/);
   assert.match(text, /type=external-review-input/);
+  assert.match(text, /type=context-budget/);
   assert.match(text, /agent\.tool\.governed-port-preflight/);
   assert.match(text, /evidence=AGENTS\.md#UniText Coordination/);
+  assert.match(text, /evidence=AGENTS\.md#Context Budget Governance/);
 });
 
 test("agent instruction evidence anchors exist in AGENTS.md", async () => {
@@ -87,6 +89,22 @@ test("global-home planning responsibility is explicit and review-gated", async (
   assert.match(planning?.enforcement ?? "", /reviewed diff/);
   assert.equal(boundary?.layer, "global-home");
   assert.match(boundary?.requirement ?? "", /without copying host-specific/);
+});
+
+test("context budget governance is routed and lazy-loaded", async () => {
+  const registry = await loadRegistry();
+  const defaultRoute = registry.entries.find((entry) => entry.id === "agent.context.default-no-tool");
+  const lazySkill = registry.entries.find((entry) => entry.id === "agent.context.skill-lazy-loading");
+  const audit = registry.entries.find((entry) => entry.id === "agent.verify.context-budget-audit");
+
+  assert.equal(defaultRoute?.type, "context-budget");
+  assert.equal(defaultRoute?.layer, "global-home");
+  assert.match(defaultRoute?.requirement ?? "", /Default to no-tool/);
+  assert.match(defaultRoute?.enforcement ?? "", /L0 through L4/);
+  assert.equal(lazySkill?.type, "context-budget");
+  assert.match(lazySkill?.requirement ?? "", /compact skill trigger metadata/);
+  assert.equal(audit?.type, "verification");
+  assert.match(audit?.enforcement ?? "", /scan:context-budget/);
 });
 
 test("agent instruction registry rejects machine-local paths", async () => {
