@@ -5,7 +5,7 @@
   "routes": [
     {
       "id": "devgov-gov",
-      "serviceId": "devgov-governance-public-http",
+      "serviceId": "devgov-dashboard-http",
       "hostname": "gov.colorgeek.co",
       "tunnelId": "2fae5864-7df3-494f-aa92-5c34f5ffdbfd",
       "localHost": "127.0.0.1",
@@ -16,7 +16,22 @@
       "healthUrl": "https://gov.colorgeek.co/health",
       "status": "candidate",
       "source": "operator request; public route governance",
-      "notes": "Zero Trust Access app 260c1806-a0ae-491d-96c1-70f45df74cd7 protects this hostname. Origin health remains dependent on the local 127.0.0.1:3000 service being online."
+      "notes": "Zero Trust Access app 260c1806-a0ae-491d-96c1-70f45df74cd7 protects this hostname. Origin is the unified DevGov dashboard on local 127.0.0.1:3000."
+    },
+    {
+      "id": "devgov-dev",
+      "serviceId": "devgov-dashboard-http",
+      "hostname": "dev.colorgeek.co",
+      "tunnelId": "2fae5864-7df3-494f-aa92-5c34f5ffdbfd",
+      "localHost": "127.0.0.1",
+      "localPort": 3000,
+      "protocol": "http",
+      "exposureClass": "prod-protected",
+      "accessRequired": true,
+      "healthUrl": "https://dev.colorgeek.co/health",
+      "status": "candidate",
+      "source": "operator request; public route governance",
+      "notes": "Zero Trust protected DevGov alias for the unified dashboard origin on local 127.0.0.1:3000."
     },
     {
       "id": "codex-remote",
@@ -49,19 +64,19 @@
       "notes": "Retired with the ChatGPT Local-Files MCP path. Do not approve or recreate; removing the actual Cloudflare tunnel route requires a separate operator-approved cleanup step."
     },
     {
-      "id": "tb2-health-prod",
+      "id": "tb2-web-prod",
       "serviceId": "tb2-mcp-http",
-      "hostname": "tb2-health.colorgeek.co",
+      "hostname": "tb2.colorgeek.co",
       "tunnelId": "8f494f33-5983-4933-bb71-5812b56cad56",
       "localHost": "127.0.0.1",
       "localPort": 3189,
       "protocol": "http",
       "exposureClass": "public-health",
       "accessRequired": false,
-      "healthUrl": "https://tb2-health.colorgeek.co/health",
+      "healthUrl": "https://tb2.colorgeek.co/health",
       "status": "approved",
       "source": "tb2 PORTS.md; public route audit",
-      "notes": "TB2 public health route; expected response is a minimal status payload without MCP execution."
+      "notes": "TB2 public web health route; expected response is a minimal status payload without MCP execution."
     },
     {
       "id": "tb2-health-staging",

@@ -4,7 +4,7 @@ import https from "node:https";
 import path from "node:path";
 
 export const DASHBOARD_HOST = "127.0.0.1";
-export const DASHBOARD_PORT = 3101;
+export const DASHBOARD_PORT = 3000;
 export const DASHBOARD_URL = `http://${DASHBOARD_HOST}:${DASHBOARD_PORT}`;
 
 export async function loadDashboardState(root = ".") {
@@ -23,6 +23,10 @@ export async function loadDashboardState(root = ".") {
     entry.project === "devgov"
     && entry.service === "dashboard-http"
   ));
+  const webEntrypoints = buildWebEntrypoints({
+    dashboardPort,
+    publicRoutes: publicRoutes.routes
+  });
 
   return {
     app: {
@@ -39,7 +43,8 @@ export async function loadDashboardState(root = ".") {
       terminalProfiles: terminalProfiles.profiles.length,
       localAgents: localAgents.agents.length,
       apiKeys: apiKeys.entries.length,
-      agentInstructions: agentInstructions.entries.length
+      agentInstructions: agentInstructions.entries.length,
+      webEntrypoints: webEntrypoints.length
     },
     ports: ports.entries,
     startupEntries: startup.entries,
@@ -53,6 +58,7 @@ export async function loadDashboardState(root = ".") {
       itemTypes: agentInstructions.itemTypes,
       entries: agentInstructions.entries
     },
+    webEntrypoints,
     serviceTargets: buildServiceTargets({
       dashboardPort,
       publicRoutes: publicRoutes.routes,
@@ -60,6 +66,71 @@ export async function loadDashboardState(root = ".") {
       startupEntries: startup.entries
     })
   };
+}
+
+export function buildWebEntrypoints({ dashboardPort, publicRoutes = [] }) {
+  const entries = [];
+  if (dashboardPort) {
+    entries.push({
+      id: "devgov-dashboard-local",
+      project: "devgov",
+      label: "DevGov Dashboard",
+      stage: "local",
+      url: DASHBOARD_URL,
+      healthUrl: `${dashboardPort.protocol}://${dashboardPort.host}:${dashboardPort.port}/health`,
+      target: `${dashboardPort.host}:${dashboardPort.port}`,
+      exposureClass: dashboardPort.visibility,
+      accessRequired: false,
+      status: "approved",
+      notes: dashboardPort.notes
+    });
+  }
+
+  for (const route of publicRoutes) {
+    entries.push({
+      id: route.id,
+      project: webEntrypointProject(route),
+      label: route.hostname,
+      stage: inferRouteStage(route),
+      url: route.healthUrl,
+      healthUrl: route.healthUrl,
+      target: `${route.localHost}:${route.localPort}`,
+      exposureClass: route.exposureClass,
+      accessRequired: route.accessRequired,
+      status: route.status,
+      notes: route.notes
+    });
+  }
+
+  const rank = new Map([
+    ["devgov", 0],
+    ["tb2", 1]
+  ]);
+  return entries.sort((left, right) => (
+    (rank.get(left.project) ?? 9) - (rank.get(right.project) ?? 9)
+    || left.project.localeCompare(right.project)
+    || left.label.localeCompare(right.label)
+  ));
+}
+
+function webEntrypointProject(route) {
+  const text = `${route.id} ${route.serviceId} ${route.hostname}`.toLowerCase();
+  if (text.includes("tb2")) return "tb2";
+  if (text.includes("devgov")) return "devgov";
+  if (text.includes("codex-remote")) return "codex-remote";
+  if (text.includes("codex-calendar-todo")) return "codex-calendar-todo";
+  if (text.includes("taste")) return "taste";
+  if (text.includes("lmstudio") || text.includes("lm-studio")) return "lm-studio";
+  return route.serviceId;
+}
+
+function inferRouteStage(route) {
+  const text = `${route.id} ${route.hostname} ${route.notes}`.toLowerCase();
+  if (text.includes("staging")) return "staging";
+  if (text.includes("prod")) return "prod";
+  if (route.exposureClass === "public-health") return "public-health";
+  if (route.exposureClass === "staging-private") return "staging";
+  return route.exposureClass;
 }
 
 export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [], startupEntries = [] }) {
@@ -412,7 +483,13 @@ export function renderDashboardHtml(state) {
       height: 14px;
       width: 14px;
     }
-    .theme-toggle {
+    .header-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .theme-toggle, .language-toggle {
       border: 2px solid var(--ink);
       background: var(--panel);
       justify-content: center;
@@ -420,10 +497,10 @@ export function renderDashboardHtml(state) {
       padding: 7px 12px;
       width: auto;
     }
-    .theme-toggle:hover, .action-button:hover, nav button:hover {
+    .theme-toggle:hover, .language-toggle:hover, .action-button:hover, nav button:hover {
       background: var(--panel-raised);
     }
-    .theme-toggle:focus-visible, button:focus-visible, input:focus-visible, a:focus-visible {
+    .theme-toggle:focus-visible, .language-toggle:focus-visible, button:focus-visible, input:focus-visible, a:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 2px;
     }
@@ -660,6 +737,7 @@ export function renderDashboardHtml(state) {
     @media (max-width: 820px) {
       .mast, main { grid-template-columns: 1fr; }
       .header-actions { justify-items: start; min-width: 0; }
+      .header-buttons { justify-content: flex-start; }
       nav { position: static; }
       .strip { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
       .status { justify-content: start; }
@@ -680,25 +758,29 @@ export function renderDashboardHtml(state) {
   <div class="mast">
     <div>
       <h1>DevGov</h1>
-      <div class="muted">Local governance console for ports, startup automation, public routes, and workspace readiness.</div>
+      <div class="muted" data-i18n="subtitle">本機治理主控台：集中檢查 ports、startup automation、public routes 與 workspace readiness。</div>
     </div>
     <div class="header-actions">
-      <button class="theme-toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode</button>
+      <div class="header-buttons">
+        <button class="language-toggle" type="button" id="language-toggle" aria-pressed="true">English</button>
+        <button class="theme-toggle" type="button" id="theme-toggle" aria-pressed="false">深色模式</button>
+      </div>
       <div class="status"><span class="dot"></span><span>${escapeHtml(state.app.url)}</span></div>
     </div>
   </div>
 </header>
 <main>
-  <nav aria-label="Dashboard views">
-    <button data-view="overview" aria-selected="true"><span class="glyph">01</span> Overview</button>
-    <button data-view="ports"><span class="glyph">02</span> Ports</button>
-    <button data-view="agents"><span class="glyph">03</span> Local Agents</button>
-    <button data-view="startup"><span class="glyph">04</span> Startup</button>
-    <button data-view="routes"><span class="glyph">05</span> Routes</button>
-    <button data-view="terminal"><span class="glyph">06</span> Terminal</button>
-    <button data-view="api-keys"><span class="glyph">07</span> API Keys</button>
-    <button data-view="agent-instructions"><span class="glyph">08</span> Agent Instructions</button>
-    <button data-view="service-status"><span class="glyph">09</span> Service Status</button>
+  <nav aria-label="儀表板檢視">
+    <button data-view="overview" aria-selected="true"><span class="glyph">01</span> <span data-i18n="nav.overview">總覽</span></button>
+    <button data-view="ports"><span class="glyph">02</span> <span data-i18n="nav.ports">Ports</span></button>
+    <button data-view="agents"><span class="glyph">03</span> <span data-i18n="nav.agents">本機 Agents</span></button>
+    <button data-view="startup"><span class="glyph">04</span> <span data-i18n="nav.startup">啟動治理</span></button>
+    <button data-view="routes"><span class="glyph">05</span> <span data-i18n="nav.routes">公開路由</span></button>
+    <button data-view="terminal"><span class="glyph">06</span> <span data-i18n="nav.terminal">Terminal Profiles</span></button>
+    <button data-view="api-keys"><span class="glyph">07</span> <span data-i18n="nav.apiKeys">API Key 治理</span></button>
+    <button data-view="agent-instructions"><span class="glyph">08</span> <span data-i18n="nav.agentInstructions">Agent Instructions</span></button>
+    <button data-view="web-entrypoints"><span class="glyph">09</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
+    <button data-view="service-status"><span class="glyph">10</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -706,43 +788,50 @@ export function renderDashboardHtml(state) {
       <table id="dashboard-port"></table>
     </section>
     <section id="ports" class="table-view">
-      <div class="toolbar"><h2>Port Registry</h2><input data-filter="ports" placeholder="Filter ports"></div>
+      <div class="toolbar"><h2 data-i18n="sections.ports">Port Registry</h2><input data-filter="ports" placeholder="篩選 ports"></div>
       <table data-table="ports"></table>
     </section>
     <section id="agents" class="table-view">
-      <div class="toolbar"><h2>Local Service Agents</h2><input data-filter="agents" placeholder="Filter local agents"></div>
+      <div class="toolbar"><h2 data-i18n="sections.agents">本機服務 Agents</h2><input data-filter="agents" placeholder="篩選本機 agents"></div>
       <table data-table="agents"></table>
     </section>
     <section id="startup" class="table-view">
-      <div class="toolbar"><h2>Startup Governance</h2><input data-filter="startup" placeholder="Filter startup"></div>
+      <div class="toolbar"><h2 data-i18n="sections.startup">啟動治理</h2><input data-filter="startup" placeholder="篩選啟動項目"></div>
       <table data-table="startup"></table>
     </section>
     <section id="routes" class="table-view">
-      <div class="toolbar"><h2>Public Routes</h2><input data-filter="routes" placeholder="Filter routes"></div>
+      <div class="toolbar"><h2 data-i18n="sections.routes">公開路由</h2><input data-filter="routes" placeholder="篩選公開路由"></div>
       <table data-table="routes"></table>
     </section>
     <section id="terminal" class="table-view">
-      <div class="toolbar"><h2>Terminal Profiles</h2><input data-filter="terminal" placeholder="Filter terminal"></div>
+      <div class="toolbar"><h2 data-i18n="sections.terminal">Terminal Profiles</h2><input data-filter="terminal" placeholder="篩選 terminal"></div>
       <table data-table="terminal"></table>
     </section>
     <section id="api-keys" class="table-view">
-      <div class="toolbar"><h2>API Key Governance</h2><input data-filter="api-keys" placeholder="Filter API keys"></div>
+      <div class="toolbar"><h2 data-i18n="sections.apiKeys">API Key 治理</h2><input data-filter="api-keys" placeholder="篩選 API keys"></div>
       <table data-table="api-keys"></table>
     </section>
     <section id="agent-instructions" class="table-view">
-      <div class="toolbar"><h2>Agent Instructions</h2><input data-filter="agent-instructions" placeholder="Filter agent instructions"></div>
+      <div class="toolbar"><h2 data-i18n="sections.agentInstructions">Agent Instructions</h2><input data-filter="agent-instructions" placeholder="篩選 agent instructions"></div>
       <div class="guidance" id="agent-storage-guidance"></div>
       <table data-table="agent-instructions"></table>
     </section>
+    <section id="web-entrypoints" class="table-view">
+      <div class="toolbar"><h2 data-i18n="sections.webEntrypoints">Web 入口</h2><input data-filter="web-entrypoints" placeholder="篩選 web 入口"></div>
+      <div class="guidance">
+        <div><strong data-i18n="webEntrypoints.label">TB2 entry:</strong> <span data-i18n="webEntrypoints.body">TB2 prod/staging health-only public web entries are listed here with the unified DevGov dashboard links. Route health is checked in Service Status.</span></div>
+      </div>
+      <table data-table="web-entrypoints"></table>
+    </section>
     <section id="service-status" class="table-view">
       <div class="toolbar">
-        <h2>Network Service Status</h2>
+        <h2 data-i18n="sections.serviceStatus">Network Service Status</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
-          <input data-filter="service-status" placeholder="Filter services">
+          <input data-filter="service-status" placeholder="篩選服務">
         </div>
       </div>
       <div class="guidance">
-        <div><strong>Restart policy:</strong> the Quick Test column runs safe health checks and reports Doctor/restart readiness. One-click restart stays disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.</div>
+        <div><strong data-i18n="restartPolicy.label">Restart policy:</strong> <span data-i18n="restartPolicy.body">Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。一鍵 restart 會維持停用，直到每個 service 都有已審查的 restart command、backup/rollback expectation 與 permission boundary。</span></div>
       </div>
       <table data-table="service-status"></table>
     </section>
@@ -750,12 +839,236 @@ export function renderDashboardHtml(state) {
 </main>
 <script>
 const state = ${stateJson};
+const messages = {
+  en: {
+    language: { code: 'en', htmlLang: 'en', switchLabel: '繁體中文', ariaPressed: 'false' },
+    subtitle: 'Local governance console for ports, startup automation, public routes, and workspace readiness.',
+    theme: { dark: 'Dark mode', light: 'Light mode' },
+    nav: {
+      overview: 'Overview',
+      ports: 'Ports',
+      agents: 'Local Agents',
+      startup: 'Startup',
+      routes: 'Routes',
+      terminal: 'Terminal',
+      apiKeys: 'API Keys',
+      agentInstructions: 'Agent Instructions',
+      webEntrypoints: 'Web Entrypoints',
+      serviceStatus: 'Service Status'
+    },
+    sections: {
+      ports: 'Port Registry',
+      agents: 'Local Service Agents',
+      startup: 'Startup Governance',
+      routes: 'Public Routes',
+      terminal: 'Terminal Profiles',
+      apiKeys: 'API Key Governance',
+      agentInstructions: 'Agent Instructions',
+      webEntrypoints: 'Web Entrypoints',
+      serviceStatus: 'Network Service Status'
+    },
+    placeholders: {
+      ports: 'Filter ports',
+      agents: 'Filter local agents',
+      startup: 'Filter startup',
+      routes: 'Filter routes',
+      terminal: 'Filter terminal',
+      apiKeys: 'Filter API keys',
+      agentInstructions: 'Filter agent instructions',
+      webEntrypoints: 'Filter web entrypoints',
+      serviceStatus: 'Filter services'
+    },
+    metrics: {
+      ports: 'Ports',
+      agents: 'Agents',
+      startup: 'Startup',
+      routes: 'Routes',
+      profiles: 'Profiles',
+      apiKeys: 'API Keys',
+      instructions: 'Instructions',
+      webEntrypoints: 'Web Entrypoints'
+    },
+    webEntrypoints: {
+      label: 'TB2 entry:',
+      body: 'TB2 prod/staging health-only public web entries are listed here with the unified DevGov dashboard links. Route health is checked in Service Status.'
+    },
+    restartPolicy: {
+      label: 'Restart policy:',
+      body: 'the Quick Test column runs safe health checks and reports Doctor/restart readiness. One-click restart stays disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.'
+    },
+    labels: {
+      dashboard: 'Dashboard',
+      socket: 'Socket',
+      policy: 'Policy',
+      notes: 'Notes',
+      missingDashboard: 'Dashboard port entry missing',
+      project: 'Project',
+      service: 'Service',
+      visibility: 'Visibility',
+      agent: 'Agent',
+      kind: 'Kind',
+      health: 'Health',
+      startup: 'Startup',
+      status: 'Status',
+      id: 'ID',
+      trigger: 'Trigger',
+      script: 'Script',
+      purpose: 'Purpose',
+      hostname: 'Hostname',
+      healthUrl: 'Health URL',
+      localTarget: 'Local Target',
+      exposure: 'Exposure',
+      access: 'Access',
+      name: 'Name',
+      assetPolicy: 'Asset Policy',
+      variable: 'Variable',
+      storage: 'Storage',
+      settings: 'Settings',
+      type: 'Type',
+      layer: 'Layer',
+      requirement: 'Requirement',
+      evidence: 'Evidence',
+      entryUrl: 'Entry URL',
+      stage: 'Stage',
+      endpoint: 'Endpoint',
+      quickTest: 'Quick Test',
+      lastCheck: 'Last Check',
+      runtimeSource: 'Runtime source',
+      canonicalRegistry: 'Canonical registry',
+      generatedJson: 'Generated local JSON',
+      generatedText: 'Generated text index',
+      unitextEndpoint: 'UniText query endpoint',
+      required: 'required',
+      notRequired: 'not required',
+      pending: 'pending',
+      doctor: 'Doctor',
+      restart: 'Restart',
+      readiness: 'Readiness'
+    }
+  },
+  zhTw: {
+    language: { code: 'zhTw', htmlLang: 'zh-Hant', switchLabel: 'English', ariaPressed: 'true' },
+    subtitle: '本機治理主控台：集中檢查 ports、startup automation、public routes 與 workspace readiness。',
+    theme: { dark: '深色模式', light: '淺色模式' },
+    nav: {
+      overview: '總覽',
+      ports: 'Ports',
+      agents: '本機 Agents',
+      startup: '啟動治理',
+      routes: '公開路由',
+      terminal: 'Terminal Profiles',
+      apiKeys: 'API Key 治理',
+      agentInstructions: 'Agent Instructions',
+      webEntrypoints: 'Web 入口',
+      serviceStatus: '服務狀態'
+    },
+    sections: {
+      ports: 'Port Registry',
+      agents: '本機服務 Agents',
+      startup: '啟動治理',
+      routes: '公開路由',
+      terminal: 'Terminal Profiles',
+      apiKeys: 'API Key 治理',
+      agentInstructions: 'Agent Instructions',
+      webEntrypoints: 'Web 入口',
+      serviceStatus: 'Network Service Status'
+    },
+    placeholders: {
+      ports: '篩選 ports',
+      agents: '篩選本機 agents',
+      startup: '篩選啟動項目',
+      routes: '篩選公開路由',
+      terminal: '篩選 terminal',
+      apiKeys: '篩選 API keys',
+      agentInstructions: '篩選 agent instructions',
+      webEntrypoints: '篩選 web 入口',
+      serviceStatus: '篩選服務'
+    },
+    metrics: {
+      ports: 'Ports',
+      agents: 'Agents',
+      startup: '啟動項目',
+      routes: 'Routes',
+      profiles: 'Profiles',
+      apiKeys: 'API Keys',
+      instructions: 'Instructions',
+      webEntrypoints: 'Web 入口'
+    },
+    webEntrypoints: {
+      label: 'TB2 entry:',
+      body: 'TB2 prod/staging health-only public web entries 會在這裡直接列出，並和 DevGov dashboard 入口放在同一個視圖。實際 route health 請看 Service Status。'
+    },
+    restartPolicy: {
+      label: 'Restart policy:',
+      body: 'Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。一鍵 restart 會維持停用，直到每個 service 都有已審查的 restart command、backup/rollback expectation 與 permission boundary。'
+    },
+    labels: {
+      dashboard: 'Dashboard',
+      socket: 'Socket',
+      policy: 'Policy',
+      notes: 'Notes',
+      missingDashboard: '找不到 dashboard port entry',
+      project: 'Project',
+      service: 'Service',
+      visibility: 'Visibility',
+      agent: 'Agent',
+      kind: 'Kind',
+      health: 'Health',
+      startup: 'Startup',
+      status: 'Status',
+      id: 'ID',
+      trigger: 'Trigger',
+      script: 'Script',
+      purpose: 'Purpose',
+      hostname: 'Hostname',
+      healthUrl: 'Health URL',
+      localTarget: 'Local Target',
+      exposure: 'Exposure',
+      access: 'Access',
+      name: 'Name',
+      assetPolicy: 'Asset Policy',
+      variable: 'Variable',
+      storage: 'Storage',
+      settings: 'Settings',
+      type: 'Type',
+      layer: 'Layer',
+      requirement: 'Requirement',
+      evidence: 'Evidence',
+      entryUrl: 'Entry URL',
+      stage: 'Stage',
+      endpoint: 'Endpoint',
+      quickTest: 'Quick Test',
+      lastCheck: 'Last Check',
+      runtimeSource: 'Runtime source',
+      canonicalRegistry: 'Canonical registry',
+      generatedJson: 'Generated local JSON',
+      generatedText: 'Generated text index',
+      unitextEndpoint: 'UniText query endpoint',
+      required: 'required',
+      notRequired: 'not required',
+      pending: 'pending',
+      doctor: 'Doctor',
+      restart: 'Restart',
+      readiness: 'Readiness'
+    }
+  }
+};
+let currentLanguage = localStorage.getItem('devgov-language') === 'en' ? 'en' : 'zhTw';
+let serviceStatusRows = [];
 const themeButton = document.getElementById('theme-toggle');
+const languageButton = document.getElementById('language-toggle');
 const savedTheme = localStorage.getItem('devgov-theme');
 if (savedTheme === 'light' || savedTheme === 'dark') {
   document.documentElement.dataset.theme = savedTheme;
 }
 syncThemeButton();
+syncI18n();
+languageButton.addEventListener('click', () => {
+  currentLanguage = currentLanguage === 'zhTw' ? 'en' : 'zhTw';
+  localStorage.setItem('devgov-language', currentLanguage);
+  syncI18n();
+  renderAll();
+});
 themeButton.addEventListener('click', () => {
   const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   const next = current === 'dark' ? 'light' : 'dark';
@@ -769,25 +1082,7 @@ buttons.forEach(button => button.addEventListener('click', () => {
   buttons.forEach(item => item.setAttribute('aria-selected', String(item === button)));
   views.forEach(view => view.classList.toggle('active', view.id === button.dataset.view));
 }));
-document.getElementById('metrics').innerHTML = [
-  ['Ports', state.summary.ports],
-  ['Agents', state.summary.localAgents],
-  ['Startup', state.summary.startupEntries],
-  ['Routes', state.summary.publicRoutes],
-  ['Profiles', state.summary.terminalProfiles],
-  ['API Keys', state.summary.apiKeys],
-  ['Instructions', state.summary.agentInstructions]
-].map(([label, value]) => '<div class="metric"><strong>' + esc(value) + '</strong><span>' + esc(label) + '</span></div>').join('');
-renderDashboardPort();
-renderPorts('');
-renderAgents('');
-renderStartup('');
-renderRoutes('');
-renderTerminal('');
-renderApiKeys('');
-renderAgentInstructions('');
-renderAgentStorageGuidance();
-renderServiceStatusTable('', state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' }, quickTest: { ...target.quickTest, state: 'CHECKING' } })));
+renderAll();
 refreshServiceStatus();
 document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
@@ -799,56 +1094,97 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
     if (input.dataset.filter === 'terminal') renderTerminal(value);
     if (input.dataset.filter === 'api-keys') renderApiKeys(value);
     if (input.dataset.filter === 'agent-instructions') renderAgentInstructions(value);
+    if (input.dataset.filter === 'web-entrypoints') renderWebEntrypoints(value);
     if (input.dataset.filter === 'service-status') renderServiceStatusTable(value, serviceStatusRows);
   });
 });
+function renderAll() {
+  document.getElementById('metrics').innerHTML = [
+    [t('metrics.ports'), state.summary.ports],
+    [t('metrics.agents'), state.summary.localAgents],
+    [t('metrics.startup'), state.summary.startupEntries],
+    [t('metrics.routes'), state.summary.publicRoutes],
+    [t('metrics.profiles'), state.summary.terminalProfiles],
+    [t('metrics.apiKeys'), state.summary.apiKeys],
+    [t('metrics.instructions'), state.summary.agentInstructions],
+    [t('metrics.webEntrypoints'), state.summary.webEntrypoints]
+  ].map(([label, value]) => '<div class="metric"><strong>' + esc(value) + '</strong><span>' + esc(label) + '</span></div>').join('');
+  renderDashboardPort();
+  renderPorts(filterValue('ports'));
+  renderAgents(filterValue('agents'));
+  renderStartup(filterValue('startup'));
+  renderRoutes(filterValue('routes'));
+  renderTerminal(filterValue('terminal'));
+  renderApiKeys(filterValue('api-keys'));
+  renderAgentInstructions(filterValue('agent-instructions'));
+  renderWebEntrypoints(filterValue('web-entrypoints'));
+  renderAgentStorageGuidance();
+  const rows = serviceStatusRows.length
+    ? serviceStatusRows
+    : state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' }, quickTest: { ...target.quickTest, state: 'CHECKING' } }));
+  renderServiceStatusTable(filterValue('service-status'), rows);
+}
+function filterValue(name) {
+  return document.querySelector('input[data-filter="' + name + '"]')?.value.toLowerCase() || '';
+}
 function renderDashboardPort() {
   const entry = state.dashboardPort;
   document.getElementById('dashboard-port').innerHTML = entry
-    ? '<tr><th>Dashboard</th><th>Socket</th><th>Policy</th><th>Notes</th></tr><tr><td>' + esc(entry.project) + '</td><td><code>' + esc(entry.host + ':' + entry.port) + '</code></td><td>' + pill(entry.visibility) + '</td><td>' + esc(entry.notes) + '</td></tr>'
-    : '<tr><td>Dashboard port entry missing</td></tr>';
+    ? '<tr><th>' + tEsc('labels.dashboard') + '</th><th>' + tEsc('labels.socket') + '</th><th>' + tEsc('labels.policy') + '</th><th>' + tEsc('labels.notes') + '</th></tr><tr><td>' + esc(entry.project) + '</td><td><code>' + esc(entry.host + ':' + entry.port) + '</code></td><td>' + pill(entry.visibility) + '</td><td>' + esc(entry.notes) + '</td></tr>'
+    : '<tr><td>' + tEsc('labels.missingDashboard') + '</td></tr>';
 }
 function renderPorts(query) {
   const rows = state.ports.filter(row => match(row, query));
-  renderTable('ports', ['Project', 'Service', 'Socket', 'Visibility', 'Notes'], rows.map(row => [textCell(row.project), textCell(row.service), '<code>' + esc(row.host + ':' + row.port) + '</code>', pill(row.visibility), linkify(row.notes)]));
+  renderTable('ports', [t('labels.project'), t('labels.service'), t('labels.socket'), t('labels.visibility'), t('labels.notes')], rows.map(row => [textCell(row.project), textCell(row.service), '<code>' + esc(row.host + ':' + row.port) + '</code>', pill(row.visibility), linkify(row.notes)]));
 }
 function renderAgents(query) {
   const rows = state.localAgents.filter(row => match(row, query));
-  renderTable('agents', ['Agent', 'Kind', 'Health', 'Startup', 'Status'], rows.map(row => [textCell(row.displayName), textCell(row.kind), linkify(row.healthUrl), fileRef(row.startupRef), pill(row.status)]));
+  renderTable('agents', [t('labels.agent'), t('labels.kind'), t('labels.health'), t('labels.startup'), t('labels.status')], rows.map(row => [textCell(row.displayName), textCell(row.kind), linkify(row.healthUrl), fileRef(row.startupRef), pill(row.status)]));
 }
 function renderStartup(query) {
   const rows = state.startupEntries.filter(row => match(row, query));
-  renderTable('startup', ['ID', 'Trigger', 'Status', 'Script', 'Purpose'], rows.map(row => [textCell(row.id), textCell(row.trigger), pill(row.status), fileRef(row.scriptRef), linkify(row.purpose)]));
+  renderTable('startup', [t('labels.id'), t('labels.trigger'), t('labels.status'), t('labels.script'), t('labels.purpose')], rows.map(row => [textCell(row.id), textCell(row.trigger), pill(row.status), fileRef(row.scriptRef), linkify(row.purpose)]));
 }
 function renderRoutes(query) {
   const rows = state.publicRoutes.filter(row => match(row, query));
-  renderTable('routes', ['Hostname', 'Health URL', 'Local Target', 'Exposure', 'Access', 'Status'], rows.map(row => [linkify('https://' + row.hostname), linkify(row.healthUrl), '<code>' + esc(row.localHost + ':' + row.localPort) + '</code>', textCell(row.exposureClass), row.accessRequired ? 'required' : 'not required', pill(row.status)]));
+  renderTable('routes', [t('labels.hostname'), t('labels.healthUrl'), t('labels.localTarget'), t('labels.exposure'), t('labels.access'), t('labels.status')], rows.map(row => [linkify('https://' + row.hostname), linkify(row.healthUrl), '<code>' + esc(row.localHost + ':' + row.localPort) + '</code>', textCell(row.exposureClass), row.accessRequired ? tEsc('labels.required') : tEsc('labels.notRequired'), pill(row.status)]));
 }
 function renderTerminal(query) {
   const rows = state.terminalProfiles.filter(row => match(row, query));
-  renderTable('terminal', ['ID', 'Name', 'Asset Policy', 'Status', 'Notes'], rows.map(row => [textCell(row.id), textCell(row.name), textCell(row.assetPolicy), pill(row.status), linkify(row.notes)]));
+  renderTable('terminal', [t('labels.id'), t('labels.name'), t('labels.assetPolicy'), t('labels.status'), t('labels.notes')], rows.map(row => [textCell(row.id), textCell(row.name), textCell(row.assetPolicy), pill(row.status), linkify(row.notes)]));
 }
 function renderApiKeys(query) {
   const rows = state.apiKeys.filter(row => match(row, query));
-  renderTable('api-keys', ['Variable', 'Service', 'Storage', 'Settings', 'Status'], rows.map(row => [textCell(row.variableName), textCell(row.service), textCell(row.storageLocation), linkify(row.settingsUrl), pill(row.status)]));
+  renderTable('api-keys', [t('labels.variable'), t('labels.service'), t('labels.storage'), t('labels.settings'), t('labels.status')], rows.map(row => [textCell(row.variableName), textCell(row.service), textCell(row.storageLocation), linkify(row.settingsUrl), pill(row.status)]));
 }
 function renderAgentInstructions(query) {
   const rows = state.agentInstructions.entries.filter(row => match(row, query));
-  renderTable('agent-instructions', ['ID', 'Type', 'Layer', 'Requirement', 'Evidence', 'Status'], rows.map(row => [textCell(row.id), textCell(row.type), textCell(row.layer), linkify(row.requirement), fileRef(row.evidence), pill(row.status)]));
+  renderTable('agent-instructions', [t('labels.id'), t('labels.type'), t('labels.layer'), t('labels.requirement'), t('labels.evidence'), t('labels.status')], rows.map(row => [textCell(row.id), textCell(row.type), textCell(row.layer), linkify(row.requirement), fileRef(row.evidence), pill(row.status)]));
 }
-let serviceStatusRows = [];
+function renderWebEntrypoints(query) {
+  const rows = state.webEntrypoints.filter(row => match(row, query));
+  renderTable('web-entrypoints', [t('labels.project'), t('labels.stage'), t('labels.entryUrl'), t('labels.health'), t('labels.localTarget'), t('labels.access'), t('labels.status')], rows.map(row => [
+    textCell(row.project),
+    textCell(row.stage),
+    linkify(row.url),
+    linkify(row.healthUrl),
+    '<code>' + esc(row.target) + '</code>',
+    row.accessRequired ? tEsc('labels.required') : tEsc('labels.notRequired'),
+    pill(row.status)
+  ]));
+}
 function renderAgentStorageGuidance() {
   document.getElementById('agent-storage-guidance').innerHTML = [
-    ['Runtime source', fileRef(state.agentInstructions.sourceOfTruth)],
-    ['Canonical registry', fileRef('registry/agent-instructions.registry.json')],
-    ['Generated local JSON', fileRef('reports/agent-instructions-index.json')],
-    ['Generated text index', fileRef('reports/agent-instructions-index.txt')],
-    ['UniText query endpoint', internalLink('/api/unitext-agent-instructions')]
+    [t('labels.runtimeSource'), fileRef(state.agentInstructions.sourceOfTruth)],
+    [t('labels.canonicalRegistry'), fileRef('registry/agent-instructions.registry.json')],
+    [t('labels.generatedJson'), fileRef('reports/agent-instructions-index.json')],
+    [t('labels.generatedText'), fileRef('reports/agent-instructions-index.txt')],
+    [t('labels.unitextEndpoint'), internalLink('/api/unitext-agent-instructions')]
   ].map(([label, value]) => '<div class="guidance-row"><strong>' + esc(label) + '</strong><span>' + value + '</span></div>').join('');
 }
 function renderServiceStatusTable(query, rows) {
   const filtered = rows.filter(row => match(row, query));
-  renderTable('service-status', ['Service', 'Endpoint', 'Quick Test', 'Last Check'], filtered.map(row => [
+  renderTable('service-status', [t('labels.service'), t('labels.endpoint'), t('labels.quickTest'), t('labels.lastCheck')], filtered.map(row => [
     renderServiceCell(row),
     renderEndpointCell(row),
     renderQuickTestCell(row),
@@ -868,10 +1204,10 @@ async function refreshServiceStatus() {
 }
 function renderQuickTestCell(row) {
   return '<div class="check-grid">'
-    + checkRow('Health', row.quickTest?.state || row.live?.state || 'CHECKING')
-    + checkRow('Doctor', row.doctor?.state || 'MISSING', row.doctor?.ref)
-    + checkRow('Restart', row.restart?.state || 'MISSING', row.restart?.ref)
-    + checkRow('Readiness', row.controlReadiness || 'BLOCKED')
+    + checkRow(t('labels.health'), row.quickTest?.state || row.live?.state || 'CHECKING')
+    + checkRow(t('labels.doctor'), row.doctor?.state || 'MISSING', row.doctor?.ref)
+    + checkRow(t('labels.restart'), row.restart?.state || 'MISSING', row.restart?.ref)
+    + checkRow(t('labels.readiness'), row.controlReadiness || 'BLOCKED')
     + '</div>';
 }
 function checkRow(label, state, ref) {
@@ -889,7 +1225,7 @@ function renderEndpointCell(row) {
 }
 function renderLastCheckCell(row) {
   if (!row.live?.checkedAt) {
-    return '<div class="last-check-cell"><span>pending</span></div>';
+    return '<div class="last-check-cell"><span>' + tEsc('labels.pending') + '</span></div>';
   }
   return '<div class="last-check-cell"><span>' + esc(row.live.checkedAt) + '</span>'
     + (row.live.statusCode ? '<span class="inline-meta">status=' + esc(row.live.statusCode) + '</span>' : '')
@@ -949,10 +1285,48 @@ function localFileTarget(value) {
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
 }
+function t(path) {
+  const parts = path.split('.');
+  let value = messages[currentLanguage];
+  for (const part of parts) value = value?.[part];
+  if (value !== undefined) return value;
+  value = messages.en;
+  for (const part of parts) value = value?.[part];
+  return value ?? path;
+}
+function tEsc(path) {
+  return esc(t(path));
+}
+function syncI18n() {
+  const language = messages[currentLanguage].language;
+  document.documentElement.lang = language.htmlLang;
+  languageButton.textContent = language.switchLabel;
+  languageButton.setAttribute('aria-pressed', language.ariaPressed);
+  document.querySelector('nav')?.setAttribute('aria-label', currentLanguage === 'zhTw' ? '儀表板檢視' : 'Dashboard views');
+  document.querySelectorAll('[data-i18n]').forEach((node) => {
+    node.textContent = t(node.dataset.i18n);
+  });
+  const placeholders = messages[currentLanguage].placeholders;
+  for (const [name, text] of Object.entries({
+    ports: placeholders.ports,
+    agents: placeholders.agents,
+    startup: placeholders.startup,
+    routes: placeholders.routes,
+    terminal: placeholders.terminal,
+    'api-keys': placeholders.apiKeys,
+    'agent-instructions': placeholders.agentInstructions,
+    'web-entrypoints': placeholders.webEntrypoints,
+    'service-status': placeholders.serviceStatus
+  })) {
+    const input = document.querySelector('input[data-filter="' + name + '"]');
+    if (input) input.placeholder = text;
+  }
+  syncThemeButton();
+}
 function syncThemeButton() {
   const effective = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   themeButton.setAttribute('aria-pressed', String(effective === 'dark'));
-  themeButton.textContent = effective === 'dark' ? 'Light mode' : 'Dark mode';
+  themeButton.textContent = effective === 'dark' ? t('theme.light') : t('theme.dark');
 }
 </script>
 </body>

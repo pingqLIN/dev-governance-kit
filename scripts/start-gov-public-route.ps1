@@ -33,7 +33,7 @@ if (-not (Test-Path -LiteralPath $CloudflaredConfig)) {
 
 if (-not (Test-HttpOk -Url $OriginUrl)) {
   Start-Process -FilePath "node" `
-    -ArgumentList @("scripts/serve-dashboard.mjs", "--port", "3000") `
+    -ArgumentList @("scripts/serve-dashboard.mjs") `
     -WorkingDirectory $RepoRoot `
     -WindowStyle Hidden
 }

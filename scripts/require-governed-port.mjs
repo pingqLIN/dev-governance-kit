@@ -157,7 +157,7 @@ Options:
   --json                  Print machine-readable output.
 
 Examples:
-  node scripts/require-governed-port.mjs --project devgov --service dashboard-http --host 127.0.0.1 --port 3101
+  node scripts/require-governed-port.mjs --project devgov --service dashboard-http --host 127.0.0.1 --port 3000
   node scripts/require-governed-port.mjs --project my-app --service web-http -- npm run dev:raw
 `);
 }

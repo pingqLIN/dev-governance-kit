@@ -319,22 +319,30 @@ test("dashboard renders canonical DevGov registry state", async () => {
   const html = renderDashboardHtml(state);
 
   assert.equal(state.app.name, "DevGov");
-  assert.equal(state.dashboardPort.port, 3101);
+  assert.equal(state.dashboardPort.port, 3000);
   assert.ok(state.localAgents.some((agent) => agent.id === "local-archive-maintainer"));
   assert.equal(state.summary.agentInstructions, state.agentInstructions.entries.length);
   assert.ok(state.agentInstructions.entries.some((entry) => entry.id === "agent.authority.single-runtime-source"));
   assert.ok(state.serviceTargets.some((target) => target.id === "devgov-dashboard"));
+  assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2.colorgeek.co/health"));
+  assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2-health-staging.colorgeek.co/health"));
   assert.match(html, /DevGov Dashboard/);
+  assert.match(html, /本機治理主控台/);
+  assert.match(html, /總覽/);
+  assert.match(html, /服務狀態/);
+  assert.match(html, /English/);
   assert.match(html, /Local Service Agents/);
   assert.match(html, /API Key Governance/);
   assert.match(html, /Agent Instructions/);
   assert.match(html, /Service Status/);
+  assert.match(html, /Web 入口/);
+  assert.match(html, /tb2\.colorgeek\.co\/health/);
   assert.match(html, /Quick Test/);
   assert.doesNotMatch(html, /id="refresh-status"/);
   assert.match(html, /\/file\?path=/);
   assert.match(html, /\/api\/unitext-agent-instructions/);
   assert.match(html, /agent\.authority\.single-runtime-source/);
-  assert.match(html, /127\.0\.0\.1:3101/);
+  assert.match(html, /127\.0\.0\.1:3000/);
 });
 
 test("dashboard exposes UniText query records and service targets", async () => {

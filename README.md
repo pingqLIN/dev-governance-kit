@@ -126,7 +126,7 @@ npm run doctor:repair
 Require a service to use its governed registry port before starting it:
 
 ```powershell
-npm run port:preflight -- --project devgov --service dashboard-http --host 127.0.0.1 --port 3101 --protocol http
+npm run port:preflight -- --project devgov --service dashboard-http --host 127.0.0.1 --port 3000 --protocol http
 ```
 
 Use the same gate to launch a reviewed raw command only after the registry and TCP availability checks pass. The child process receives `HOST`, `PORT`, `DEVGOV_HOST`, `DEVGOV_PORT`, and related metadata from the registry:
@@ -138,7 +138,7 @@ npm run port:preflight -- --project my-app --service web-http -- npm run dev:raw
 Check ad hoc TCP availability when no registry entry is being launched:
 
 ```powershell
-node templates/check-ports.mjs 3101,3201
+node templates/check-ports.mjs 3000,3201
 ```
 
 ## Port Ranges
@@ -155,12 +155,11 @@ Reserved DevGov service:
 
 | Service | Host | Port | Notes |
 |---|---|---:|---|
-| dashboard-http | `127.0.0.1` | `3101` | Long-lived loopback dashboard. The server fails fast if this port is occupied. |
-| governance-public-http | `127.0.0.1` | `3000` | Zero Trust protected `gov.colorgeek.co` origin. Startup uses a reviewed on-demand helper. |
+| dashboard-http | `127.0.0.1` | `3000` | Long-lived dashboard and Zero Trust protected public-route origin. The server fails fast if this port is occupied. |
 
 ## Dashboard And Startup
 
-The dashboard entry point is `http://127.0.0.1:3101`. It reads canonical registry files directly and exposes `/health`, `/api/state`, `/api/local-agents`, and `/api/doctor` for local checks.
+The dashboard entry point is `http://127.0.0.1:3000`. It reads canonical registry files directly and exposes `/health`, `/api/state`, `/api/local-agents`, and `/api/doctor` for local checks.
 
 Local service agents are tracked in `registry/local-agents.registry.json`. These records identify resident loopback services such as Local Archive Maintainer without storing service-local homes, token files, logs, generated data, or full command lines in canonical registry data.
 
@@ -172,7 +171,7 @@ Development API key locations are tracked in `registry/api-keys.registry.json`. 
 
 Startup registration is review-gated. `scripts/register-dashboard-startup.ps1` can create or remove the Windows Startup entry when an operator explicitly runs it. The default on-demand path is `npm run dashboard:open -- --open`, which health-checks the dashboard and starts the loopback server only when needed.
 
-The public `gov.colorgeek.co` route is also review-gated. `npm run gov:route:register` creates the user Startup entry that keeps the `127.0.0.1:3000` origin and dedicated Cloudflare Tunnel connector available after login; `npm run gov:route:remove` removes that entry.
+The public `gov.colorgeek.co` and `dev.colorgeek.co` routes are also review-gated. `npm run gov:route:register` creates the user Startup entry that keeps the unified `127.0.0.1:3000` origin and dedicated Cloudflare Tunnel connector available after login; `npm run gov:route:remove` removes that entry.
 
 ## Doctor
 

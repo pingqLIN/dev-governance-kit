@@ -21,7 +21,7 @@ The current project scope covers global-home and local development-environment g
 - manage Cloudflare/public route governance records
 - generate local static document-search artifacts
 - govern AGENTS instruction scope, item types, and queryable indexes
-- provide a local loopback dashboard on the reviewed long-lived `127.0.0.1:3101` port
+- provide a local loopback dashboard on the reviewed long-lived `127.0.0.1:3000` port
 - run self-check, limited self-repair, and local report generation through the Doctor command
 - validate conflicts and required fields
 - generate templates that agents can follow before starting services
@@ -147,7 +147,7 @@ Run `npm run scan:agents` after changing AGENTS governance. The command writes g
 1. Read `registry/ports.registry.json` before changing port allocation rules.
 2. Do not add random or auto-increment fallback ports.
 3. Default development host is `127.0.0.1`.
-4. The DevGov dashboard allocation is `127.0.0.1:3101`; do not silently choose another dashboard port.
+4. The DevGov dashboard allocation is `127.0.0.1:3000`; do not silently choose another dashboard port.
 5. Service startup commands should use a governed-port preflight entry such as `scripts/require-governed-port.mjs` before binding a reviewed port.
 6. Any `0.0.0.0` binding must be documented with `visibility` and `notes`.
 7. Do not run target project config files while scanning them.

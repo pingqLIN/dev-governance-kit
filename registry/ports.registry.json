@@ -41,16 +41,6 @@
       "notes": "Codex remote service route target. Startup entry is managed separately in startup.registry.json."
     },
     {
-      "project": "devgov",
-      "service": "governance-public-http",
-      "port": 3000,
-      "host": "127.0.0.1",
-      "visibility": "public",
-      "protocol": "http",
-      "source": "operator request; public route governance",
-      "notes": "Fixed loopback origin for gov.colorgeek.co. Public ingress must require Cloudflare Zero Trust Access."
-    },
-    {
       "project": "taste",
       "service": "web-http",
       "port": 3010,
@@ -84,13 +74,12 @@
     {
       "project": "devgov",
       "service": "dashboard-http",
-      "port": 3101,
+      "port": 3000,
       "host": "127.0.0.1",
-      "visibility": "local",
+      "visibility": "public",
       "protocol": "http",
-      "range": "frontend",
-      "source": "DevGov dashboard governance",
-      "notes": "Long-lived local dashboard entry. Keep loopback-only and fail fast if the port is occupied instead of falling back."
+      "source": "DevGov dashboard and public route governance",
+      "notes": "Unified DevGov dashboard and public-route loopback origin for governed colorgeek.co hostnames. Public ingress must require Cloudflare Zero Trust Access."
     },
     {
       "project": "color-management-Shader",

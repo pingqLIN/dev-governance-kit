@@ -62,11 +62,11 @@
       "id": "devgov-gov-public-route-login",
       "project": "devgov",
       "trigger": "startup-folder",
-      "purpose": "Start the gov.colorgeek.co tunnel connector and 127.0.0.1:3000 origin on operator login.",
+      "purpose": "Start the DevGov public tunnel connector and unified 127.0.0.1:3000 origin on operator login.",
       "scriptRef": "devgov/scripts/register-gov-public-route-startup.ps1",
       "status": "candidate",
       "source": "DevGov public route governance",
-      "notes": "Reviewed opt-in startup mechanism for the Zero Trust protected gov.colorgeek.co route. The start script checks existing health and process state before starting hidden background helpers.",
+      "notes": "Reviewed opt-in startup mechanism for the Zero Trust protected gov.colorgeek.co and dev.colorgeek.co routes. The start script checks existing health and process state before starting hidden background helpers.",
       "managedByCodex": true
     },
     {

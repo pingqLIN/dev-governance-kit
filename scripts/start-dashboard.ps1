@@ -12,5 +12,5 @@ Start-Process -FilePath "node" `
 
 if ($Open) {
   Start-Sleep -Milliseconds 500
-  Start-Process "http://127.0.0.1:3101"
+  Start-Process "http://127.0.0.1:3000"
 }
