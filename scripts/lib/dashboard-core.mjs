@@ -513,6 +513,17 @@ export function renderDashboardHtml(state) {
       margin: 0 auto;
       padding: 24px clamp(16px, 3vw, 34px) 42px;
     }
+    body.deck-mode main {
+      display: block;
+      max-width: 1520px;
+      min-height: calc(100vh - 114px);
+    }
+    body.deck-mode nav {
+      display: none;
+    }
+    body.deck-mode main > div {
+      min-height: calc(100vh - 180px);
+    }
     nav {
       align-self: start;
       border: 2px solid var(--ink);
@@ -574,12 +585,67 @@ export function renderDashboardHtml(state) {
       grid-template-columns: repeat(7, minmax(120px, 1fr));
       margin-bottom: 18px;
     }
+    body.deck-mode .strip {
+      --deck-edge: clamp(8px, 1.5vw, 18px);
+      align-content: start;
+      cursor: pointer;
+      display: block;
+      gap: clamp(14px, 2vw, 24px);
+      margin: 0;
+      min-height: calc(100svh - 190px);
+      overflow: hidden;
+      padding: var(--deck-edge);
+      position: relative;
+    }
     .metric {
       border: 2px solid var(--ink);
       background: var(--panel);
+      color: var(--ink);
+      display: block;
       min-height: 96px;
       padding: 12px;
+      text-align: left;
       transform-origin: center bottom;
+    }
+    body.deck-mode .metric {
+      --card-rotate: 0deg;
+      --card-shadow-x: 8px;
+      --card-shadow-y: 12px;
+      --card-shadow-blur: 0;
+      --card-shadow-alpha: .22;
+      --card-x: 0px;
+      --card-y: 0px;
+      --card-lift: 0px;
+      box-shadow: var(--card-shadow-x) var(--card-shadow-y) var(--card-shadow-blur) oklch(23% 0.018 248 / var(--card-shadow-alpha));
+      cursor: grab;
+      min-height: clamp(178px, 17vw, 244px);
+      padding: clamp(18px, 2.4vw, 28px);
+      position: absolute;
+      touch-action: none;
+      transform: translate(var(--card-x), calc(var(--card-y) + var(--card-lift))) rotate(var(--card-rotate));
+      user-select: none;
+      width: clamp(210px, 22vw, 310px);
+    }
+    body.deck-mode .metric::after {
+      bottom: 14px;
+      color: var(--muted);
+      content: attr(data-action-label);
+      font-size: 12px;
+      font-weight: 700;
+      left: clamp(18px, 2.4vw, 28px);
+      position: absolute;
+      text-transform: uppercase;
+    }
+    body.deck-mode .metric.is-dragging {
+      cursor: grabbing;
+      transition: none;
+      z-index: 20;
+    }
+    body.deck-mode .metric.is-pressing {
+      --card-lift: 3px;
+      --card-shadow-x: 4px;
+      --card-shadow-y: 5px;
+      --card-shadow-alpha: .18;
     }
     .metric strong {
       display: block;
@@ -588,9 +654,21 @@ export function renderDashboardHtml(state) {
       font-weight: 700;
       line-height: 1;
     }
+    body.deck-mode .metric strong {
+      font-size: clamp(54px, 7vw, 96px);
+      line-height: .88;
+    }
     .metric span, .muted {
       color: var(--muted);
       font-size: 13px;
+    }
+    body.deck-mode .metric span {
+      display: block;
+      font-size: clamp(18px, 2vw, 26px);
+      margin-top: 10px;
+    }
+    body.deck-mode #dashboard-port {
+      display: none;
     }
     .toolbar {
       align-items: center;
@@ -740,6 +818,9 @@ export function renderDashboardHtml(state) {
       .theme-toggle:active, .language-toggle:active, .action-button:active, nav button:active {
         transform: translateY(1px);
       }
+      body.deck-mode .metric {
+        transition: box-shadow 140ms ease-out;
+      }
     }
     @keyframes status-pulse {
       0%, 100% { transform: scale(1); }
@@ -775,6 +856,33 @@ export function renderDashboardHtml(state) {
       .header-buttons { justify-content: flex-start; }
       nav { position: static; }
       .strip { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      body.deck-mode main {
+        min-height: calc(100svh - 150px);
+        padding-inline: clamp(10px, 3vw, 18px);
+      }
+      body.deck-mode main > div {
+        min-height: calc(100svh - 210px);
+      }
+      body.deck-mode .strip {
+        --deck-edge: clamp(6px, 2vw, 12px);
+        min-height: max(430px, calc(100svh - 230px));
+      }
+      body.deck-mode .metric {
+        min-height: clamp(138px, 25vw, 176px);
+        padding: clamp(14px, 3.5vw, 20px);
+        width: clamp(166px, 33vw, 236px);
+      }
+      body.deck-mode .metric strong {
+        font-size: clamp(42px, 9vw, 62px);
+      }
+      body.deck-mode .metric span {
+        font-size: clamp(15px, 3.4vw, 20px);
+        margin-top: 8px;
+      }
+      body.deck-mode .metric::after {
+        bottom: 10px;
+        left: clamp(14px, 3.5vw, 20px);
+      }
       .status { justify-content: start; }
       .toolbar { align-items: stretch; flex-direction: column; }
       .guidance-row { grid-template-columns: 1fr; }
@@ -785,6 +893,37 @@ export function renderDashboardHtml(state) {
         white-space: nowrap;
       }
       th, td { white-space: normal; }
+    }
+    @media (max-width: 520px) {
+      body.deck-mode main {
+        min-height: calc(100svh - 170px);
+        padding: 10px 8px 28px;
+      }
+      body.deck-mode main > div {
+        min-height: calc(100svh - 220px);
+      }
+      body.deck-mode .strip {
+        --deck-edge: 6px;
+        min-height: max(410px, calc(100svh - 238px));
+      }
+      body.deck-mode .metric {
+        min-height: clamp(118px, 34vw, 148px);
+        padding: 12px;
+        width: clamp(132px, 42vw, 176px);
+      }
+      body.deck-mode .metric strong {
+        font-size: clamp(34px, 11vw, 48px);
+      }
+      body.deck-mode .metric span {
+        font-size: clamp(13px, 3.9vw, 16px);
+        line-height: 1.15;
+        margin-top: 6px;
+      }
+      body.deck-mode .metric::after {
+        bottom: 8px;
+        font-size: 11px;
+        left: 12px;
+      }
     }
   </style>
 </head>
@@ -1003,7 +1142,8 @@ const messages = {
       readiness: 'Readiness',
       gaps: 'Gaps',
       links: 'Quick Links',
-      noGaps: 'none'
+      noGaps: 'none',
+      openCard: 'Open'
     }
   },
   zhTw: {
@@ -1120,13 +1260,17 @@ const messages = {
       readiness: 'Readiness',
       gaps: 'Gaps',
       links: 'Quick Links',
-      noGaps: 'none'
+      noGaps: 'none',
+      openCard: '進入'
     }
   }
 };
 let currentLanguage = localStorage.getItem('devgov-language') === 'en' ? 'en' : 'zhTw';
 let serviceStatusRows = [];
 let serviceOnboardingRows = [];
+let deckDrag = null;
+let deckLayoutReady = false;
+let deckZCounter = 10;
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 const themeButton = document.getElementById('theme-toggle');
 const languageButton = document.getElementById('language-toggle');
@@ -1135,6 +1279,7 @@ const savedTheme = localStorage.getItem('devgov-theme');
 if (savedTheme === 'light' || savedTheme === 'dark') {
   document.documentElement.dataset.theme = savedTheme;
 }
+document.body.classList.add('deck-mode');
 syncThemeButton();
 syncI18n();
 languageButton.addEventListener('click', () => {
@@ -1150,13 +1295,22 @@ themeButton.addEventListener('click', () => {
   localStorage.setItem('devgov-theme', next);
   syncThemeButton();
 });
+addEventListener('resize', () => {
+  if (document.body.classList.contains('deck-mode')) layoutMetricCards();
+});
 const views = [...document.querySelectorAll('section')];
 const buttons = [...document.querySelectorAll('nav button')];
-buttons.forEach(button => button.addEventListener('click', () => {
+buttons.forEach(button => button.addEventListener('click', () => activateView(button.dataset.view)));
+function activateView(viewId, options = {}) {
+  if (options.enterDashboard || !document.body.classList.contains('deck-mode')) {
+    document.body.classList.remove('deck-mode');
+    resetDeckCards();
+  }
+  const button = document.querySelector('nav button[data-view="' + viewId + '"]') || buttons[0];
   buttons.forEach(item => item.setAttribute('aria-selected', String(item === button)));
   views.forEach(view => view.classList.toggle('active', view.id === button.dataset.view));
   Motion.switchView(document.getElementById(button.dataset.view), button);
-}));
+}
 document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase();
@@ -1173,17 +1327,17 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
   });
 });
 function renderAll() {
-  document.getElementById('metrics').innerHTML = [
-    [t('metrics.ports'), state.summary.ports],
-    [t('metrics.agents'), state.summary.localAgents],
-    [t('metrics.startup'), state.summary.startupEntries],
-    [t('metrics.routes'), state.summary.publicRoutes],
-    [t('metrics.profiles'), state.summary.terminalProfiles],
-    [t('metrics.apiKeys'), state.summary.apiKeys],
-    [t('metrics.instructions'), state.summary.agentInstructions],
-    [t('metrics.webEntrypoints'), state.summary.webEntrypoints]
-  ].map(([label, value]) => '<div class="metric"><strong>' + esc(value) + '</strong><span>' + esc(label) + '</span></div>').join('');
-  Motion.metrics();
+  document.getElementById('metrics').innerHTML = metricDeckItems().map((item) => (
+    '<button class="metric" type="button" data-card-view="' + esc(item.view) + '" data-action-label="' + tEsc('labels.openCard') + '"><strong>'
+    + esc(item.value)
+    + '</strong><span>'
+    + esc(item.label)
+    + '</span></button>'
+  )).join('');
+  bindMetricCards();
+  bindDeckSurface();
+  layoutMetricCards();
+  if (!document.body.classList.contains('deck-mode')) Motion.metrics();
   renderDashboardPort();
   renderPorts(filterValue('ports'));
   renderAgents(filterValue('agents'));
@@ -1199,6 +1353,295 @@ function renderAll() {
     : state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' }, quickTest: { ...target.quickTest, state: 'CHECKING' } }));
   renderServiceStatusTable(filterValue('service-status'), rows);
   renderServiceOnboardingTable(filterValue('service-onboarding'), serviceOnboardingRows);
+}
+function metricDeckItems() {
+  return [
+    { label: t('metrics.ports'), value: state.summary.ports, view: 'ports' },
+    { label: t('metrics.agents'), value: state.summary.localAgents, view: 'agents' },
+    { label: t('metrics.startup'), value: state.summary.startupEntries, view: 'startup' },
+    { label: t('metrics.routes'), value: state.summary.publicRoutes, view: 'routes' },
+    { label: t('metrics.profiles'), value: state.summary.terminalProfiles, view: 'terminal' },
+    { label: t('metrics.apiKeys'), value: state.summary.apiKeys, view: 'api-keys' },
+    { label: t('metrics.instructions'), value: state.summary.agentInstructions, view: 'agent-instructions' },
+    { label: t('metrics.webEntrypoints'), value: state.summary.webEntrypoints, view: 'web-entrypoints' }
+  ];
+}
+function bindMetricCards() {
+  document.querySelectorAll('.metric[data-card-view]').forEach((card) => {
+    card.addEventListener('click', () => {
+      if (card.dataset.dragged === 'true' || Number(card.dataset.suppressClickUntil || 0) > Date.now()) {
+        card.dataset.dragged = 'false';
+        return;
+      }
+      tapMetricCard(card, () => activateView(card.dataset.cardView, { enterDashboard: true }));
+    });
+    card.addEventListener('pointerdown', startCardDrag);
+  });
+}
+function bindDeckSurface() {
+  const deck = document.getElementById('metrics');
+  deck.onclick = (event) => {
+    if (!document.body.classList.contains('deck-mode') || event.target !== deck) return;
+    tapDeckSurface();
+  };
+}
+function layoutMetricCards() {
+  if (!document.body.classList.contains('deck-mode')) return;
+  const deck = document.getElementById('metrics');
+  const cards = [...deck.querySelectorAll('.metric[data-card-view]')];
+  if (!cards.length) return;
+  deckLayoutReady = false;
+  requestAnimationFrame(() => {
+    const deckWidth = deck.clientWidth;
+    const deckHeight = deck.clientHeight;
+    const tuning = deckLayoutTuning(deckWidth);
+    const mobileDeck = deckWidth <= 520;
+    let mobileY = tuning.edge;
+    cards.forEach((card, index) => {
+      const cardWidth = card.offsetWidth || 260;
+      const cardHeight = card.offsetHeight || 200;
+      const maxX = Math.max(tuning.edge, deckWidth - cardWidth - tuning.edge);
+      const maxY = Math.max(tuning.edge, deckHeight - cardHeight - tuning.edge);
+      const x = mobileDeck ? Math.min(maxX, index % 2 === 0 ? tuning.edge : tuning.edge + 18) : randomBetween(tuning.edge, maxX);
+      const y = mobileDeck ? mobileY : randomBetween(tuning.edge, maxY);
+      const rotation = randomBetween(-tuning.rotation, tuning.rotation).toFixed(2) + 'deg';
+      card.dataset.x = String(Math.round(x));
+      card.dataset.y = String(Math.round(y));
+      card.dataset.homeRotation = rotation;
+      card.style.left = '0px';
+      card.style.top = '0px';
+      card.style.zIndex = String(2 + index);
+      card.style.setProperty('--card-x', Math.round(x) + 'px');
+      card.style.setProperty('--card-y', Math.round(y) + 'px');
+      card.style.setProperty('--card-rotate', rotation);
+      card.style.setProperty('--card-shadow-x', Math.round(randomBetween(4, tuning.shadowX)) + 'px');
+      card.style.setProperty('--card-shadow-y', Math.round(randomBetween(7, tuning.shadowY)) + 'px');
+      card.style.setProperty('--card-shadow-blur', Math.round(randomBetween(0, tuning.shadowBlur)) + 'px');
+      card.style.setProperty('--card-shadow-alpha', String(randomBetween(.15, tuning.shadowAlpha).toFixed(2)));
+      if (mobileDeck) mobileY += cardHeight + 16;
+    });
+    deck.style.minHeight = mobileDeck ? Math.round(mobileY + tuning.edge) + 'px' : '';
+    deckZCounter = cards.length + 2;
+    deckLayoutReady = true;
+    Motion.deck(cards);
+  });
+}
+function deckLayoutTuning(deckWidth) {
+  if (deckWidth <= 520) {
+    return { edge: 6, rotation: 4.5, shadowX: 8, shadowY: 12, shadowBlur: 2, shadowAlpha: .22 };
+  }
+  if (deckWidth <= 820) {
+    return { edge: 8, rotation: 5.8, shadowX: 10, shadowY: 14, shadowBlur: 3, shadowAlpha: .24 };
+  }
+  return { edge: 12, rotation: 8, shadowX: 12, shadowY: 18, shadowBlur: 3, shadowAlpha: .27 };
+}
+function resetDeckCards() {
+  document.querySelectorAll('.metric[data-card-view]').forEach((card) => {
+    card.style.transform = '';
+    card.style.boxShadow = '';
+    card.classList.remove('is-dragging', 'is-pressing');
+  });
+}
+function randomBetween(min, max) {
+  return min + Math.random() * Math.max(0, max - min);
+}
+function startCardDrag(event) {
+  if (!document.body.classList.contains('deck-mode') || event.button !== 0) return;
+  const card = event.currentTarget;
+  Motion.cancel(card);
+  const x = Number(card.dataset.x || 0);
+  const y = Number(card.dataset.y || 0);
+  deckDrag = {
+    card,
+    startPointerX: event.clientX,
+    startPointerY: event.clientY,
+    startX: x,
+    startY: y,
+    moved: false,
+    overlapping: false,
+    promotedInOverlap: false
+  };
+  card.classList.add('is-dragging', 'is-pressing');
+  try {
+    card.setPointerCapture?.(event.pointerId);
+  } catch {
+    // Synthetic pointer checks do not always have an active pointer to capture.
+  }
+  card.addEventListener('pointermove', moveCardDrag);
+  card.addEventListener('pointerup', endCardDrag, { once: true });
+  card.addEventListener('pointercancel', endCardDrag, { once: true });
+}
+function moveCardDrag(event) {
+  if (!deckDrag) return;
+  const dx = event.clientX - deckDrag.startPointerX;
+  const dy = event.clientY - deckDrag.startPointerY;
+  if (Math.abs(dx) + Math.abs(dy) > 5) deckDrag.moved = true;
+  const nextX = deckDrag.startX + dx;
+  const nextY = deckDrag.startY + dy;
+  deckDrag.card.dataset.x = String(nextX);
+  deckDrag.card.dataset.y = String(nextY);
+  deckDrag.card.dataset.dragged = String(deckDrag.moved);
+  deckDrag.card.style.setProperty('--card-x', Math.round(nextX) + 'px');
+  deckDrag.card.style.setProperty('--card-y', Math.round(nextY) + 'px');
+  updateDragStacking(deckDrag.card);
+  updateDragShadow(deckDrag.card, dx, dy);
+}
+function updateDragStacking(card) {
+  const overlapping = overlapsOtherCard(card);
+  if (overlapping && !deckDrag.promotedInOverlap) {
+    deckZCounter += 1;
+    card.style.zIndex = String(deckZCounter);
+    deckDrag.promotedInOverlap = true;
+  }
+  if (!overlapping) {
+    deckDrag.promotedInOverlap = false;
+  }
+  deckDrag.overlapping = overlapping;
+}
+function overlapsOtherCard(card) {
+  const cardRect = card.getBoundingClientRect();
+  return [...document.querySelectorAll('.metric[data-card-view]')].some((other) => {
+    if (other === card) return false;
+    const otherRect = other.getBoundingClientRect();
+    return cardRect.left < otherRect.right
+      && cardRect.right > otherRect.left
+      && cardRect.top < otherRect.bottom
+      && cardRect.bottom > otherRect.top;
+  });
+}
+function updateDragShadow(card, dx, dy) {
+  const distance = Math.min(80, Math.hypot(dx, dy));
+  const directionX = Math.max(-18, Math.min(18, dx * .16 + 8));
+  const directionY = Math.max(10, Math.min(30, dy * .12 + 16));
+  card.style.setProperty('--card-lift', '-8px');
+  card.style.setProperty('--card-shadow-x', Math.round(directionX) + 'px');
+  card.style.setProperty('--card-shadow-y', Math.round(directionY + distance * .08) + 'px');
+  card.style.setProperty('--card-shadow-blur', Math.round(6 + distance * .16) + 'px');
+  card.style.setProperty('--card-shadow-alpha', String((.24 + distance * .003).toFixed(2)));
+}
+function endCardDrag(event) {
+  if (!deckDrag) return;
+  const card = deckDrag.card;
+  const moved = deckDrag.moved;
+  try {
+    card.releasePointerCapture?.(event.pointerId);
+  } catch {
+    // Pointer capture may not exist when the drag was driven by synthetic events.
+  }
+  card.classList.remove('is-dragging', 'is-pressing');
+  card.removeEventListener('pointermove', moveCardDrag);
+  card.dataset.suppressClickUntil = moved ? String(Date.now() + 260) : '0';
+  settleCardShadow(card);
+  setTimeout(() => {
+    card.dataset.dragged = 'false';
+    deckDrag = null;
+  }, 0);
+}
+function settleCardShadow(card) {
+  card.style.setProperty('--card-lift', '0px');
+  card.style.setProperty('--card-shadow-x', '8px');
+  card.style.setProperty('--card-shadow-y', '12px');
+  card.style.setProperty('--card-shadow-blur', '2px');
+  card.style.setProperty('--card-shadow-alpha', '.22');
+}
+function tapMetricCard(card, onComplete) {
+  if (!document.body.classList.contains('deck-mode') || !deckLayoutReady || !Motion.enabled()) {
+    onComplete();
+    return;
+  }
+  card.classList.add('is-pressing');
+  settleCardShadow(card);
+  const rotation = card.dataset.homeRotation || '0deg';
+  const animation = Motion.animate(card, [
+    {
+      transform: 'translate(var(--card-x), var(--card-y)) rotate(' + rotation + ') scale(1)',
+      offset: 0
+    },
+    {
+      transform: 'translate(var(--card-x), calc(var(--card-y) + 8px)) rotate(' + rotation + ') scale(.985)',
+      offset: .34
+    },
+    {
+      transform: 'translate(var(--card-x), calc(var(--card-y) - 7px)) rotate(' + rotation + ') scale(1.015)',
+      offset: .68
+    },
+    {
+      transform: 'translate(var(--card-x), var(--card-y)) rotate(' + rotation + ') scale(1)',
+      offset: 1
+    }
+  ], {
+    duration: 230,
+    easing: 'cubic-bezier(.22,.9,.26,1)',
+    fill: 'none'
+  });
+  if (!animation) {
+    onComplete();
+    return;
+  }
+  animation.addEventListener('finish', () => {
+    card.classList.remove('is-pressing');
+    onComplete();
+  }, { once: true });
+}
+function tapDeckSurface() {
+  if (!document.body.classList.contains('deck-mode') || !deckLayoutReady || !Motion.enabled()) return;
+  const cards = [...document.querySelectorAll('.metric[data-card-view]')];
+  const stackValues = cards.map((card, index) => Number(card.style.zIndex || index));
+  const minStack = Math.min(...stackValues);
+  const maxStack = Math.max(...stackValues);
+  const stackRange = Math.max(1, maxStack - minStack);
+  cards.forEach((card, index) => {
+    Motion.cancel(card);
+    settleCardShadow(card);
+    const x = Number(card.dataset.x || 0);
+    const y = Number(card.dataset.y || 0);
+    const rotation = parseFloat(card.dataset.homeRotation || '0') || 0;
+    const stackDepth = (stackValues[index] - minStack) / stackRange;
+    const motionScale = .24 + stackDepth * .86;
+    const direction = index % 2 === 0 ? 1 : -1;
+    const nudgeX = randomBetween(-11, 11) * motionScale;
+    const nudgeY = randomBetween(-7, 7) * motionScale;
+    const lift = randomBetween(7, 20) * motionScale;
+    const rotationDelta = (randomBetween(2.4, 7.2) * motionScale) * direction;
+    const counterRotation = rotation - rotationDelta * randomBetween(.32, .52);
+    const peakScale = 1 + .018 * motionScale;
+    const settleScale = 1 - .009 * motionScale;
+    const shadowAlpha = (.2 + .18 * motionScale).toFixed(2);
+    const shadowBlur = Math.round(3 + 13 * motionScale);
+    const shadowY = Math.round(8 + 18 * motionScale);
+    Motion.animate(card, [
+      {
+        transform: 'translate(' + x + 'px, ' + y + 'px) rotate(' + rotation + 'deg) scale(1)',
+        boxShadow: '8px 12px 2px oklch(23% 0.018 248 / .22)',
+        offset: 0
+      },
+      {
+        transform: 'translate(' + (x + nudgeX * .55) + 'px, ' + (y - lift * .52) + 'px) rotate(' + (rotation + rotationDelta * .72) + 'deg) scale(' + peakScale + ')',
+        boxShadow: '12px ' + shadowY + 'px ' + shadowBlur + 'px oklch(23% 0.018 248 / ' + shadowAlpha + ')',
+        offset: .28
+      },
+      {
+        transform: 'translate(' + (x + nudgeX) + 'px, ' + (y - lift + nudgeY) + 'px) rotate(' + (rotation + rotationDelta) + 'deg) scale(' + peakScale + ')',
+        boxShadow: '15px ' + Math.round(shadowY + 5 * motionScale) + 'px ' + Math.round(shadowBlur + 4 * motionScale) + 'px oklch(23% 0.018 248 / ' + shadowAlpha + ')',
+        offset: .48
+      },
+      {
+        transform: 'translate(' + (x + nudgeX * .26) + 'px, ' + (y + 3 * motionScale) + 'px) rotate(' + counterRotation + 'deg) scale(' + settleScale + ')',
+        boxShadow: '5px 7px 1px oklch(23% 0.018 248 / .2)',
+        offset: .76
+      },
+      {
+        transform: 'translate(' + x + 'px, ' + y + 'px) rotate(' + rotation + 'deg) scale(1)',
+        boxShadow: '8px 12px 2px oklch(23% 0.018 248 / .22)',
+        offset: 1
+      }
+    ], {
+      duration: 290 + Math.round(110 * motionScale),
+      delay: Math.round(index * 14 + randomBetween(0, 28) * motionScale),
+      easing: 'cubic-bezier(.2,.9,.24,1)',
+      fill: 'none'
+    });
+  });
 }
 function filterValue(name) {
   return document.querySelector('input[data-filter="' + name + '"]')?.value.toLowerCase() || '';
@@ -1454,36 +1897,94 @@ function syncThemeButton() {
   themeButton.textContent = effective === 'dark' ? t('theme.light') : t('theme.dark');
 }
 const Motion = {
+  defaults: {
+    duration: 320,
+    easing: 'cubic-bezier(.2,.8,.2,1)',
+    fill: 'backwards'
+  },
+  active: [],
   enabled() {
     return !motionQuery.matches && 'animate' in Element.prototype;
   },
+  track(animation) {
+    if (!animation) return animation;
+    this.active.push(animation);
+    animation.addEventListener('finish', () => {
+      this.active = this.active.filter((item) => item !== animation);
+    }, { once: true });
+    animation.addEventListener('cancel', () => {
+      this.active = this.active.filter((item) => item !== animation);
+    }, { once: true });
+    return animation;
+  },
+  cancel(scope) {
+    const animations = scope ? scope.getAnimations({ subtree: true }) : this.active;
+    animations.forEach((animation) => animation.cancel());
+    if (!scope) this.active = [];
+  },
+  animate(target, frames, options = {}) {
+    if (!this.enabled() || !target) return null;
+    return this.track(target.animate(frames, { ...this.defaults, ...options }));
+  },
+  stagger(targets, frames, options = {}) {
+    if (!this.enabled()) return;
+    const { delay = 0, maxStaggerIndex = 12, stagger = 24, ...animationOptions } = options;
+    [...targets].forEach((target, index) => {
+      this.animate(target, frames, {
+        ...animationOptions,
+        delay: delay + Math.min(index, maxStaggerIndex) * stagger
+      });
+    });
+  },
+  timeline(steps) {
+    if (!this.enabled()) return;
+    let cursor = 0;
+    for (const step of steps) {
+      const at = step.at ?? cursor;
+      this.stagger(step.targets, step.frames, {
+        duration: step.duration,
+        easing: step.easing,
+        fill: step.fill,
+        maxStaggerIndex: step.maxStaggerIndex,
+        stagger: step.stagger,
+        delay: at
+      });
+      cursor = Math.max(cursor, at + (step.duration ?? this.defaults.duration));
+    }
+  },
   intro() {
     if (!this.enabled()) return;
-    const items = [...document.querySelectorAll('header, nav, section.active')];
-    items.forEach((item, index) => {
-      item.animate([
-        { opacity: 0, transform: 'translateY(' + (index === 1 ? 10 : 16) + 'px)' },
-        { opacity: 1, transform: 'translateY(0)' }
-      ], {
+    this.timeline([
+      {
+        targets: document.querySelectorAll('header, nav, section.active'),
+        stagger: 70,
         duration: 420,
-        delay: index * 70,
-        easing: 'cubic-bezier(.2,.8,.2,1)',
-        fill: 'backwards'
-      });
+        frames: [
+          { opacity: 0, transform: 'translateY(16px)' },
+          { opacity: 1, transform: 'translateY(0)' }
+        ]
+      }
+    ]);
+  },
+  deck(cards) {
+    if (!this.enabled() || !document.body.classList.contains('deck-mode')) return;
+    this.stagger(cards, [
+      { opacity: 0, transform: 'translate(var(--card-x), calc(var(--card-y) + 22px)) rotate(calc(var(--card-rotate) - 3deg)) scale(.96)' },
+      { opacity: 1, transform: 'translate(var(--card-x), var(--card-y)) rotate(var(--card-rotate)) scale(1)' }
+    ], {
+      duration: 420,
+      stagger: 48,
+      maxStaggerIndex: 8
     });
   },
   metrics() {
     if (!this.enabled()) return;
-    document.querySelectorAll('.metric').forEach((item, index) => {
-      item.animate([
-        { opacity: 0, transform: 'translateY(14px) scale(.985)' },
-        { opacity: 1, transform: 'translateY(0) scale(1)' }
-      ], {
-        duration: 320,
-        delay: index * 26,
-        easing: 'cubic-bezier(.2,.8,.2,1)',
-        fill: 'backwards'
-      });
+    this.stagger(document.querySelectorAll('.metric'), [
+      { opacity: 0, transform: 'translateY(14px) scale(.985)' },
+      { opacity: 1, transform: 'translateY(0) scale(1)' }
+    ], {
+      duration: 320,
+      stagger: 26
     });
   },
   rows(name) {
@@ -1491,35 +1992,30 @@ const Motion = {
     const table = document.querySelector('[data-table="' + name + '"]');
     const active = table?.closest('section')?.classList.contains('active');
     if (!active) return;
-    table.querySelectorAll('tr').forEach((row, index) => {
-      row.animate([
-        { opacity: 0, transform: 'translateY(8px)' },
-        { opacity: 1, transform: 'translateY(0)' }
-      ], {
-        duration: 220,
-        delay: Math.min(index, 12) * 18,
-        easing: 'cubic-bezier(.2,.8,.2,1)',
-        fill: 'backwards'
-      });
+    this.cancel(table);
+    this.stagger(table.querySelectorAll('tr'), [
+      { opacity: 0, transform: 'translateY(8px)' },
+      { opacity: 1, transform: 'translateY(0)' }
+    ], {
+      duration: 220,
+      stagger: 18
     });
   },
   switchView(view, button) {
     if (!this.enabled()) return;
-    button?.animate([
+    this.cancel(view);
+    this.animate(button, [
       { transform: 'translateX(0)' },
       { transform: 'translateX(4px)' },
       { transform: 'translateX(0)' }
     ], {
-      duration: 260,
-      easing: 'cubic-bezier(.2,.8,.2,1)'
+      duration: 260
     });
-    view?.animate([
+    this.animate(view, [
       { opacity: 0, transform: 'translateY(12px)' },
       { opacity: 1, transform: 'translateY(0)' }
     ], {
-      duration: 280,
-      easing: 'cubic-bezier(.2,.8,.2,1)',
-      fill: 'backwards'
+      duration: 280
     });
     const table = view?.querySelector('table[data-table]');
     if (table) this.rows(table.dataset.table);
