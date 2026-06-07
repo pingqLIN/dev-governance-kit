@@ -111,6 +111,16 @@
       "protocol": "http",
       "source": "Local Archive Maintainer service inspection",
       "notes": "Loopback app-server for the resident archive/index worker. Requires bearer token for authenticated API calls; token file stays outside registry data."
+    },
+    {
+      "project": "video-render-kit",
+      "service": "control-panel-http",
+      "port": 8765,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "video-render-kit control panel governance review",
+      "notes": "Loopback-only FFmpeg control panel for local video render workflows. Must fail closed if the port is not registered, mismatched, or occupied."
     }
   ]
 }
