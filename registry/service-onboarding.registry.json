@@ -40,6 +40,24 @@
       "notes": "Bearer token paths, service home, logs, and generated indexes must remain out of canonical registry data."
     },
     {
+      "id": "ps3eye-windows-virtual-camera-observation",
+      "project": "ps3eye-windows-virtual-camera",
+      "service": "camera-observation",
+      "readiness": "PARTIAL",
+      "ownerKind": "source-repo-and-hardware-device",
+      "sourceRef": "registry/startup.registry.json#ps3eye-system-camera-login",
+      "healthProcedure": "Use the project Doctor in read-only mode to confirm PS3 Eye presence, frame freshness, virtual-camera registration, and capture viability; prefer Logitech one-shot capture for Codex environment observation.",
+      "doctorProcedure": "Use ps3eye-windows-virtual-camera/scripts/Test-Ps3EyeCameraDoctor.ps1 as the stable diagnostic candidate; keep repair mode operator-reviewed until restart, feeder, and virtual-camera boundaries are documented.",
+      "resetProcedure": "REVIEW_REQUIRED: stopping or starting VCamSample, ffmpeg feeder processes, virtual-camera registration, or camera-device ownership must remain explicit and observable.",
+      "startupProcedure": "Default policy is on-demand and login startup disabled; keep ps3eye-system-camera-login as a candidate only for reviewed opt-in service mode.",
+      "dashboardProcedure": "Do not expose dashboard restart yet; surface as a service-onboarding candidate after a safe one-shot camera health contract is added.",
+      "cloudflareProcedure": "No Cloudflare route applies; camera observation must stay local-only and must not expose images or device streams through public routes.",
+      "reviewStatus": "needs-implementation",
+      "reviewEvidence": "reports/service-onboarding-audit.json#ps3eye-windows-virtual-camera:camera-observation",
+      "nextAction": "Add a small on-demand capture Doctor for the Logitech default camera, then decide whether PS3 Eye ffmpeg bridging remains a fallback or is replaced by direct C++ capture.",
+      "notes": "The current PS3 Eye bridge needs long-lived ffmpeg/feeder state when enabled; do not register it as an always-on service for Codex observation without a separate privacy and resource review."
+    },
+    {
       "id": "codex-calendar-todo-staging-http",
       "project": "codex-calendar-todo",
       "service": "staging-http",
