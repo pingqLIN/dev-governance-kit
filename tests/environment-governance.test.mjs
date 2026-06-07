@@ -249,7 +249,7 @@ test("new governance registries validate canonical shared data only", () => {
 test("API key scanner records names and redacts values", async () => {
   const root = await mkdtemp(join(tmpdir(), "dev-governance-api-keys-"));
   await writeFile(join(root, ".env"), "OPENAI_API_KEY=sk-test-secret\nAPP_PORT=3101\n", "utf8");
-  await writeFile(join(root, "README.md"), "Use OPENAI_API_KEY and CF_API_TOKEN for local tests.", "utf8");
+  await writeFile(join(root, "README.md"), "Use OPENAI_API_KEY, openai_api_key_falcon, openai_api_key_translate, and CF_API_TOKEN for local tests.", "utf8");
 
   const project = await scanProjectApiKeyReferences(root);
   const report = renderApiKeyAudit({
@@ -267,9 +267,11 @@ test("API key scanner records names and redacts values", async () => {
     }]
   });
 
-  assert.equal(project.findings.length, 3);
+  assert.equal(project.findings.length, 5);
   assert.doesNotMatch(report, /sk-test-secret/);
   assert.match(report, /OPENAI_API_KEY=<redacted>/);
+  assert.match(report, /openai_api_key_falcon/);
+  assert.match(report, /openai_api_key_translate/);
   assert.match(report, /machine-openai-api-key/);
 });
 
