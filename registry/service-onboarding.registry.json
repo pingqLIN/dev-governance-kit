@@ -29,14 +29,14 @@
       "ownerKind": "source-repo-and-windows-service",
       "sourceRef": "registry/local-agents.registry.json#local-archive-maintainer",
       "healthProcedure": "Use the registered loopback /health endpoint.",
-      "doctorProcedure": "Add a stable project Doctor wrapper for app-server service state, token-file presence, queue health, and log freshness.",
-      "resetProcedure": "REVIEW_REQUIRED: service restart or queue reset needs a reviewed service-control boundary before automation may execute it.",
+      "doctorProcedure": "Use docs/APP_SERVER_SERVICE.md headless validation as evidence today; add a stable target Doctor wrapper for service state, token-file presence, queue health, and log freshness before marking Doctor FOUND.",
+      "resetProcedure": "REVIEW_REQUIRED: service restart, queue reset, token repair, or WinSW reinstall must remain operator-reviewed and must not be executed from the dashboard.",
       "startupProcedure": "Keep restart review-gated through local-archive-maintainer/scripts/install-app-server-service.ps1.",
       "dashboardProcedure": "Service Status already has the local-agent row; update Doctor to FOUND after the project Doctor is registered.",
       "cloudflareProcedure": "No public Cloudflare route is registered; keep loopback-only unless a future route review is approved.",
       "reviewStatus": "needs-implementation",
       "reviewEvidence": "reports/service-onboarding-audit.json#local-archive-maintainer:app-server-http",
-      "nextAction": "Create or identify a Doctor command in the source repo, then promote its stable ref into DevGov.",
+      "nextAction": "Add a target Doctor command that wraps the existing start-app-server health gate and APP_SERVER_SERVICE headless validation, then promote its stable ref into DevGov.",
       "notes": "Bearer token paths, service home, logs, and generated indexes must remain out of canonical registry data."
     },
     {
