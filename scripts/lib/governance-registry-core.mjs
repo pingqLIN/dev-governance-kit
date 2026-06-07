@@ -10,6 +10,9 @@ const VALID_PUBLIC_EXPOSURE = new Set(["local-only", "staging-private", "prod-pr
 const VALID_PROTOCOL = new Set(["http", "https", "tcp", "ws", "wss"]);
 const VALID_LOCAL_AGENT_KIND = new Set(["windows-service-agent", "scheduled-task-agent", "startup-folder-agent", "on-demand-agent"]);
 const VALID_CREDENTIAL_KIND = new Set(["api-key", "token", "secret", "password", "credential", "account-identity"]);
+const VALID_ONBOARDING_READINESS = new Set(["READY", "PARTIAL", "BLOCKED"]);
+const VALID_ONBOARDING_REVIEW = new Set(["reviewed", "needs-implementation", "needs-owner", "blocked"]);
+const VALID_CLOUDFLARE_ARCH_KIND = new Set(["loopback-origin", "public-route", "access-policy", "startup-control", "evidence-boundary"]);
 const DESIGN_THEMES = ["light", "dark"];
 const DESIGN_THEME_TOKENS = ["ink", "muted", "line", "paper", "panel", "panelRaised", "input", "accent", "accentInk", "link", "okBg", "warnBg", "badBg", "neutralBg", "gridLine", "headerBg", "focus"];
 const DESIGN_TYPOGRAPHY_ROLES = ["display", "headline", "title", "body", "label", "mono"];
@@ -49,6 +52,12 @@ export function validateGovernanceRegistry(registry) {
   }
   if (registry.schema === "devgov.api-keys.registry.v1") {
     return validateApiKeysRegistry(registry);
+  }
+  if (registry.schema === "devgov.service-onboarding.registry.v1") {
+    return validateServiceOnboardingRegistry(registry);
+  }
+  if (registry.schema === "devgov.local-cloudflare.registry.v1") {
+    return validateLocalCloudflareRegistry(registry);
   }
   if (registry.schema === "devgov.agent-instructions.registry.v1") {
     return validateAgentInstructionsRegistry(registry);
@@ -207,6 +216,63 @@ export function validateApiKeysRegistry(registry) {
     if (looksSecretValue(entry.notes) || looksSecretValue(entry.rules) || looksSecretValue(entry.accessMethod)) {
       errors.push(`${label} must not contain apparent credential values`);
     }
+  }
+  return errors;
+}
+
+export function validateServiceOnboardingRegistry(registry) {
+  const errors = validateRegistryEnvelope(registry, "devgov.service-onboarding.registry.v1", "entries");
+  if (errors.length) return errors;
+
+  const seen = new Set();
+  for (const [index, entry] of registry.entries.entries()) {
+    const label = `entries[${index}]`;
+    requireStrings(entry, [
+      "id",
+      "project",
+      "service",
+      "readiness",
+      "ownerKind",
+      "sourceRef",
+      "healthProcedure",
+      "doctorProcedure",
+      "resetProcedure",
+      "startupProcedure",
+      "dashboardProcedure",
+      "cloudflareProcedure",
+      "reviewStatus",
+      "reviewEvidence",
+      "nextAction",
+      "notes"
+    ], label, errors);
+    rejectMachineLocalStrings(entry, label, errors);
+    if (seen.has(entry.id)) errors.push(`${label}.id duplicates another service onboarding entry`);
+    seen.add(entry.id);
+    if (!VALID_ONBOARDING_READINESS.has(entry.readiness)) {
+      errors.push(`${label}.readiness must be one of ${[...VALID_ONBOARDING_READINESS].join(", ")}`);
+    }
+    if (!VALID_ONBOARDING_REVIEW.has(entry.reviewStatus)) {
+      errors.push(`${label}.reviewStatus must be one of ${[...VALID_ONBOARDING_REVIEW].join(", ")}`);
+    }
+  }
+  return errors;
+}
+
+export function validateLocalCloudflareRegistry(registry) {
+  const errors = validateRegistryEnvelope(registry, "devgov.local-cloudflare.registry.v1", "items");
+  if (errors.length) return errors;
+
+  const seen = new Set();
+  for (const [index, item] of registry.items.entries()) {
+    const label = `items[${index}]`;
+    requireStrings(item, ["id", "kind", "requirement", "ownerRegistry", "verification", "status", "notes"], label, errors);
+    rejectMachineLocalStrings(item, label, errors);
+    if (seen.has(item.id)) errors.push(`${label}.id duplicates another local Cloudflare item`);
+    seen.add(item.id);
+    if (!VALID_CLOUDFLARE_ARCH_KIND.has(item.kind)) {
+      errors.push(`${label}.kind must be one of ${[...VALID_CLOUDFLARE_ARCH_KIND].join(", ")}`);
+    }
+    if (!VALID_STATUS.has(item.status)) errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
   }
   return errors;
 }

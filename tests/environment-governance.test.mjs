@@ -9,7 +9,7 @@ import { buildServiceTargets, buildUniTextAgentInstructionIndex, loadDashboardSt
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
 import { buildServiceOnboardingAudit } from "../scripts/lib/service-onboarding-core.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
-import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validatePublicRoutesRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
+import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validateLocalCloudflareRegistry, validatePublicRoutesRegistry, validateServiceOnboardingRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
 import { scanStartupFolder } from "../scripts/lib/startup-core.mjs";
 import { buildTerminalFixPlan, scanTerminalSettingsObject } from "../scripts/lib/terminal-core.mjs";
@@ -146,6 +146,41 @@ test("new governance registries validate canonical shared data only", () => {
       status: "candidate",
       source: "API key environment audit",
       notes: "Stores only the variable name and policy."
+    }]
+  }), []);
+
+  assert.deepEqual(validateServiceOnboardingRegistry({
+    schema: "devgov.service-onboarding.registry.v1",
+    entries: [{
+      id: "demo-web-http",
+      project: "demo",
+      service: "web-http",
+      readiness: "PARTIAL",
+      ownerKind: "source-repo",
+      sourceRef: "registry/ports.registry.json#demo:web-http",
+      healthProcedure: "Use /health.",
+      doctorProcedure: "Use package.json#scripts.doctor.",
+      resetProcedure: "REVIEW_REQUIRED until reviewed.",
+      startupProcedure: "Use reviewed startup registry entry.",
+      dashboardProcedure: "Service Status row exists.",
+      cloudflareProcedure: "No public route.",
+      reviewStatus: "needs-implementation",
+      reviewEvidence: "reports/service-onboarding-audit.json#demo:web-http",
+      nextAction: "Register Doctor.",
+      notes: "No machine-local paths."
+    }]
+  }), []);
+
+  assert.deepEqual(validateLocalCloudflareRegistry({
+    schema: "devgov.local-cloudflare.registry.v1",
+    items: [{
+      id: "cloudflare.loopback-origin",
+      kind: "loopback-origin",
+      requirement: "Use governed loopback origin.",
+      ownerRegistry: "registry/ports.registry.json",
+      verification: "Run port preflight.",
+      status: "approved",
+      notes: "No host-local path."
     }]
   }), []);
 
@@ -401,6 +436,8 @@ test("doctor verifies DevGov dashboard governance without modifying canonical re
   assert.ok(result.checks.some((check) => check.id === "script-scripts/start-gov-public-route.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/register-gov-public-route-startup.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/require-governed-port.mjs" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "registry-service-onboarding.registry.json" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "registry-local-cloudflare.registry.json" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "local-agent-registry" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "api-key-registry" && check.ok));
 });

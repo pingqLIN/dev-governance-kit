@@ -1,0 +1,52 @@
+{
+  "schema": "devgov.local-cloudflare.registry.v1",
+  "description": "Canonical local Cloudflare architecture rules for DevGov-governed loopback services. Host-local config paths and credentials stay in reports/.",
+  "sourceOfTruth": "registry/local-cloudflare.registry.json",
+  "items": [
+    {
+      "id": "cloudflare.loopback-origin",
+      "kind": "loopback-origin",
+      "requirement": "Every Cloudflare-exposed local service must have a governed loopback origin in the port registry before public route promotion.",
+      "ownerRegistry": "registry/ports.registry.json",
+      "verification": "Run port preflight and service health checks before public probing.",
+      "status": "approved",
+      "notes": "Default origin host is 127.0.0.1 unless a reviewed exception documents wider exposure."
+    },
+    {
+      "id": "cloudflare.public-route-record",
+      "kind": "public-route",
+      "requirement": "Each hostname must be represented by a public route record with exposure class, Access requirement, local target, and health URL.",
+      "ownerRegistry": "registry/public-routes.registry.json",
+      "verification": "Run public route scans and validate duplicate hostnames before promotion.",
+      "status": "approved",
+      "notes": "Public health routes must expose minimal readiness only and must not execute service commands."
+    },
+    {
+      "id": "cloudflare.access-policy",
+      "kind": "access-policy",
+      "requirement": "Protected app or API routes should require Cloudflare Access unless intentionally classified as public health.",
+      "ownerRegistry": "registry/public-routes.registry.json",
+      "verification": "Confirm Access requirement and route behavior together before marking routes approved.",
+      "status": "candidate",
+      "notes": "A route without Access requires explicit exposure review."
+    },
+    {
+      "id": "cloudflare.startup-control",
+      "kind": "startup-control",
+      "requirement": "Tunnel startup and restart paths must be represented by startup governance records and remain review-gated.",
+      "ownerRegistry": "registry/startup.registry.json",
+      "verification": "Confirm backup or rollback evidence before applying tunnel startup changes.",
+      "status": "candidate",
+      "notes": "Dashboard execution stays disabled until command boundaries are reviewed."
+    },
+    {
+      "id": "cloudflare.evidence-boundary",
+      "kind": "evidence-boundary",
+      "requirement": "Credential files, tunnel config paths, certs, private keys, API tokens, process IDs, and logs must not enter canonical registries.",
+      "ownerRegistry": "reports/",
+      "verification": "Registry validators reject machine-local paths and credential-looking values.",
+      "status": "approved",
+      "notes": "Keep host-local discovery evidence in generated reports only."
+    }
+  ]
+}

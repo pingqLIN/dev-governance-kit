@@ -31,6 +31,7 @@ Service control readiness 是觀測模型。它用來告訴 operator 某個 serv
 - 只有存在穩定且已審查的 start/restart mechanism，restart 才能標為 `FOUND`。
 - 若有 startup 或 service reference，但尚未安全到可由 dashboard 執行，restart 必須標為 `REVIEW_REQUIRED`。
 - 即使有輔助 script，只要 policy 明確禁止 dashboard restart，restart 必須標為 `DISABLED`。
+- Reset/restart operations 和 Doctor 分開。標為 `REVIEW_REQUIRED` 的 reset path 是候選 control path，不是已核准的 dashboard action。
 
 ## UI 規則
 
@@ -44,6 +45,14 @@ Service control readiness 是觀測模型。它用來告訴 operator 某個 serv
 - `/api/service-status` 不得執行 restart command。
 - `/api/service-onboarding` 可以執行既有已登記服務的唯讀補充稽核。
 - machine-local paths、完整 launch commands、credential paths、tokens、process IDs、logs 與暫時 evidence 不得進入 canonical registry data。
+
+## Reset 與 Cloudflare 規則
+
+- Doctor 預設唯讀；Doctor repair 必須有明確且窄的文件化邊界。
+- Reset 指 restart、recover、republish、clear runtime state，或 repair startup/tunnel state。
+- Reset 在 command boundaries、rollback expectations、log handling 與 credential safety 被審查前，一律是 `REVIEW_REQUIRED`。
+- Cloudflare 本機架構必須將 governed loopback origins 放在 `ports.registry.json`，public exposure 放在 `public-routes.registry.json`。
+- Cloudflare credential files、tunnel config paths、certs、private keys、API tokens、process IDs 與 local logs 留在 reports 或 local evidence，不進 canonical registries。
 
 ## Existing Project Supplementation
 

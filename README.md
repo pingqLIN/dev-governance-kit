@@ -197,6 +197,10 @@ Network service status is available in the Service Status view and `/api/service
 
 Existing-project supplementation is available in the Onboarding view and `/api/service-onboarding`. The read-only audit cross-checks `registry/ports.registry.json`, `registry/startup.registry.json`, `registry/public-routes.registry.json`, `registry/local-agents.registry.json`, and dashboard service-status rows so operators can quickly see which registered services still need Quick Test, Doctor, or startup supplementation.
 
+Service onboarding procedures are tracked in `registry/service-onboarding.registry.json` and documented in `docs/service-onboarding/`. Each service record describes Health, Doctor, Reset, Startup, Dashboard, and Cloudflare handling. Reset/restart actions marked `REVIEW_REQUIRED` are candidate control paths only; they must not be executed from the dashboard or automation until command boundaries, rollback expectations, log handling, and credential safety are reviewed.
+
+Local Cloudflare architecture rules are tracked in `registry/local-cloudflare.registry.json`. The expected model is a governed loopback origin in `registry/ports.registry.json`, public exposure in `registry/public-routes.registry.json`, review-gated startup/tunnel control in `registry/startup.registry.json`, and host-local evidence in `reports/`.
+
 Development API key locations are tracked in `registry/api-keys.registry.json`. These records identify the service, variable name, storage location type, access method, usage rules, review status, and provider settings page. Credential values, credential file contents, local secret paths, shell history, and full command lines must stay out of canonical registry data.
 
 Startup registration is review-gated. `scripts/register-dashboard-startup.ps1` can create or remove the Windows Startup entry when an operator explicitly runs it. The default on-demand path is `npm run dashboard:open -- --open`, which health-checks the dashboard and starts the loopback server only when needed.

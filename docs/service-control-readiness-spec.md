@@ -31,6 +31,7 @@ Each service status row must expose:
 - Restart is `FOUND` only when a stable reviewed start/restart mechanism exists.
 - Restart is `REVIEW_REQUIRED` when a startup or service reference exists but is not safe for dashboard execution.
 - Restart is `DISABLED` when policy intentionally forbids dashboard restart even if supporting scripts exist.
+- Reset/restart operations are separate from Doctor. A reset path marked `REVIEW_REQUIRED` is a candidate control path, not an approved dashboard action.
 
 ## UI Rules
 
@@ -44,6 +45,14 @@ Each service status row must expose:
 - `/api/service-status` must not execute restart commands.
 - `/api/service-onboarding` may run a read-only supplementation audit for already-registered services.
 - Machine-local paths, complete launch commands, credential paths, tokens, process IDs, logs, and temporary evidence remain outside canonical registry data.
+
+## Reset And Cloudflare Rules
+
+- Doctor is read-only by default; Doctor repair must be narrowly documented.
+- Reset means restart, recover, republish, clear runtime state, or repair startup/tunnel state.
+- Reset is `REVIEW_REQUIRED` until command boundaries, rollback expectations, log handling, and credential safety are reviewed.
+- Cloudflare local architecture must keep governed loopback origins in `ports.registry.json` and public exposure in `public-routes.registry.json`.
+- Cloudflare credential files, tunnel config paths, certs, private keys, API tokens, process IDs, and local logs stay in reports or local evidence, not canonical registries.
 
 ## Existing Project Supplementation
 

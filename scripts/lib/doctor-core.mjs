@@ -19,6 +19,8 @@ export async function runDoctorChecks(root = ".", options = {}) {
     "local-agents.registry.json",
     "api-keys.registry.json",
     "agent-instructions.registry.json",
+    "service-onboarding.registry.json",
+    "local-cloudflare.registry.json",
     "startup.registry.json",
     "public-routes.registry.json",
     "terminal-profiles.registry.json"
