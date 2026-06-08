@@ -18,6 +18,7 @@ export async function loadDashboardState(root = ".") {
     readJson(path.join(root, "registry", "api-keys.registry.json")),
     readJson(path.join(root, "registry", "agent-instructions.registry.json"))
   ]);
+  const webConsoleEvents = await readDashboardEvents(path.join(root, "reports", "web-console-events.json"));
 
   const dashboardPort = ports.entries.find((entry) => (
     entry.project === "devgov"
@@ -44,7 +45,8 @@ export async function loadDashboardState(root = ".") {
       localAgents: localAgents.agents.length,
       apiKeys: apiKeys.entries.length,
       agentInstructions: agentInstructions.entries.length,
-      webEntrypoints: webEntrypoints.length
+      webEntrypoints: webEntrypoints.length,
+      webConsoleEvents: webConsoleEvents.length
     },
     ports: ports.entries,
     startupEntries: startup.entries,
@@ -58,6 +60,7 @@ export async function loadDashboardState(root = ".") {
       itemTypes: agentInstructions.itemTypes,
       entries: agentInstructions.entries
     },
+    webConsoleEvents,
     webEntrypoints,
     serviceTargets: buildServiceTargets({
       dashboardPort,
@@ -956,6 +959,7 @@ export function renderDashboardHtml(state) {
     <button data-view="web-entrypoints"><span class="glyph">09</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
     <button data-view="service-status"><span class="glyph">10</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
     <button data-view="service-onboarding"><span class="glyph">11</span> <span data-i18n="nav.serviceOnboarding">補充程序</span></button>
+    <button data-view="web-console-events"><span class="glyph">12</span> <span data-i18n="nav.webConsoleEvents">Web Console Events</span></button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -1023,6 +1027,10 @@ export function renderDashboardHtml(state) {
       </div>
       <table data-table="service-onboarding"></table>
     </section>
+    <section id="web-console-events" class="table-view">
+      <div class="toolbar"><h2 data-i18n="sections.webConsoleEvents">Web Console Events</h2><input data-filter="web-console-events" placeholder="篩選事件"></div>
+      <table data-table="web-console-events"></table>
+    </section>
   </div>
 </main>
 <script>
@@ -1043,7 +1051,8 @@ const messages = {
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web Entrypoints',
       serviceStatus: 'Service Status',
-      serviceOnboarding: 'Onboarding'
+      serviceOnboarding: 'Onboarding',
+      webConsoleEvents: 'Web Console Events'
     },
     sections: {
       ports: 'Port Registry',
@@ -1055,7 +1064,8 @@ const messages = {
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web Entrypoints',
       serviceStatus: 'Network Service Status',
-      serviceOnboarding: 'Existing Project Onboarding'
+      serviceOnboarding: 'Existing Project Onboarding',
+      webConsoleEvents: 'Web Console Events'
     },
     placeholders: {
       ports: 'Filter ports',
@@ -1067,7 +1077,8 @@ const messages = {
       agentInstructions: 'Filter agent instructions',
       webEntrypoints: 'Filter web entrypoints',
       serviceStatus: 'Filter services',
-      serviceOnboarding: 'Filter onboarding rows'
+      serviceOnboarding: 'Filter onboarding rows',
+      webConsoleEvents: 'Filter web console events'
     },
     metrics: {
       ports: 'Ports',
@@ -1077,7 +1088,8 @@ const messages = {
       profiles: 'Profiles',
       apiKeys: 'API Keys',
       instructions: 'Instructions',
-      webEntrypoints: 'Web Entrypoints'
+      webEntrypoints: 'Web Entrypoints',
+      webConsoleEvents: 'Web Console Events'
     },
     webEntrypoints: {
       label: 'TB2 entry:',
@@ -1143,6 +1155,12 @@ const messages = {
       gaps: 'Gaps',
       links: 'Quick Links',
       noGaps: 'none',
+      eventType: 'Event Type',
+      source: 'Source',
+      path: 'Path',
+      details: 'Details',
+      action: 'Action',
+      time: 'Time',
       openCard: 'Open'
     }
   },
@@ -1161,7 +1179,8 @@ const messages = {
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web 入口',
       serviceStatus: '服務狀態',
-      serviceOnboarding: '補充程序'
+      serviceOnboarding: '補充程序',
+      webConsoleEvents: '網頁事件'
     },
     sections: {
       ports: 'Port Registry',
@@ -1173,7 +1192,8 @@ const messages = {
       agentInstructions: 'Agent Instructions',
       webEntrypoints: 'Web 入口',
       serviceStatus: 'Network Service Status',
-      serviceOnboarding: '既有專案補充程序'
+      serviceOnboarding: '既有專案補充程序',
+      webConsoleEvents: '網頁事件'
     },
     placeholders: {
       ports: '篩選 ports',
@@ -1185,7 +1205,8 @@ const messages = {
       agentInstructions: '篩選 agent instructions',
       webEntrypoints: '篩選 web 入口',
       serviceStatus: '篩選服務',
-      serviceOnboarding: '篩選補充程序'
+      serviceOnboarding: '篩選補充程序',
+      webConsoleEvents: '篩選網頁事件'
     },
     metrics: {
       ports: 'Ports',
@@ -1195,7 +1216,8 @@ const messages = {
       profiles: 'Profiles',
       apiKeys: 'API Keys',
       instructions: 'Instructions',
-      webEntrypoints: 'Web 入口'
+      webEntrypoints: 'Web 入口',
+      webConsoleEvents: '網頁事件'
     },
     webEntrypoints: {
       label: 'TB2 entry:',
@@ -1261,6 +1283,12 @@ const messages = {
       gaps: 'Gaps',
       links: 'Quick Links',
       noGaps: 'none',
+      eventType: '事件類型',
+      source: '來源',
+      path: '路徑',
+      details: '詳細',
+      action: '動作',
+      time: '時間',
       openCard: '進入'
     }
   }
@@ -1268,9 +1296,11 @@ const messages = {
 let currentLanguage = localStorage.getItem('devgov-language') === 'en' ? 'en' : 'zhTw';
 let serviceStatusRows = [];
 let serviceOnboardingRows = [];
+let webConsoleEventsRows = [];
 let deckDrag = null;
 let deckLayoutReady = false;
 let deckZCounter = 10;
+let pendingWebConsoleEventReports = Promise.resolve();
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 const themeButton = document.getElementById('theme-toggle');
 const languageButton = document.getElementById('language-toggle');
@@ -1300,7 +1330,11 @@ addEventListener('resize', () => {
 });
 const views = [...document.querySelectorAll('section')];
 const buttons = [...document.querySelectorAll('nav button')];
-buttons.forEach(button => button.addEventListener('click', () => activateView(button.dataset.view)));
+buttons.forEach(button => button.addEventListener('click', () => {
+  const view = button.dataset.view;
+  activateView(view);
+  reportWebConsoleEvent('view-switch', { view });
+}));
 function activateView(viewId, options = {}) {
   if (options.enterDashboard || !document.body.classList.contains('deck-mode')) {
     document.body.classList.remove('deck-mode');
@@ -1324,6 +1358,7 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
     if (input.dataset.filter === 'web-entrypoints') renderWebEntrypoints(value);
     if (input.dataset.filter === 'service-status') renderServiceStatusTable(value, serviceStatusRows);
     if (input.dataset.filter === 'service-onboarding') renderServiceOnboardingTable(value, serviceOnboardingRows);
+    if (input.dataset.filter === 'web-console-events') renderWebConsoleEventsTable(value, webConsoleEventsRows);
   });
 });
 function renderAll() {
@@ -1347,6 +1382,7 @@ function renderAll() {
   renderApiKeys(filterValue('api-keys'));
   renderAgentInstructions(filterValue('agent-instructions'));
   renderWebEntrypoints(filterValue('web-entrypoints'));
+  renderWebConsoleEventsTable(filterValue('web-console-events'), webConsoleEventsRows);
   renderAgentStorageGuidance();
   const rows = serviceStatusRows.length
     ? serviceStatusRows
@@ -1363,12 +1399,14 @@ function metricDeckItems() {
     { label: t('metrics.profiles'), value: state.summary.terminalProfiles, view: 'terminal' },
     { label: t('metrics.apiKeys'), value: state.summary.apiKeys, view: 'api-keys' },
     { label: t('metrics.instructions'), value: state.summary.agentInstructions, view: 'agent-instructions' },
-    { label: t('metrics.webEntrypoints'), value: state.summary.webEntrypoints, view: 'web-entrypoints' }
+    { label: t('metrics.webEntrypoints'), value: state.summary.webEntrypoints, view: 'web-entrypoints' },
+    { label: t('metrics.webConsoleEvents'), value: state.summary.webConsoleEvents, view: 'web-console-events' }
   ];
 }
 function bindMetricCards() {
   document.querySelectorAll('.metric[data-card-view]').forEach((card) => {
     card.addEventListener('click', () => {
+      reportWebConsoleEvent('metric-card-open', { view: card.dataset.cardView });
       if (card.dataset.dragged === 'true' || Number(card.dataset.suppressClickUntil || 0) > Date.now()) {
         card.dataset.dragged = 'false';
         return;
@@ -1692,6 +1730,18 @@ function renderWebEntrypoints(query) {
     pill(row.status)
   ]));
 }
+function renderWebConsoleEventsTable(query, rows) {
+  const filtered = rows.filter(row => match(row, query));
+  renderTable('web-console-events', [t('labels.time'), t('labels.eventType'), t('labels.project'), t('labels.source'), t('labels.path'), t('labels.action'), t('labels.details')], filtered.map(row => [
+    textCell(row.receivedAt || row.receivedTime || ''),
+    textCell(row.eventType),
+    textCell(row.project),
+    textCell(row.source),
+    textCell(row.path),
+    textCell(row.action),
+    textCell(row.details || '')
+  ]));
+}
 function renderAgentStorageGuidance() {
   document.getElementById('agent-storage-guidance').innerHTML = [
     [t('labels.runtimeSource'), fileRef(state.agentInstructions.sourceOfTruth)],
@@ -1743,6 +1793,17 @@ async function refreshServiceOnboarding() {
   } finally {
     onboardingButton.disabled = false;
     renderServiceOnboardingTable(filterValue('service-onboarding'), serviceOnboardingRows);
+  }
+}
+async function refreshWebConsoleEvents() {
+  try {
+    const response = await fetch('/api/web-console-events');
+    const payload = await response.json();
+    webConsoleEventsRows = payload.events || [];
+  } catch {
+    webConsoleEventsRows = [];
+  } finally {
+    renderWebConsoleEventsTable(filterValue('web-console-events'), webConsoleEventsRows);
   }
 }
 function renderQuickTestCell(row) {
@@ -1884,7 +1945,8 @@ function syncI18n() {
     'agent-instructions': placeholders.agentInstructions,
     'web-entrypoints': placeholders.webEntrypoints,
     'service-status': placeholders.serviceStatus,
-    'service-onboarding': placeholders.serviceOnboarding
+    'service-onboarding': placeholders.serviceOnboarding,
+    'web-console-events': placeholders.webConsoleEvents
   })) {
     const input = document.querySelector('input[data-filter="' + name + '"]');
     if (input) input.placeholder = text;
@@ -2025,7 +2087,13 @@ renderAll();
 Motion.intro();
 refreshServiceStatus();
 refreshServiceOnboarding();
+refreshWebConsoleEvents();
 onboardingButton.addEventListener('click', () => refreshServiceOnboarding());
+reportWebConsoleEvent('dashboard-open', {
+  path: location.pathname,
+  title: document.title,
+  source: 'inline-dashboard'
+});
 </script>
 </body>
 </html>`;
@@ -2034,6 +2102,66 @@ onboardingButton.addEventListener('click', () => refreshServiceOnboarding());
 async function readJson(filePath) {
   const text = await fs.readFile(filePath, "utf8");
   return JSON.parse(text);
+}
+async function readDashboardEvents(filePath) {
+  const raw = await fs.readFile(filePath, "utf8").catch(() => null);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    const events = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.events) ? parsed.events : [];
+    return events;
+  } catch {
+    return [];
+  }
+}
+
+function reportWebConsoleEvent(eventType, metadata = {}) {
+  const payload = {
+    eventType,
+    project: metadata.project ?? "devgov-dashboard",
+    source: metadata.source ?? "dashboard",
+    path: metadata.path ?? (location ? location.pathname : "/"),
+    action: metadata.action ?? eventType,
+    details: serializeEventDetails(metadata),
+    metadata: sanitizeEventMetadata(metadata)
+  };
+  pendingWebConsoleEventReports = pendingWebConsoleEventReports
+    .then(() => sendWebConsoleEvent(payload))
+    .catch(() => { });
+}
+
+function sanitizeText(value, maxLength = 280) {
+  if (value === undefined || value === null) return "";
+  return String(value).trim().slice(0, maxLength);
+}
+
+function serializeEventDetails(value) {
+  const body = value.details ?? value.reason ?? value.message;
+  if (body === undefined) return "";
+  if (typeof body === "string") return sanitizeText(body);
+  try {
+    return sanitizeText(JSON.stringify(body));
+  } catch {
+    return sanitizeText(String(body));
+  }
+}
+
+function sanitizeEventMetadata(metadata) {
+  const value = { ...metadata };
+  delete value.path;
+  delete value.action;
+  delete value.details;
+  delete value.reason;
+  delete value.message;
+  return value;
+}
+
+async function sendWebConsoleEvent(payload) {
+  await fetch('/api/web-console-events', {
+    method: 'POST',
+    headers: { "content-type": "application/json; charset=utf-8" },
+    body: JSON.stringify(payload)
+  });
 }
 
 function escapeHtml(value) {

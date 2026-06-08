@@ -11,6 +11,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = parseArgs(process.argv.slice(2));
 const host = args.host ?? DASHBOARD_HOST;
 const port = Number(args.port ?? DASHBOARD_PORT);
+const WEB_CONSOLE_EVENTS_PATH = resolve(root, "reports", "web-console-events.json");
+const MAX_WEB_EVENTS = 240;
 
 const server = http.createServer(async (request, response) => {
   try {
@@ -36,6 +38,37 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/agent-instructions") {
       const state = await loadDashboardState(root);
       sendJson(response, state.agentInstructions);
+      return;
+    }
+    if (url.pathname === "/api/web-console-events") {
+      if (request.method === "GET") {
+        const payload = await loadWebConsoleEvents(root);
+        sendJson(response, payload);
+        return;
+      }
+      if (request.method === "POST") {
+        try {
+          const event = await parseEventPayload(request);
+          await appendWebConsoleEvent(root, event, request.socket.remoteAddress ?? "unknown");
+          sendJson(response, { ok: true, receivedAt: event.receivedAt, id: event.id });
+          return;
+        } catch (error) {
+          response.writeHead(400, {
+            "content-type": "application/json; charset=utf-8",
+            "access-control-allow-origin": "*",
+            "cache-control": "no-store"
+          });
+          response.end(`${JSON.stringify({ ok: false, error: error.message }, null, 2)}\n`);
+          return;
+        }
+      }
+      response.writeHead(405, {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*",
+        "cache-control": "no-store",
+        allow: "GET, POST"
+      });
+      response.end(`${JSON.stringify({ ok: false, error: "Method not allowed" }, null, 2)}\n`);
       return;
     }
     if (url.pathname === "/api/unitext-agent-instructions") {
@@ -110,6 +143,108 @@ function sendHtml(response, value) {
     "cache-control": "no-store"
   });
   response.end(value);
+}
+
+async function loadWebConsoleEvents(rootPath) {
+  const raw = await readWebConsoleEvents(rootPath);
+  const events = Array.isArray(raw) ? raw : Array.isArray(raw?.events) ? raw.events : [];
+  return {
+    schema: "devgov.dashboard-web-console-events.v1",
+    generatedAt: new Date().toISOString(),
+    events: events.slice(0, MAX_WEB_EVENTS),
+    limit: MAX_WEB_EVENTS
+  };
+}
+
+async function appendWebConsoleEvent(rootPath, payload, clientIp) {
+  const sanitized = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    receivedAt: payload.receivedAt,
+    eventType: normalizeText(payload.eventType),
+    project: normalizeText(payload.project),
+    source: normalizeText(payload.source),
+    path: normalizeText(payload.path, 240),
+    action: normalizeText(payload.action),
+    details: normalizeText(payload.details),
+    metadata: payload.metadata,
+    clientIp,
+    userAgent: normalizeText(payload.userAgent)
+  };
+  const current = await loadWebConsoleEvents(rootPath);
+  const next = [sanitized, ...current.events].slice(0, MAX_WEB_EVENTS);
+  await fs.mkdir(resolve(rootPath, "reports"), { recursive: true });
+  await fs.writeFile(
+    WEB_CONSOLE_EVENTS_PATH,
+    `${JSON.stringify({ schema: "devgov.dashboard-web-console-events.v1", generatedAt: new Date().toISOString(), events: next }, null, 2)}\n`,
+    "utf8"
+  );
+}
+
+function normalizeText(value, maxLength = 260) {
+  if (value === undefined || value === null) return "";
+  return String(value).trim().slice(0, maxLength);
+}
+
+function sanitizePayload(payload = {}, ua = "") {
+  return {
+    eventType: payload.eventType ?? payload.type ?? "web_console_event",
+    project: payload.project ?? payload.app ?? "unknown",
+    source: payload.source ?? payload.origin ?? "web_console",
+    path: payload.path ?? payload.url ?? payload.pathname ?? payload.endpoint ?? "",
+    action: payload.action ?? payload.name ?? payload.event ?? "",
+    details: payload.details ?? payload.message ?? payload.data ?? "",
+    metadata: payload.metadata ?? null,
+    userAgent: ua,
+    receivedAt: normalizeIsoTimestamp(payload.timestamp) ?? new Date().toISOString()
+  };
+}
+
+async function parseEventPayload(request) {
+  const body = await readJsonFromRequest(request);
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new Error("Invalid event payload");
+  }
+  const ua = request.headers["user-agent"] || "";
+  return sanitizePayload(body, ua);
+}
+
+async function readWebConsoleEvents(rootPath) {
+  const raw = await fs.readFile(WEB_CONSOLE_EVENTS_PATH, "utf8").catch(() => null);
+  if (!raw) return [];
+  try {
+    const value = JSON.parse(raw);
+    return value?.events ?? value;
+  } catch {
+    return [];
+  }
+}
+
+function normalizeIsoTimestamp(value) {
+  if (typeof value !== "string") return null;
+  const maybeDate = new Date(value);
+  if (Number.isNaN(maybeDate.getTime())) return null;
+  return maybeDate.toISOString();
+}
+
+function readJsonFromRequest(request) {
+  return new Promise((resolve, reject) => {
+    let content = "";
+    request.on("data", (chunk) => {
+      content += chunk;
+    });
+    request.on("end", () => {
+      if (!content.trim()) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(content));
+      } catch {
+        reject(new Error("Invalid JSON body"));
+      }
+    });
+    request.on("error", reject);
+  });
 }
 
 async function sendRepoFile(response, url) {
