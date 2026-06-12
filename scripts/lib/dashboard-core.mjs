@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { spawn } from "node:child_process";
 import http from "node:http";
 import https from "node:https";
 import path from "node:path";
@@ -271,7 +272,9 @@ export async function checkServiceStatuses(root = ".", options = {}) {
   const state = await loadDashboardState(root);
   const timeoutMs = options.timeoutMs ?? 2500;
   const statuses = await Promise.all(state.serviceTargets.map(async (target) => {
-    const live = await checkUrl(target.url, timeoutMs, target.quickTest);
+    const live = target.quickTest?.probeRef
+      ? await checkLocalProbe(root, target.quickTest, timeoutMs)
+      : await checkUrl(target.url, timeoutMs, target.quickTest);
     const quickTest = {
       ...target.quickTest,
       ...live
@@ -298,10 +301,12 @@ export async function checkServiceStatuses(root = ".", options = {}) {
 
 function buildQuickTest(url, options = {}) {
   return {
-    state: url ? "CHECKING" : "MISSING",
+    state: url || options.probeRef ? "CHECKING" : "MISSING",
     url,
-    notes: url ? (options.notes || "Safe HTTP health check only.") : "No health URL is registered.",
-    acceptedStatusCodes: Array.isArray(options.acceptedStatusCodes) ? options.acceptedStatusCodes : undefined
+    notes: url || options.probeRef ? (options.notes || "Safe HTTP health check only.") : "No health URL is registered.",
+    acceptedStatusCodes: Array.isArray(options.acceptedStatusCodes) ? options.acceptedStatusCodes : undefined,
+    probeRef: options.probeRef || "",
+    timeoutSeconds: Number.isInteger(options.timeoutSeconds) ? options.timeoutSeconds : undefined
   };
 }
 
@@ -320,7 +325,7 @@ function deriveControlReadiness(target, options = {}) {
   const quickState = target.quickTest?.state;
   const hasQuickSignal = options.useLiveHealth
     ? ["ONLINE", "OFFLINE", "ERROR"].includes(quickState)
-    : Boolean(target.quickTest?.url);
+    : Boolean(target.quickTest?.url || target.quickTest?.probeRef);
   const quickOnline = quickState === "ONLINE";
 
   if (quickOnline && target.doctor?.state === "FOUND" && target.restart?.state === "FOUND") {
@@ -473,7 +478,11 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       registryStatus: startup?.status || "candidate",
       url: "",
       target: "camera-observation",
-      quickTest: buildQuickTest(""),
+      quickTest: buildQuickTest("", {
+        notes: "Safe local observation probe only. Confirms feeder, virtual camera process, fresh frame updates, and camera registration without exposing image contents.",
+        probeRef: "scripts/service-control/quickcheck-ps3eye-windows-virtual-camera.ps1",
+        timeoutSeconds: 30
+      }),
       doctor: {
         state: "MISSING",
         ref: "",
@@ -2612,6 +2621,86 @@ function checkUrl(url, timeoutMs, quickTest = {}) {
         latencyMs: Date.now() - started,
         checkedAt: new Date().toISOString()
       });
+    });
+  });
+}
+
+function checkLocalProbe(root, quickTest = {}, timeoutMs) {
+  const probeRef = String(quickTest.probeRef || "").trim();
+  if (!probeRef) {
+    return Promise.resolve({
+      state: "MISSING",
+      statusCode: null,
+      latencyMs: null,
+      checkedAt: new Date().toISOString(),
+      error: "No local quick probe registered"
+    });
+  }
+
+  return new Promise((resolveStatus) => {
+    let resolved = false;
+    let stdout = "";
+    let stderr = "";
+    const started = Date.now();
+    const effectiveTimeoutMs = Math.max(1000, (quickTest.timeoutSeconds ?? Math.ceil(timeoutMs / 1000)) * 1000);
+    const child = spawn("powershell.exe", [
+      "-NoProfile",
+      "-ExecutionPolicy", "Bypass",
+      "-File", path.join(root, probeRef)
+    ], {
+      cwd: root,
+      windowsHide: true
+    });
+
+    const timer = setTimeout(() => {
+      child.kill();
+      if (resolved) return;
+      resolved = true;
+      resolveStatus({
+        state: "OFFLINE",
+        error: "timeout",
+        latencyMs: Date.now() - started,
+        checkedAt: new Date().toISOString()
+      });
+    }, effectiveTimeoutMs);
+
+    child.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      if (resolved) return;
+      resolved = true;
+      resolveStatus({
+        state: "ERROR",
+        error: error.message,
+        latencyMs: Date.now() - started,
+        checkedAt: new Date().toISOString()
+      });
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (resolved) return;
+      resolved = true;
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        resolveStatus({
+          state: code === 0 && parsed.ok ? "ONLINE" : "ERROR",
+          error: code === 0 ? undefined : String(parsed.summary ?? stderr.trim() ?? stdout.trim() ?? `Probe exited with code ${code}`),
+          latencyMs: Date.now() - started,
+          checkedAt: new Date().toISOString()
+        });
+      } catch {
+        resolveStatus({
+          state: code === 0 ? "ONLINE" : "ERROR",
+          error: code === 0 ? undefined : (stderr.trim() || stdout.trim() || `Probe exited with code ${code}`),
+          latencyMs: Date.now() - started,
+          checkedAt: new Date().toISOString()
+        });
+      }
     });
   });
 }

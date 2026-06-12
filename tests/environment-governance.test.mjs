@@ -452,10 +452,10 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(tunnelClientTarget.restart.state, "FOUND");
   assert.equal(tunnelClientTarget.controlReadiness, "PARTIAL");
   assert.equal(ps3eyeTarget.project, "ps3eye-windows-virtual-camera");
-  assert.equal(ps3eyeTarget.quickTest.state, "MISSING");
+  assert.equal(ps3eyeTarget.quickTest.state, "CHECKING");
   assert.equal(ps3eyeTarget.doctor.state, "FOUND");
   assert.equal(ps3eyeTarget.restart.state, "FOUND");
-  assert.equal(ps3eyeTarget.controlReadiness, "BLOCKED");
+  assert.equal(ps3eyeTarget.controlReadiness, "PARTIAL");
   assert.equal(tasteTarget.project, "taste-web");
   assert.equal(tasteTarget.doctor.state, "FOUND");
   assert.equal(tasteTarget.restart.state, "FOUND");
@@ -488,6 +488,7 @@ test("live service-status view blocks deprecated targets and recomputes readines
   const devgovGovTarget = status.services.find((target) => target.id === "public-route:devgov-gov");
   const devgovDevTarget = status.services.find((target) => target.id === "public-route:devgov-dev");
   const localArchiveTarget = status.services.find((target) => target.id === "local-agent:local-archive-maintainer");
+  const ps3eyeTarget = status.services.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
   const deprecatedRouteTarget = status.services.find((target) => target.id === "public-route:mcp-colorgeek");
   const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
 
@@ -501,6 +502,8 @@ test("live service-status view blocks deprecated targets and recomputes readines
   assert.equal(localArchiveTarget.quickTest.state, "ONLINE");
   assert.equal(localArchiveTarget.quickTest.statusCode, 401);
   assert.equal(localArchiveTarget.controlReadiness, "READY");
+  assert.equal(ps3eyeTarget.quickTest.state, "ONLINE");
+  assert.equal(ps3eyeTarget.controlReadiness, "READY");
   assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
   assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
   assert.equal(tunnelClientTarget.quickTest.state, "ONLINE");
