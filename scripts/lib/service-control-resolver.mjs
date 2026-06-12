@@ -72,6 +72,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed PS3 Eye virtual camera repair/start path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "taste" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-taste.ps1"),
+      runtimeKind: "taste-next-runtime",
+      summary: "Run the reviewed Taste runtime check through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "taste" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-taste.ps1"),
+      runtimeKind: "taste-next-runtime",
+      summary: "Run the reviewed Taste ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }

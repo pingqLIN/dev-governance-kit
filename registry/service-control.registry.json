@@ -132,12 +132,50 @@
       "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
       "inputContract": "No user input. Run the reviewed PS3 Eye repair/start sequence and then re-run doctor checks.",
       "auditLevel": "server-authored-local-log",
-      "timeoutSeconds": 45,
+      "timeoutSeconds": 75,
       "rollbackNotes": "If repair does not restore the camera pipeline, inspect ffmpeg, VCamSample, and hardware state directly on the target repo.",
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only repair action for PS3 Eye virtual camera observation."
+    },
+    {
+      "id": "taste-doctor",
+      "controlTargetId": "taste",
+      "surfaceTargets": [
+        "taste"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-taste.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the Taste runtime check for local and public endpoint reachability.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 35,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the Taste runtime check output and the public route state before attempting repair.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the Taste Next.js runtime and Cloudflare route."
+    },
+    {
+      "id": "taste-restart",
+      "controlTargetId": "taste",
+      "surfaceTargets": [
+        "taste"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-taste.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure the local Taste runtime is listening on 127.0.0.1:3010, then rerun the full runtime check.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "If restart restores the local app but public checks still fail, inspect the cloudflared service and route health separately.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the Taste Next.js runtime; public route failures remain visible after local start."
     }
   ]
 }

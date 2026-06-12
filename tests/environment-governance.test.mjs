@@ -415,6 +415,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const stagingRouteTarget = targets.find((target) => target.id === "public-route:codex-calendar-todo-staging");
   const tunnelClientTarget = targets.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
   const ps3eyeTarget = targets.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
+  const tasteTarget = targets.find((target) => target.id === "public-route:taste");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -441,6 +442,10 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(ps3eyeTarget.doctor.state, "FOUND");
   assert.equal(ps3eyeTarget.restart.state, "FOUND");
   assert.equal(ps3eyeTarget.controlReadiness, "BLOCKED");
+  assert.equal(tasteTarget.project, "taste-web");
+  assert.equal(tasteTarget.doctor.state, "FOUND");
+  assert.equal(tasteTarget.restart.state, "FOUND");
+  assert.equal(tasteTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -513,6 +518,17 @@ test("service control registry exposes ps3eye virtual camera doctor and restart 
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "ps3eye-windows-virtual-camera" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "ps3eye-windows-virtual-camera" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes taste doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "taste" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "taste" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);

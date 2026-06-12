@@ -415,7 +415,7 @@ function applyApprovedControlRefs(target, approvedControlsByTarget) {
       ...current,
       state: "FOUND",
       ref: approved.wrapperRef,
-      notes: current?.notes || approved.notes
+      notes: approved.notes || current?.notes || ""
     };
   }
 
