@@ -198,6 +198,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed LM Studio local API ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "tb2" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-tb2.ps1"),
+      runtimeKind: "tb2-local-mcp",
+      summary: "Run the reviewed TB2 local MCP doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "tb2" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-tb2.ps1"),
+      runtimeKind: "tb2-local-mcp",
+      summary: "Run the reviewed TB2 local MCP ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }

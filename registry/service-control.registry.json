@@ -410,6 +410,46 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the LM Studio API server."
+    },
+    {
+      "id": "tb2-doctor",
+      "controlTargetId": "tb2",
+      "surfaceTargets": [
+        "tb2",
+        "tb2-mcp-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-tb2.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Check TB2 status-runtime, verify prod and staging runtime state, and probe local/public health endpoints.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 45,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the TB2 Windows entrypoint scripts, the local MCP start authority, and the active cloudflared TB2 route mapping.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the TB2 Windows entrypoint layer. It intentionally keeps staging drift and public-route failures visible."
+    },
+    {
+      "id": "tb2-restart",
+      "controlTargetId": "tb2",
+      "surfaceTargets": [
+        "tb2",
+        "tb2-mcp-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-tb2.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed TB2 local MCP start authority, then verify local/public health and runtime integrity.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "If local listener recovers but public health still fails, inspect cloudflared routing or runtime stage drift before treating TB2 as restored.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the TB2 Windows entrypoint layer. It intentionally fails closed when staging or public health remain broken."
     }
   ]
 }
