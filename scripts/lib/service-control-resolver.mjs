@@ -144,6 +144,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed Display Shader Control Lab ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "url-hero" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-url-hero.ps1"),
+      runtimeKind: "url-hero-vite-dev",
+      summary: "Run the reviewed URL Hero doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "url-hero" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-url-hero.ps1"),
+      runtimeKind: "url-hero-vite-dev",
+      summary: "Run the reviewed URL Hero ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }

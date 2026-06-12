@@ -418,6 +418,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const tasteTarget = targets.find((target) => target.id === "public-route:taste");
   const sbsTarget = targets.find((target) => target.id === "onboarding:sbs-local-proxy-http");
   const displayShaderLabTarget = targets.find((target) => target.id === "onboarding:color-management-shader-display-shader-control-lab-http");
+  const urlHeroTarget = targets.find((target) => target.id === "onboarding:url-hero-vite-dev");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -460,6 +461,11 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(displayShaderLabTarget.doctor.state, "FOUND");
   assert.equal(displayShaderLabTarget.restart.state, "FOUND");
   assert.equal(displayShaderLabTarget.controlReadiness, "PARTIAL");
+  assert.equal(urlHeroTarget.project, "url-hero");
+  assert.equal(urlHeroTarget.target, "127.0.0.1:3100");
+  assert.equal(urlHeroTarget.doctor.state, "FOUND");
+  assert.equal(urlHeroTarget.restart.state, "FOUND");
+  assert.equal(urlHeroTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -576,6 +582,17 @@ test("service control registry exposes color management shader doctor and restar
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "color-management-shader" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "color-management-shader" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes url hero doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "url-hero" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "url-hero" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);

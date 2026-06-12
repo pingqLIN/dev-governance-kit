@@ -292,6 +292,46 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the color-management-Shader Display Shader Control Lab."
+    },
+    {
+      "id": "url-hero-doctor",
+      "controlTargetId": "url-hero",
+      "surfaceTargets": [
+        "url-hero",
+        "vite-dev"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-url-hero.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Validate the governed Vite port, then run the existing lint and test scripts from the root url-hero worktree.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the root url-hero worktree test output before attempting to restart the dev server.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the root url-hero Vite dev app without mutating the dirty target repo."
+    },
+    {
+      "id": "url-hero-restart",
+      "controlTargetId": "url-hero",
+      "surfaceTargets": [
+        "url-hero",
+        "vite-dev"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-url-hero.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure the root url-hero Vite dev server is listening on 127.0.0.1:3100 with strictPort and HMR disabled for background stability.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 40,
+      "rollbackNotes": "If ensure-running fails, inspect the url-hero dev server logs and the existing dirty target repo before changing any project code.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the root url-hero Vite dev app without editing the pre-existing dirty worktree."
     }
   ]
 }

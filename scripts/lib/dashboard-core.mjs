@@ -529,6 +529,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const urlHero = onboardingEntries.find((entry) => entry.id === "url-hero-vite-dev");
+  if (urlHero) {
+    const portEntry = portsByProjectService.get("url-hero:vite-dev");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/url-hero/` : "http://127.0.0.1:3100/url-hero/";
+    targets.push({
+      id: "onboarding:url-hero-vite-dev",
+      controlTargetId: "url-hero",
+      project: "url-hero",
+      label: "URL Hero",
+      kind: "vite-dev-runtime",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:3100",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: urlHero.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: urlHero.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 
