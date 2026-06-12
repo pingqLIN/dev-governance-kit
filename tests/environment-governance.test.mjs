@@ -419,6 +419,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const sbsTarget = targets.find((target) => target.id === "onboarding:sbs-local-proxy-http");
   const displayShaderLabTarget = targets.find((target) => target.id === "onboarding:color-management-shader-display-shader-control-lab-http");
   const urlHeroTarget = targets.find((target) => target.id === "onboarding:url-hero-vite-dev");
+  const comfyUiTarget = targets.find((target) => target.id === "onboarding:comfyui-local-http");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -466,6 +467,11 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(urlHeroTarget.doctor.state, "FOUND");
   assert.equal(urlHeroTarget.restart.state, "FOUND");
   assert.equal(urlHeroTarget.controlReadiness, "PARTIAL");
+  assert.equal(comfyUiTarget.project, "ComfyUI");
+  assert.equal(comfyUiTarget.target, "127.0.0.1:8188");
+  assert.equal(comfyUiTarget.doctor.state, "FOUND");
+  assert.equal(comfyUiTarget.restart.state, "FOUND");
+  assert.equal(comfyUiTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -626,6 +632,17 @@ test("service control registry exposes tb2 doctor and restart actions", async ()
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "tb2" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "tb2" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes comfyui local doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "comfyui-local" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "comfyui-local" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);

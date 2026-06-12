@@ -555,6 +555,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const comfyui = onboardingEntries.find((entry) => entry.id === "comfyui-local-http");
+  if (comfyui) {
+    const portEntry = portsByProjectService.get("ComfyUI:comfyui-local-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/system_stats` : "http://127.0.0.1:8188/system_stats";
+    targets.push({
+      id: "onboarding:comfyui-local-http",
+      controlTargetId: "comfyui-local",
+      project: "ComfyUI",
+      label: "ComfyUI",
+      kind: "portable-runtime",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:8188",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: comfyui.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: comfyui.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 

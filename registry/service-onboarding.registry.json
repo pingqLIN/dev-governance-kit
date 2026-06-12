@@ -220,6 +220,24 @@
       "notes": "The root url-hero worktree is the active source authority for this control path; DevGov does not modify the pre-existing dirty target repo."
     },
     {
+      "id": "comfyui-local-http",
+      "project": "ComfyUI",
+      "service": "comfyui-local-http",
+      "readiness": "PARTIAL",
+      "ownerKind": "source-repo-and-portable-runtime",
+      "sourceRef": "registry/ports.registry.json#ComfyUI:comfyui-local-http",
+      "healthProcedure": "Use the local http://127.0.0.1:8188/system_stats endpoint on the localhost-only ComfyUI runtime.",
+      "doctorProcedure": "Use the reviewed DevGov ComfyUI doctor wrapper to validate the portable runtime layout, model links, process presence, and localhost health endpoint.",
+      "resetProcedure": "Use the reviewed DevGov ComfyUI restart wrapper to ensure the portable runtime is running on 127.0.0.1:8188 without widening exposure beyond localhost.",
+      "startupProcedure": "Use the reviewed on-demand ComfyUI local start path in the target repo; login startup is not registered in DevGov.",
+      "dashboardProcedure": "Surface ComfyUI as a local service target with approved Health, Doctor, and Restart controls through the local-only DevGov control listener.",
+      "cloudflareProcedure": "No Cloudflare route is approved; keep ComfyUI loopback-only unless a later exposure review explicitly changes that boundary.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "registry/service-control.registry.json#comfyui-local-doctor",
+      "nextAction": "Decide later whether ComfyUI should gain a reviewed login-startup authority, distinct from the current on-demand localhost control path.",
+      "notes": "The target repo is an operations workspace, not the upstream ComfyUI source tree; DevGov reuses the repo-level localhost-only service-control scripts rather than editing the dirty worktree."
+    },
+    {
       "id": "video-render-kit-control-panel-http",
       "project": "video-render-kit",
       "service": "control-panel-http",

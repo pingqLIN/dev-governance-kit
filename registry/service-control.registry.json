@@ -450,6 +450,46 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the TB2 Windows entrypoint layer. It intentionally fails closed when staging or public health remain broken."
+    },
+    {
+      "id": "comfyui-local-doctor",
+      "controlTargetId": "comfyui-local",
+      "surfaceTargets": [
+        "comfyui-local",
+        "comfyui-local-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-comfyui-local.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed ComfyUI local doctor to validate the portable runtime, model links, ComfyUI process, and localhost health endpoint.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 45,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the local ComfyUI runtime layout and existing repo-level service-control scripts before changing software or models.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the ComfyUI localhost-only static image runtime."
+    },
+    {
+      "id": "comfyui-local-restart",
+      "controlTargetId": "comfyui-local",
+      "surfaceTargets": [
+        "comfyui-local",
+        "comfyui-local-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-comfyui-local.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed ComfyUI localhost-only restart wrapper and wait for the governed 127.0.0.1:8188 runtime to recover.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "If restart does not restore localhost health, inspect the ComfyUI portable runtime console and repo-level start script before changing models or runtime flags.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the ComfyUI localhost-only static image runtime."
     }
   ]
 }
