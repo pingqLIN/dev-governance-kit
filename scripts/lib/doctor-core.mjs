@@ -6,6 +6,7 @@ import { buildDocsIndex, renderSearchHtml } from "./docs-index-core.mjs";
 import { validateGovernanceRegistry } from "./governance-registry-core.mjs";
 import { writeReport } from "./report-output.mjs";
 import { DASHBOARD_HOST, DASHBOARD_PORT } from "./dashboard-core.mjs";
+import { SERVICE_CONTROL_HOST, SERVICE_CONTROL_PORT } from "./service-control-resolver.mjs";
 
 export async function runDoctorChecks(root = ".", options = {}) {
   const checks = [];
@@ -20,6 +21,7 @@ export async function runDoctorChecks(root = ".", options = {}) {
     "api-keys.registry.json",
     "agent-instructions.registry.json",
     "service-onboarding.registry.json",
+    "service-control.registry.json",
     "local-cloudflare.registry.json",
     "startup.registry.json",
     "public-routes.registry.json",
@@ -65,7 +67,14 @@ export async function runDoctorChecks(root = ".", options = {}) {
     `${apiKeys.entries.length} credential-location records`
   );
 
-  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/register-dashboard-protocol.ps1", "scripts/start-gov-public-route.ps1", "scripts/register-gov-public-route-startup.ps1", "scripts/require-governed-port.mjs", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs", "scripts/scan-context-budget.mjs", "scripts/Invoke-AntivirusTriage.ps1", "scripts/Invoke-CodexAntivirusHook.ps1"]) {
+  const serviceControlPort = ports.entries.find((entry) => entry.project === "devgov" && entry.service === "service-control-http");
+  add(
+    "service-control-port-registry",
+    Boolean(serviceControlPort && serviceControlPort.host === SERVICE_CONTROL_HOST && serviceControlPort.port === SERVICE_CONTROL_PORT),
+    serviceControlPort ? `${serviceControlPort.host}:${serviceControlPort.port}` : "missing"
+  );
+
+  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/register-dashboard-protocol.ps1", "scripts/start-gov-public-route.ps1", "scripts/register-gov-public-route-startup.ps1", "scripts/require-governed-port.mjs", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs", "scripts/scan-context-budget.mjs", "scripts/Invoke-AntivirusTriage.ps1", "scripts/Invoke-CodexAntivirusHook.ps1", "scripts/service-control/restart-devgov-dashboard.ps1", "scripts/service-control/doctor-tunnel-client-local-filesystem-mcp.ps1", "scripts/service-control/restart-tunnel-client-local-filesystem-mcp.ps1", "scripts/lib/service-control-core.mjs", "scripts/lib/service-control-resolver.mjs"]) {
     add(`script-${scriptPath}`, await fileExists(path.join(root, scriptPath)), scriptPath);
   }
 

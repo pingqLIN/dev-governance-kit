@@ -1,0 +1,67 @@
+{
+  "schema": "devgov.service-control.registry.v1",
+  "description": "Reviewed executable service-control actions. Canonical registry data stores only stable control identities and wrapper references; machine-local runtime details stay outside this file.",
+  "sourceOfTruth": "registry/service-control.registry.json",
+  "entries": [
+    {
+      "id": "devgov-dashboard-restart",
+      "controlTargetId": "devgov-dashboard",
+      "surfaceTargets": [
+        "devgov-dashboard",
+        "devgov-dashboard-http",
+        "devgov-gov",
+        "devgov-dev"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-devgov-dashboard.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user-supplied runtime arguments. Action performs bounded local ensure-running behavior for the DevGov dashboard origin only.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 15,
+      "rollbackNotes": "If the action fails, inspect reports/service-control-events.json and rerun the reviewed local dashboard start path manually.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "This first approved action is intentionally bounded to local DevGov dashboard ensure-running semantics on the non-public control listener."
+    },
+    {
+      "id": "tunnel-client-local-filesystem-mcp-doctor",
+      "controlTargetId": "tunnel-client-local-filesystem-mcp",
+      "surfaceTargets": [
+        "tunnel-client-local-filesystem-mcp"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-tunnel-client-local-filesystem-mcp.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the external tunnel-client runtime doctor wrapper and summarize the outcome.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 30,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the external openai-mcp-tunnel runtime scripts and readyz listener.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the tunnel-client local filesystem MCP bridge."
+    },
+    {
+      "id": "tunnel-client-local-filesystem-mcp-restart",
+      "controlTargetId": "tunnel-client-local-filesystem-mcp",
+      "surfaceTargets": [
+        "tunnel-client-local-filesystem-mcp"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-tunnel-client-local-filesystem-mcp.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the external tunnel-client runtime repair wrapper and summarize the outcome.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 45,
+      "rollbackNotes": "Use the openai-mcp-tunnel runtime scripts directly if DevGov control is unavailable. Runtime process restarts remain loopback-only.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running restart action for the tunnel-client local filesystem MCP bridge."
+    }
+  ]
+}

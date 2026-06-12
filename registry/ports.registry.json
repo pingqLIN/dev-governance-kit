@@ -82,6 +82,27 @@
       "notes": "Unified DevGov dashboard and public-route loopback origin for governed colorgeek.co hostnames. Public ingress must require Cloudflare Zero Trust Access."
     },
     {
+      "project": "devgov",
+      "service": "service-control-http",
+      "port": 3201,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "range": "api",
+      "source": "DevGov reviewed local-only service control governance",
+      "notes": "Local-only service-control listener for reviewed apply actions. This origin must never be published through Cloudflare routes."
+    },
+    {
+      "project": "openai-mcp-tunnel",
+      "service": "local-filesystem-mcp-admin-http",
+      "port": 8080,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "OpenAI MCP tunnel local filesystem bridge readiness and admin health governance",
+      "notes": "Loopback-only tunnel-client health, readyz, and admin UI listener for the local filesystem MCP bridge. Do not publish this origin through Cloudflare."
+    },
+    {
       "project": "color-management-Shader",
       "service": "display-shader-control-lab-http",
       "port": 4174,

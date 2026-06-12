@@ -1,15 +1,16 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { buildDocsIndex, renderSearchHtml } from "../scripts/lib/docs-index-core.mjs";
-import { buildServiceTargets, buildUniTextAgentInstructionIndex, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
+import { buildServiceTargets, buildUniTextAgentInstructionIndex, checkServiceStatuses, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
 import { buildServiceOnboardingAudit } from "../scripts/lib/service-onboarding-core.mjs";
+import { executeServiceControl, loadApprovedServiceControls, readServiceControlEvents, SERVICE_CONTROL_PORT } from "../scripts/lib/service-control-core.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
-import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validateLocalCloudflareRegistry, validatePublicRoutesRegistry, validateServiceOnboardingRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
+import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validateLocalCloudflareRegistry, validatePublicRoutesRegistry, validateServiceControlRegistry, validateServiceOnboardingRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
 import { scanStartupFolder } from "../scripts/lib/startup-core.mjs";
 import { buildTerminalFixPlan, scanTerminalSettingsObject } from "../scripts/lib/terminal-core.mjs";
@@ -244,6 +245,26 @@ test("new governance registries validate canonical shared data only", () => {
     statusSemantics: { ok: ["approved"] },
     rules: ["Keep status words visible."]
   }), []);
+  assert.deepEqual(validateServiceControlRegistry({
+    schema: "devgov.service-control.registry.v1",
+    entries: [{
+      id: "devgov-dashboard-restart",
+      controlTargetId: "devgov-dashboard",
+      surfaceTargets: ["devgov-dashboard"],
+      action: "restart",
+      approved: true,
+      wrapperRef: "scripts/service-control/restart-devgov-dashboard.ps1",
+      resolverRef: "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      inputContract: "No user input.",
+      auditLevel: "server-authored-local-log",
+      timeoutSeconds: 15,
+      rollbackNotes: "Use local opener manually.",
+      uiLabel: "Restart",
+      requiresConfirmation: true,
+      status: "approved",
+      notes: "Reviewed local-only control."
+    }]
+  }), []);
 });
 
 test("API key scanner records names and redacts values", async () => {
@@ -387,14 +408,12 @@ test("dashboard renders canonical DevGov registry state", async () => {
 test("dashboard exposes UniText query records and service targets", async () => {
   const state = await loadDashboardState(".");
   const unitext = buildUniTextAgentInstructionIndex(state.agentInstructions);
-  const targets = buildServiceTargets({
-    dashboardPort: state.dashboardPort,
-    publicRoutes: state.publicRoutes,
-    localAgents: state.localAgents,
-    startupEntries: state.startupEntries
-  });
+  const targets = state.serviceTargets;
   const dashboardTarget = targets.find((target) => target.id === "devgov-dashboard");
   const localAgentTarget = targets.find((target) => target.id === "local-agent:local-archive-maintainer");
+  const deprecatedRouteTarget = targets.find((target) => target.id === "public-route:mcp-colorgeek");
+  const stagingRouteTarget = targets.find((target) => target.id === "public-route:codex-calendar-todo-staging");
+  const tunnelClientTarget = targets.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -407,6 +426,70 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(localAgentTarget.doctor.state, "MISSING");
   assert.equal(localAgentTarget.restart.state, "REVIEW_REQUIRED");
   assert.equal(localAgentTarget.controlReadiness, "PARTIAL");
+  assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
+  assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
+  assert.equal(stagingRouteTarget.controlTargetId, "codex-calendar-todo-staging");
+  assert.equal(stagingRouteTarget.restart.state, "REVIEW_REQUIRED");
+  assert.equal(tunnelClientTarget.project, "openai-mcp-tunnel");
+  assert.equal(tunnelClientTarget.target, "127.0.0.1:8080");
+  assert.equal(tunnelClientTarget.doctor.state, "FOUND");
+  assert.equal(tunnelClientTarget.restart.state, "FOUND");
+  assert.equal(tunnelClientTarget.controlReadiness, "READY");
+});
+
+test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
+  const status = await checkServiceStatuses(".");
+  const dashboardTarget = status.services.find((target) => target.id === "devgov-dashboard");
+  const deprecatedRouteTarget = status.services.find((target) => target.id === "public-route:mcp-colorgeek");
+  const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
+
+  assert.equal(status.schema, "devgov.service-status.v1");
+  assert.equal(dashboardTarget.quickTest.state, "ONLINE");
+  assert.equal(dashboardTarget.controlReadiness, "READY");
+  assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
+  assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
+  assert.equal(tunnelClientTarget.quickTest.state, "ONLINE");
+  assert.equal(tunnelClientTarget.controlReadiness, "READY");
+});
+
+test("service control registry and approved DevGov action are executable through the reviewed wrapper", async () => {
+  const eventsPath = "reports/service-control-events.json";
+  const originalEvents = await readFile(eventsPath, "utf8").catch(() => null);
+  const controls = await loadApprovedServiceControls(".");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "devgov-dashboard" && entry.action === "restart");
+
+  assert.ok(restartControl);
+  assert.equal(restartControl.status, "approved");
+  assert.equal(SERVICE_CONTROL_PORT, 3201);
+
+  try {
+    const result = await executeServiceControl(".", { controlTargetId: "devgov-dashboard", action: "restart" }, { origin: "http://127.0.0.1:3000", clientIp: "127.0.0.1" });
+    const events = await readServiceControlEvents(".");
+
+    assert.equal(result.ok, true);
+    assert.match(result.summary, /DevGov dashboard/i);
+    assert.ok(events.some((event) => event.controlTargetId === "devgov-dashboard" && event.action === "restart" && event.ok));
+  } finally {
+    if (originalEvents === null) {
+      await rm(eventsPath, { force: true });
+    } else {
+      await writeFile(eventsPath, originalEvents, "utf8");
+    }
+  }
+});
+
+test("service control registry exposes tunnel client doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "tunnel-client-local-filesystem-mcp" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "tunnel-client-local-filesystem-mcp" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+
+  const result = await executeServiceControl(".", { controlTargetId: "tunnel-client-local-filesystem-mcp", action: "doctor" }, { origin: "http://127.0.0.1:3000", clientIp: "127.0.0.1" });
+
+  assert.equal(result.ok, true);
+  assert.match(result.summary, /Tunnel client doctor passed/i);
 });
 
 test("service onboarding audit summarizes registered service gaps", async () => {

@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 import { buildUniTextAgentInstructionIndex, checkServiceStatuses, DASHBOARD_HOST, DASHBOARD_PORT, loadDashboardState, renderDashboardHtml } from "./lib/dashboard-core.mjs";
 import { runDoctorChecks } from "./lib/doctor-core.mjs";
 import { loadServiceOnboardingAudit } from "./lib/service-onboarding-core.mjs";
+import { executeServiceControl, SERVICE_CONTROL_HOST, SERVICE_CONTROL_PORT } from "./lib/service-control-core.mjs";
+import { isAllowedControlOrigin } from "./lib/service-control-resolver.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = parseArgs(process.argv.slice(2));
@@ -106,6 +108,53 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
+const controlServer = http.createServer(async (request, response) => {
+  try {
+    const url = new URL(request.url ?? "/", `http://${SERVICE_CONTROL_HOST}:${SERVICE_CONTROL_PORT}`);
+    const origin = String(request.headers.origin ?? "");
+    if (request.method === "OPTIONS") {
+      if (!isAllowedControlOrigin(origin)) {
+        response.writeHead(403, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+        response.end(`${JSON.stringify({ ok: false, error: "Origin not allowed" }, null, 2)}\n`);
+        return;
+      }
+      sendJson(response, { ok: true }, { origin, methods: "POST, OPTIONS" });
+      return;
+    }
+    if (url.pathname === "/health") {
+      sendJson(response, { ok: true, project: "devgov", service: "service-control-http", port: SERVICE_CONTROL_PORT }, { origin });
+      return;
+    }
+    const controlActionMatch = /^\/api\/service-control\/([a-z-]+)$/.exec(url.pathname);
+    if (request.method === "POST" && controlActionMatch) {
+      if (!isAllowedControlOrigin(origin)) {
+        response.writeHead(403, {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store",
+          "access-control-allow-origin": "null"
+        });
+        response.end(`${JSON.stringify({ ok: false, error: "Origin not allowed" }, null, 2)}\n`);
+        return;
+      }
+      const payload = {
+        ...(await readJsonFromRequest(request)),
+        action: controlActionMatch[1]
+      };
+      const result = await executeServiceControl(root, payload, {
+        origin,
+        clientIp: request.socket.remoteAddress ?? "unknown"
+      });
+      sendJson(response, result, { origin, methods: "POST, OPTIONS" });
+      return;
+    }
+    response.writeHead(404, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    response.end(`${JSON.stringify({ ok: false, error: "Not found" }, null, 2)}\n`);
+  } catch (error) {
+    response.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    response.end(`${JSON.stringify({ ok: false, error: error.message }, null, 2)}\n`);
+  }
+});
+
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {
     console.error(`DevGov dashboard port ${host}:${port} is already in use. Stop the owning process or choose a reviewed registry change.`);
@@ -113,9 +162,19 @@ server.on("error", (error) => {
   }
   throw error;
 });
+controlServer.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`DevGov service-control port ${SERVICE_CONTROL_HOST}:${SERVICE_CONTROL_PORT} is already in use. Stop the owning process or choose a reviewed registry change.`);
+    process.exit(1);
+  }
+  throw error;
+});
 
 server.listen(port, host, () => {
   console.log(`DevGov dashboard listening at http://${host}:${port}`);
+});
+controlServer.listen(SERVICE_CONTROL_PORT, SERVICE_CONTROL_HOST, () => {
+  console.log(`DevGov service control listening at http://${SERVICE_CONTROL_HOST}:${SERVICE_CONTROL_PORT}`);
 });
 
 function parseArgs(argv) {
@@ -128,12 +187,22 @@ function parseArgs(argv) {
   return parsed;
 }
 
-function sendJson(response, value) {
-  response.writeHead(200, {
+function sendJson(response, value, options = {}) {
+  const headers = {
     "content-type": "application/json; charset=utf-8",
-    "access-control-allow-origin": "*",
     "cache-control": "no-store"
-  });
+  };
+  if (options.origin) {
+    headers["access-control-allow-origin"] = options.origin;
+    headers["vary"] = "Origin";
+  } else {
+    headers["access-control-allow-origin"] = "*";
+  }
+  if (options.methods) {
+    headers["access-control-allow-methods"] = options.methods;
+    headers["access-control-allow-headers"] = "content-type";
+  }
+  response.writeHead(200, headers);
   response.end(`${JSON.stringify(value, null, 2)}\n`);
 }
 

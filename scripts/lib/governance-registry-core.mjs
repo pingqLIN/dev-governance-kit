@@ -59,6 +59,9 @@ export function validateGovernanceRegistry(registry) {
   if (registry.schema === "devgov.local-cloudflare.registry.v1") {
     return validateLocalCloudflareRegistry(registry);
   }
+  if (registry.schema === "devgov.service-control.registry.v1") {
+    return validateServiceControlRegistry(registry);
+  }
   if (registry.schema === "devgov.agent-instructions.registry.v1") {
     return validateAgentInstructionsRegistry(registry);
   }
@@ -273,6 +276,42 @@ export function validateLocalCloudflareRegistry(registry) {
       errors.push(`${label}.kind must be one of ${[...VALID_CLOUDFLARE_ARCH_KIND].join(", ")}`);
     }
     if (!VALID_STATUS.has(item.status)) errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+  }
+  return errors;
+}
+
+export function validateServiceControlRegistry(registry) {
+  const errors = validateRegistryEnvelope(registry, "devgov.service-control.registry.v1", "entries");
+  if (errors.length) return errors;
+
+  const seen = new Set();
+  for (const [index, entry] of registry.entries.entries()) {
+    const label = `entries[${index}]`;
+    requireStrings(entry, [
+      "id",
+      "controlTargetId",
+      "action",
+      "wrapperRef",
+      "resolverRef",
+      "inputContract",
+      "auditLevel",
+      "rollbackNotes",
+      "uiLabel",
+      "status",
+      "notes"
+    ], label, errors);
+    rejectMachineLocalStrings(entry, label, errors);
+    if (seen.has(entry.id)) errors.push(`${label}.id duplicates another service control entry`);
+    seen.add(entry.id);
+    if (!Array.isArray(entry.surfaceTargets) || entry.surfaceTargets.length === 0 || entry.surfaceTargets.some((value) => typeof value !== "string" || !value.trim())) {
+      errors.push(`${label}.surfaceTargets must be a non-empty string array`);
+    }
+    if (typeof entry.approved !== "boolean") errors.push(`${label}.approved must be boolean`);
+    if (!Number.isInteger(entry.timeoutSeconds) || entry.timeoutSeconds < 1 || entry.timeoutSeconds > 120) {
+      errors.push(`${label}.timeoutSeconds must be an integer from 1 to 120`);
+    }
+    if (typeof entry.requiresConfirmation !== "boolean") errors.push(`${label}.requiresConfirmation must be boolean`);
+    if (!VALID_STATUS.has(entry.status)) errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
   }
   return errors;
 }

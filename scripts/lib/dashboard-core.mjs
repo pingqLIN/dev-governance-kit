@@ -2,13 +2,14 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import https from "node:https";
 import path from "node:path";
+import { loadApprovedServiceControls, SERVICE_CONTROL_URL } from "./service-control-core.mjs";
 
 export const DASHBOARD_HOST = "127.0.0.1";
 export const DASHBOARD_PORT = 3000;
 export const DASHBOARD_URL = `http://${DASHBOARD_HOST}:${DASHBOARD_PORT}`;
 
 export async function loadDashboardState(root = ".") {
-  const [pkg, ports, startup, publicRoutes, terminalProfiles, localAgents, apiKeys, agentInstructions] = await Promise.all([
+  const [pkg, ports, startup, publicRoutes, terminalProfiles, localAgents, apiKeys, agentInstructions, serviceOnboarding, serviceControls] = await Promise.all([
     readJson(path.join(root, "package.json")),
     readJson(path.join(root, "registry", "ports.registry.json")),
     readJson(path.join(root, "registry", "startup.registry.json")),
@@ -16,7 +17,9 @@ export async function loadDashboardState(root = ".") {
     readJson(path.join(root, "registry", "terminal-profiles.registry.json")),
     readJson(path.join(root, "registry", "local-agents.registry.json")),
     readJson(path.join(root, "registry", "api-keys.registry.json")),
-    readJson(path.join(root, "registry", "agent-instructions.registry.json"))
+    readJson(path.join(root, "registry", "agent-instructions.registry.json")),
+    readJson(path.join(root, "registry", "service-onboarding.registry.json")),
+    loadApprovedServiceControls(root)
   ]);
   const webConsoleEvents = await readDashboardEvents(path.join(root, "reports", "web-console-events.json"));
 
@@ -60,13 +63,19 @@ export async function loadDashboardState(root = ".") {
       itemTypes: agentInstructions.itemTypes,
       entries: agentInstructions.entries
     },
+    serviceControl: {
+      baseUrl: SERVICE_CONTROL_URL,
+      entries: serviceControls
+    },
     webConsoleEvents,
     webEntrypoints,
     serviceTargets: buildServiceTargets({
       dashboardPort,
       publicRoutes: publicRoutes.routes,
       localAgents: localAgents.agents,
-      startupEntries: startup.entries
+      startupEntries: startup.entries,
+      onboardingEntries: serviceOnboarding.entries,
+      ports: ports.entries
     })
   };
 }
@@ -136,14 +145,17 @@ function inferRouteStage(route) {
   return route.exposureClass;
 }
 
-export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [], startupEntries = [] }) {
+export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [], startupEntries = [], onboardingEntries = [], ports = [] }) {
   const targets = [];
   const startupById = new Map(startupEntries.map((entry) => [entry.id, entry]));
   const startupByProject = new Map(startupEntries.map((entry) => [entry.project, entry]));
+  const startupByControlTarget = buildStartupByControlTarget(startupEntries);
+  const portsByProjectService = new Map(ports.map((entry) => [`${entry.project}:${entry.service}`, entry]));
 
   if (dashboardPort) {
     const target = {
       id: "devgov-dashboard",
+      controlTargetId: "devgov-dashboard",
       project: "devgov",
       label: "DevGov Dashboard",
       kind: "dashboard",
@@ -166,9 +178,13 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
   }
 
   for (const agent of localAgents) {
-    const startup = startupById.get(agent.startupRef) ?? startupByProject.get(agent.project);
+    const controlTargetId = deriveLocalAgentControlTargetId(agent);
+    const startup = startupById.get(agent.startupRef)
+      ?? startupByControlTarget.get(controlTargetId)
+      ?? startupByProject.get(agent.project);
     const target = {
       id: `local-agent:${agent.id}`,
+      controlTargetId,
       project: agent.project,
       label: agent.displayName,
       kind: "local-agent",
@@ -181,7 +197,11 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
         ref: "",
         notes: "No stable project Doctor mechanism is registered for this local agent."
       },
-      restart: startup ? {
+      restart: isStartupExecutionSuppressed(startup, agent.status) ? {
+        state: "DISABLED",
+        ref: startup?.scriptRef || "",
+        notes: "Execution is intentionally disabled for deprecated or policy-blocked targets."
+      } : startup ? {
         state: "REVIEW_REQUIRED",
         ref: startup.scriptRef,
         notes: "A startup/service reference exists, but it is not approved for dashboard restart execution."
@@ -195,9 +215,12 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
   }
 
   for (const route of publicRoutes) {
-    const startup = startupByProject.get(route.serviceId);
+    const controlTargetId = derivePublicRouteControlTargetId(route);
+    const startup = startupByControlTarget.get(controlTargetId)
+      ?? startupByProject.get(route.serviceId);
     const target = {
       id: `public-route:${route.id}`,
+      controlTargetId,
       project: route.serviceId,
       label: route.hostname,
       kind: "public-route",
@@ -210,7 +233,11 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
         ref: "",
         notes: "Public-route health URL is a quick test, not a registered project Doctor."
       },
-      restart: startup ? {
+      restart: isStartupExecutionSuppressed(startup, route.status) ? {
+        state: "DISABLED",
+        ref: startup?.scriptRef || "",
+        notes: "Execution is intentionally disabled for deprecated or policy-blocked targets."
+      } : startup ? {
         state: "REVIEW_REQUIRED",
         ref: startup.scriptRef,
         notes: "Startup governance exists for this service, but dashboard restart execution is not approved."
@@ -223,6 +250,10 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
     targets.push(withControlReadiness(target));
   }
 
+  for (const target of buildOnboardingOnlyTargets({ onboardingEntries, startupById, startupByProject, portsByProjectService })) {
+    targets.push(withControlReadiness(target));
+  }
+
   return targets;
 }
 
@@ -231,13 +262,19 @@ export async function checkServiceStatuses(root = ".", options = {}) {
   const timeoutMs = options.timeoutMs ?? 2500;
   const statuses = await Promise.all(state.serviceTargets.map(async (target) => {
     const live = await checkUrl(target.url, timeoutMs);
+    const quickTest = {
+      ...target.quickTest,
+      ...live
+    };
     return {
       ...target,
       live,
-      quickTest: {
-        ...target.quickTest,
-        ...live
-      }
+      quickTest,
+      controlReadiness: deriveControlReadiness({
+        ...target,
+        live,
+        quickTest
+      }, { useLiveHealth: true })
     };
   }));
 
@@ -264,17 +301,115 @@ function withControlReadiness(target) {
   };
 }
 
-function deriveControlReadiness(target) {
-  const hasQuickTest = Boolean(target.quickTest?.url);
-  if (hasQuickTest && target.doctor?.state === "FOUND" && target.restart?.state === "FOUND") {
+function deriveControlReadiness(target, options = {}) {
+  if (isControlSuppressedTarget(target)) {
+    return "BLOCKED";
+  }
+
+  const quickState = target.quickTest?.state;
+  const hasQuickSignal = options.useLiveHealth
+    ? ["ONLINE", "OFFLINE", "ERROR"].includes(quickState)
+    : Boolean(target.quickTest?.url);
+  const quickOnline = options.useLiveHealth
+    ? quickState === "ONLINE"
+    : Boolean(target.quickTest?.url);
+
+  if (quickOnline && target.doctor?.state === "FOUND" && target.restart?.state === "FOUND") {
     return "READY";
   }
 
-  if (hasQuickTest && [target.doctor?.state, target.restart?.state].some((state) => ["FOUND", "REVIEW_REQUIRED"].includes(state))) {
+  if (hasQuickSignal && [target.doctor?.state, target.restart?.state].some((state) => ["FOUND", "REVIEW_REQUIRED"].includes(state))) {
     return "PARTIAL";
   }
 
   return "BLOCKED";
+}
+
+function isControlSuppressedTarget(target) {
+  return target.registryStatus === "deprecated" || target.restart?.state === "DISABLED";
+}
+
+function isStartupExecutionSuppressed(startup, status) {
+  return status === "deprecated" || startup?.status === "deprecated";
+}
+
+function buildStartupByControlTarget(startupEntries = []) {
+  const lookup = new Map();
+  for (const entry of startupEntries) {
+    for (const alias of deriveStartupControlTargetAliases(entry)) {
+      if (!lookup.has(alias)) {
+        lookup.set(alias, entry);
+      }
+    }
+  }
+  return lookup;
+}
+
+function deriveStartupControlTargetAliases(entry) {
+  const aliases = new Set([entry.project, entry.id]);
+  if (entry.project === "devgov") {
+    if (entry.id.includes("dashboard") || /dashboard/i.test(entry.purpose) || /dashboard/i.test(entry.scriptRef)) {
+      aliases.add("devgov-dashboard");
+    }
+  }
+  if (entry.project === "codex-calendar-todo") {
+    aliases.add("codex-calendar-todo-staging");
+  }
+  if (entry.project === "chatgpt-local-files-mcp") {
+    aliases.add("mcp-colorgeek");
+  }
+  if (entry.project === "lm-studio") {
+    aliases.add("lmstudio");
+  }
+  return aliases;
+}
+
+function deriveLocalAgentControlTargetId(agent) {
+  return agent.id;
+}
+
+function derivePublicRouteControlTargetId(route) {
+  const byId = route.id;
+  if (byId === "devgov-gov" || byId === "devgov-dev") return "devgov-dashboard";
+  if (byId === "codex-calendar-todo-staging") return "codex-calendar-todo-staging";
+  if (byId === "codex-remote") return "codex-remote";
+  if (byId === "mcp-colorgeek") return "mcp-colorgeek";
+  if (byId === "taste") return "taste";
+  if (byId === "lmstudio") return "lmstudio";
+  if (byId.startsWith("tb2")) return "tb2";
+  return route.serviceId;
+}
+
+function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, startupByProject, portsByProjectService }) {
+  const targets = [];
+  const tunnelClient = onboardingEntries.find((entry) => entry.id === "tunnel-client-local-filesystem-mcp");
+  if (tunnelClient) {
+    const startup = startupById.get("tunnel-client-local-filesystem-login")
+      ?? startupByProject.get("openai-mcp-tunnel");
+    const portEntry = portsByProjectService.get("openai-mcp-tunnel:local-filesystem-mcp-admin-http");
+    targets.push({
+      id: "onboarding:tunnel-client-local-filesystem-mcp",
+      controlTargetId: "tunnel-client-local-filesystem-mcp",
+      project: "openai-mcp-tunnel",
+      label: "Tunnel Client Local Filesystem MCP",
+      kind: "runtime-command",
+      registryStatus: startup?.status || "candidate",
+      url: "http://127.0.0.1:8080/readyz",
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:8080",
+      quickTest: buildQuickTest("http://127.0.0.1:8080/readyz"),
+      doctor: {
+        state: "FOUND",
+        ref: "scripts/service-control/doctor-tunnel-client-local-filesystem-mcp.ps1",
+        notes: tunnelClient.doctorProcedure
+      },
+      restart: {
+        state: "FOUND",
+        ref: "scripts/service-control/restart-tunnel-client-local-filesystem-mcp.ps1",
+        notes: tunnelClient.startupProcedure
+      }
+    });
+  }
+  return targets;
 }
 
 export function buildUniTextAgentInstructionIndex(agentInstructions) {
@@ -496,30 +631,24 @@ export function renderDashboardHtml(state) {
         0 0 12px color-mix(in oklab, var(--accent) 58%, transparent),
         0 0 22px color-mix(in oklab, var(--accent) 42%, transparent);
       content: "";
-      height: 14px;
-      left: 4px;
+      height: 16px;
+      left: 50%;
       position: absolute;
-      top: 1px;
-      width: 14px;
-    }
-    .status-lamp::after {
-      background: color-mix(in oklab, var(--ink) 84%, white 16%);
-      border-radius: 999px;
-      content: "";
-      height: 4px;
-      left: 8px;
-      position: absolute;
-      top: 16px;
-      width: 6px;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px;
     }
     .status-lamp-core {
       background: color-mix(in oklab, white 78%, var(--accent) 22%);
       border-radius: 999px;
-      box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 68%, transparent);
-      height: 5px;
-      left: 8px;
+      box-shadow:
+        0 0 8px color-mix(in oklab, var(--accent) 68%, transparent),
+        0 0 0 1px color-mix(in oklab, white 46%, transparent);
+      height: 6px;
+      left: 50%;
       position: absolute;
-      top: 5px;
+      top: 50%;
+      transform: translate(-50%, -50%);
       width: 6px;
     }
     .header-buttons {
@@ -595,6 +724,11 @@ export function renderDashboardHtml(state) {
       min-height: 38px;
       padding: 7px 12px;
       width: auto;
+    }
+    .action-button.inline-action {
+      min-height: 26px;
+      padding: 2px 8px;
+      font-size: 12px;
     }
     .action-button[disabled] {
       color: var(--muted);
@@ -1332,11 +1466,13 @@ let currentLanguage = localStorage.getItem('devgov-language') === 'en' ? 'en' : 
 let serviceStatusRows = [];
 let serviceOnboardingRows = [];
 let webConsoleEventsRows = [];
+let controlActionStates = {};
 let deckDrag = null;
 let deckLayoutReady = false;
 let deckZCounter = 10;
 let pendingWebConsoleEventReports = Promise.resolve();
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+const serviceControlMap = new Map((state.serviceControl?.entries || []).map((entry) => [String(entry.controlTargetId) + ':' + String(entry.action), entry]));
 const themeButton = document.getElementById('theme-toggle');
 const languageButton = document.getElementById('language-toggle');
 const onboardingButton = document.getElementById('refresh-service-onboarding');
@@ -1888,13 +2024,27 @@ async function refreshWebConsoleEvents() {
 function renderQuickTestCell(row) {
   return '<div class="check-grid">'
     + checkRow(t('labels.health'), row.quickTest?.state || row.live?.state || 'CHECKING')
-    + checkRow(t('labels.doctor'), row.doctor?.state || 'MISSING', row.doctor?.ref)
-    + checkRow(t('labels.restart'), row.restart?.state || 'MISSING', row.restart?.ref)
+    + renderActionRow(row, 'doctor', row.doctor)
+    + renderActionRow(row, 'restart', row.restart)
     + checkRow(t('labels.readiness'), row.controlReadiness || 'BLOCKED')
     + '</div>';
 }
 function checkRow(label, state, ref) {
   return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span>' + (ref ? linkedPill(state, ref, label) : pill(state)) + '</span></div>';
+}
+function renderActionRow(row, action, actionStatus) {
+  const actionKey = String(row.controlTargetId) + ':' + String(action);
+  const control = serviceControlMap.get(actionKey);
+  const actionState = controlActionStates[actionKey];
+  const label = t('labels.' + action);
+  let body = actionStatus?.ref ? linkedPill(actionStatus?.state || 'MISSING', actionStatus?.ref, label) : pill(actionStatus?.state || 'MISSING');
+  if (control?.approved) {
+    body += ' <button class="action-button inline-action" type="button" data-service-action="' + esc(action) + '" data-control-target="' + esc(row.controlTargetId) + '"' + (actionState?.pending ? ' disabled' : '') + '>' + esc(control.uiLabel || label) + '</button>';
+  }
+  if (actionState?.message) {
+    body += '<span class="inline-meta">' + esc(actionState.message) + '</span>';
+  }
+  return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span>' + body + '</span></div>';
 }
 function renderServiceCell(row) {
   return '<div class="service-cell">'
@@ -1934,7 +2084,46 @@ function renderOnboardingLink(link) {
 }
 function renderTable(name, headers, rows) {
   document.querySelector('[data-table="' + name + '"]').innerHTML = '<tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>' + rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('');
+  bindServiceControlButtons();
   Motion.rows(name);
+}
+function bindServiceControlButtons() {
+  document.querySelectorAll('button[data-service-action]').forEach((button) => {
+    button.onclick = () => runServiceControl(button.dataset.controlTarget, button.dataset.serviceAction);
+  });
+}
+async function runServiceControl(controlTargetId, action) {
+  const actionKey = String(controlTargetId) + ':' + String(action);
+  const control = serviceControlMap.get(actionKey);
+  if (control?.requiresConfirmation) {
+    const confirmed = window.confirm(currentLanguage === 'zhTw'
+      ? '要執行這個重新啟動動作嗎？'
+      : 'Run this restart action?');
+    if (!confirmed) {
+      return;
+    }
+  }
+  controlActionStates[actionKey] = { pending: true, message: currentLanguage === 'zhTw' ? '執行中...' : 'Running...' };
+  renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
+  try {
+    const response = await fetch(state.serviceControl.baseUrl + '/api/service-control/' + action, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ controlTargetId, action })
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || payload.summary || 'Control action failed');
+    }
+    controlActionStates[actionKey] = {
+      pending: false,
+      message: payload.summary || (currentLanguage === 'zhTw' ? '已完成' : 'Completed')
+    };
+    await refreshServiceStatus();
+  } catch (error) {
+    controlActionStates[actionKey] = { pending: false, message: error.message };
+    renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
+  }
 }
 function pill(value) {
   return '<span class="pill ' + esc(String(value).toLowerCase()) + '">' + esc(value) + '</span>';
