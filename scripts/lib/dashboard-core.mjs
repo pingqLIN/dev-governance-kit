@@ -503,6 +503,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const displayShaderLab = onboardingEntries.find((entry) => entry.id === "color-management-shader-display-shader-control-lab-http");
+  if (displayShaderLab) {
+    const portEntry = portsByProjectService.get("color-management-Shader:display-shader-control-lab-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/api/shaderglass/status` : "http://127.0.0.1:4174/api/shaderglass/status";
+    targets.push({
+      id: "onboarding:color-management-shader-display-shader-control-lab-http",
+      controlTargetId: "color-management-shader",
+      project: "color-management-Shader",
+      label: "Display Shader Control Lab",
+      kind: "preview-runtime",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:4174",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: displayShaderLab.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: displayShaderLab.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 

@@ -126,6 +126,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed SBS local proxy ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "color-management-shader" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-color-management-shader.ps1"),
+      runtimeKind: "color-management-shader-display-shader-control-lab",
+      summary: "Run the reviewed Display Shader Control Lab doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "color-management-shader" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-color-management-shader.ps1"),
+      runtimeKind: "color-management-shader-display-shader-control-lab",
+      summary: "Run the reviewed Display Shader Control Lab ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }

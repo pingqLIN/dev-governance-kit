@@ -417,6 +417,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const ps3eyeTarget = targets.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
   const tasteTarget = targets.find((target) => target.id === "public-route:taste");
   const sbsTarget = targets.find((target) => target.id === "onboarding:sbs-local-proxy-http");
+  const displayShaderLabTarget = targets.find((target) => target.id === "onboarding:color-management-shader-display-shader-control-lab-http");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -454,6 +455,11 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(sbsTarget.doctor.state, "FOUND");
   assert.equal(sbsTarget.restart.state, "FOUND");
   assert.equal(sbsTarget.controlReadiness, "PARTIAL");
+  assert.equal(displayShaderLabTarget.project, "color-management-Shader");
+  assert.equal(displayShaderLabTarget.target, "127.0.0.1:4174");
+  assert.equal(displayShaderLabTarget.doctor.state, "FOUND");
+  assert.equal(displayShaderLabTarget.restart.state, "FOUND");
+  assert.equal(displayShaderLabTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -559,6 +565,17 @@ test("service control registry exposes sbs doctor and restart actions", async ()
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "sbs" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "sbs" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes color management shader doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "color-management-shader" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "color-management-shader" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);

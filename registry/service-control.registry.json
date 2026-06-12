@@ -252,6 +252,46 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the SBS local proxy."
+    },
+    {
+      "id": "color-management-shader-doctor",
+      "controlTargetId": "color-management-shader",
+      "surfaceTargets": [
+        "color-management-shader",
+        "display-shader-control-lab-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-color-management-shader.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Validate the governed port registration, Python server syntax, and the live ShaderGlass bridge health endpoint.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 20,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the local preview server status and the target repo bridge docs before attempting ensure-running.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the color-management-Shader Display Shader Control Lab."
+    },
+    {
+      "id": "color-management-shader-restart",
+      "controlTargetId": "color-management-shader",
+      "surfaceTargets": [
+        "color-management-shader",
+        "display-shader-control-lab-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-color-management-shader.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure the Display Shader Control Lab Python bridge is listening on the governed loopback port without opening a browser window.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 35,
+      "rollbackNotes": "If ensure-running fails, inspect the preview server logs and the governed port state before retrying.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the color-management-Shader Display Shader Control Lab."
     }
   ]
 }
