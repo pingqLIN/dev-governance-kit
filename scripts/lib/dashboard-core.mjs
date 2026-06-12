@@ -290,12 +290,15 @@ export async function checkServiceStatuses(root = ".", options = {}) {
       }, { useLiveHealth: true })
     };
   }));
+  const retiredServices = statuses.filter(isRetiredEvidenceTarget);
+  const activeServices = statuses.filter((target) => !isRetiredEvidenceTarget(target));
 
   return {
     schema: "devgov.service-status.v1",
     generatedAt: new Date().toISOString(),
     timeoutMs,
-    services: statuses
+    services: activeServices,
+    retiredServices
   };
 }
 
@@ -341,6 +344,10 @@ function deriveControlReadiness(target, options = {}) {
 
 function isControlSuppressedTarget(target) {
   return target.registryStatus === "deprecated" || target.restart?.state === "DISABLED";
+}
+
+function isRetiredEvidenceTarget(target) {
+  return target.registryStatus === "deprecated";
 }
 
 function isStartupExecutionSuppressed(startup, status) {

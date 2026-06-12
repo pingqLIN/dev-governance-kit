@@ -488,7 +488,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(photoHdrFlowTarget.controlReadiness, "PARTIAL");
 });
 
-test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
+test("live service-status view excludes retired targets from the active control surface and recomputes readiness from probe results", async () => {
   const status = await checkServiceStatuses(".");
   const dashboardTarget = status.services.find((target) => target.id === "devgov-dashboard");
   const devgovGovTarget = status.services.find((target) => target.id === "public-route:devgov-gov");
@@ -496,6 +496,7 @@ test("live service-status view blocks deprecated targets and recomputes readines
   const localArchiveTarget = status.services.find((target) => target.id === "local-agent:local-archive-maintainer");
   const ps3eyeTarget = status.services.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
   const deprecatedRouteTarget = status.services.find((target) => target.id === "public-route:mcp-colorgeek");
+  const retiredRouteTarget = status.retiredServices.find((target) => target.id === "public-route:mcp-colorgeek");
   const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
 
   assert.equal(status.schema, "devgov.service-status.v1");
@@ -510,8 +511,9 @@ test("live service-status view blocks deprecated targets and recomputes readines
   assert.equal(localArchiveTarget.controlReadiness, "READY");
   assert.equal(ps3eyeTarget.quickTest.state, "ONLINE");
   assert.equal(ps3eyeTarget.controlReadiness, "READY");
-  assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
-  assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
+  assert.equal(deprecatedRouteTarget, undefined);
+  assert.equal(retiredRouteTarget.restart.state, "DISABLED");
+  assert.equal(retiredRouteTarget.controlReadiness, "BLOCKED");
   assert.equal(tunnelClientTarget.quickTest.state, "ONLINE");
   assert.equal(tunnelClientTarget.controlReadiness, "READY");
 });
