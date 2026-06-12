@@ -184,6 +184,24 @@
       "notes": "This service already has strong project-local proxy health documentation."
     },
     {
+      "id": "tunnel-client-local-filesystem-mcp",
+      "project": "openai-mcp-tunnel",
+      "service": "local-filesystem-mcp",
+      "readiness": "READY",
+      "ownerKind": "source-and-runtime-command",
+      "sourceRef": "registry/startup.registry.json#tunnel-client-local-filesystem-login",
+      "healthProcedure": "Run: tunnel-client health --url http://127.0.0.1:8080/readyz --json and confirm readiness.",
+      "doctorProcedure": "Run: openai-mcp-tunnel/scripts/tunnel-client/tunnel-client-runtime.ps1 -Mode Doctor. Doctor checks plugin-hint presence and profile mount path coverage.",
+      "resetProcedure": "REVIEW_REQUIRED: stop/restart or runtime override should be explicit before automation.",
+      "startupProcedure": "Run: openai-mcp-tunnel/scripts/tunnel-client/register-tunnel-client-startup.ps1 to enable startup; runtime start uses openai-mcp-tunnel/scripts/tunnel-client/tunnel-client-runtime.ps1 -Mode QuickStart.",
+      "dashboardProcedure": "Keep service-status row as candidate until health and doctor checks complete end-to-end.",
+      "cloudflareProcedure": "No public route. Keep local-only unless a reviewed public route is added.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "registry/startup.registry.json#tunnel-client-local-filesystem-login",
+      "nextAction": "Collect one completed health + doctor + startup evidence report and promote after validation.",
+      "notes": "MCP command mounts reviewed local workspace and model-library roots."
+    },
+    {
       "id": "url-hero-vite-dev",
       "project": "url-hero",
       "service": "vite-dev",

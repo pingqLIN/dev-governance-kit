@@ -112,6 +112,17 @@
       "source": "PS3 Eye virtual camera startup and doctor design review",
       "notes": "Reviewed current-user startup mechanism. The runtime wrapper calls the repo doctor repair mode, checks stale feeder PID state, and keeps machine-local launch details in generated evidence only.",
       "managedByCodex": true
+    },
+    {
+      "id": "tunnel-client-local-filesystem-login",
+      "project": "openai-mcp-tunnel",
+      "trigger": "startup-folder",
+      "purpose": "Start tunnel-client local filesystem MCP bridge on operator login.",
+      "scriptRef": "openai-mcp-tunnel/scripts/tunnel-client/register-tunnel-client-startup.ps1",
+      "status": "candidate",
+      "source": "operator request; openai-mcp-tunnel onboarding",
+      "notes": "Startup entry calls tunnel-client-runtime.ps1 in QuickStart mode and keeps machine-local launch details outside registry.",
+      "managedByCodex": true
     }
   ]
 }
