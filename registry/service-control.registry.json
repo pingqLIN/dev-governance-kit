@@ -62,6 +62,44 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running restart action for the tunnel-client local filesystem MCP bridge."
+    },
+    {
+      "id": "local-archive-maintainer-doctor",
+      "controlTargetId": "local-archive-maintainer",
+      "surfaceTargets": [
+        "local-archive-maintainer"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-local-archive-maintainer.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Inspect the installed Windows service state, token file, and authenticated /health result for the Local Archive Maintainer app-server.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 20,
+      "rollbackNotes": "Doctor is diagnostic only. If it fails, inspect the service home logs and service-local state before forcing a reinstall.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the installed Local Archive Maintainer Windows service."
+    },
+    {
+      "id": "local-archive-maintainer-restart",
+      "controlTargetId": "local-archive-maintainer",
+      "surfaceTargets": [
+        "local-archive-maintainer"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-local-archive-maintainer.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Restart the installed WinSW service and wait for the authenticated /health endpoint to recover.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 45,
+      "rollbackNotes": "If restart does not restore health, inspect the service home logs and consider reinstall or state repair outside DevGov.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only restart action for the installed Local Archive Maintainer Windows service."
     }
   ]
 }

@@ -150,7 +150,18 @@ const controlServer = http.createServer(async (request, response) => {
     response.writeHead(404, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
     response.end(`${JSON.stringify({ ok: false, error: "Not found" }, null, 2)}\n`);
   } catch (error) {
-    response.writeHead(500, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+    const origin = String(request.headers.origin ?? "");
+    const headers = {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store"
+    };
+    if (isAllowedControlOrigin(origin)) {
+      headers["access-control-allow-origin"] = origin;
+      headers["vary"] = "Origin";
+      headers["access-control-allow-methods"] = "POST, OPTIONS";
+      headers["access-control-allow-headers"] = "content-type";
+    }
+    response.writeHead(500, headers);
     response.end(`${JSON.stringify({ ok: false, error: error.message }, null, 2)}\n`);
   }
 });

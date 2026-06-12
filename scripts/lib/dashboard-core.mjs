@@ -75,7 +75,8 @@ export async function loadDashboardState(root = ".") {
       localAgents: localAgents.agents,
       startupEntries: startup.entries,
       onboardingEntries: serviceOnboarding.entries,
-      ports: ports.entries
+      ports: ports.entries,
+      serviceControls
     })
   };
 }
@@ -145,12 +146,13 @@ function inferRouteStage(route) {
   return route.exposureClass;
 }
 
-export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [], startupEntries = [], onboardingEntries = [], ports = [] }) {
+export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [], startupEntries = [], onboardingEntries = [], ports = [], serviceControls = [] }) {
   const targets = [];
   const startupById = new Map(startupEntries.map((entry) => [entry.id, entry]));
   const startupByProject = new Map(startupEntries.map((entry) => [entry.project, entry]));
   const startupByControlTarget = buildStartupByControlTarget(startupEntries);
   const portsByProjectService = new Map(ports.map((entry) => [`${entry.project}:${entry.service}`, entry]));
+  const approvedControlsByTarget = buildApprovedControlsByTarget(serviceControls);
 
   if (dashboardPort) {
     const target = {
@@ -174,7 +176,7 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
         notes: "Reviewed on-demand starter exists. Dashboard execution remains disabled."
       }
     };
-    targets.push(withControlReadiness(target));
+    targets.push(withControlReadiness(applyApprovedControlRefs(target, approvedControlsByTarget)));
   }
 
   for (const agent of localAgents) {
@@ -211,7 +213,7 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
         notes: "No stable startup or restart reference is registered."
       }
     };
-    targets.push(withControlReadiness(target));
+    targets.push(withControlReadiness(applyApprovedControlRefs(target, approvedControlsByTarget)));
   }
 
   for (const route of publicRoutes) {
@@ -247,11 +249,11 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
         notes: "No stable startup or restart reference is registered for this public route."
       }
     };
-    targets.push(withControlReadiness(target));
+    targets.push(withControlReadiness(applyApprovedControlRefs(target, approvedControlsByTarget)));
   }
 
   for (const target of buildOnboardingOnlyTargets({ onboardingEntries, startupById, startupByProject, portsByProjectService })) {
-    targets.push(withControlReadiness(target));
+    targets.push(withControlReadiness(applyApprovedControlRefs(target, approvedControlsByTarget)));
   }
 
   return targets;
@@ -310,9 +312,7 @@ function deriveControlReadiness(target, options = {}) {
   const hasQuickSignal = options.useLiveHealth
     ? ["ONLINE", "OFFLINE", "ERROR"].includes(quickState)
     : Boolean(target.quickTest?.url);
-  const quickOnline = options.useLiveHealth
-    ? quickState === "ONLINE"
-    : Boolean(target.quickTest?.url);
+  const quickOnline = quickState === "ONLINE";
 
   if (quickOnline && target.doctor?.state === "FOUND" && target.restart?.state === "FOUND") {
     return "READY";
@@ -378,6 +378,48 @@ function derivePublicRouteControlTargetId(route) {
   if (byId === "lmstudio") return "lmstudio";
   if (byId.startsWith("tb2")) return "tb2";
   return route.serviceId;
+}
+
+function buildApprovedControlsByTarget(serviceControls = []) {
+  const map = new Map();
+  for (const entry of serviceControls) {
+    if (!entry?.approved || entry?.status !== "approved") {
+      continue;
+    }
+    const actions = map.get(entry.controlTargetId) ?? new Map();
+    actions.set(entry.action, entry);
+    map.set(entry.controlTargetId, actions);
+  }
+  return map;
+}
+
+function applyApprovedControlRefs(target, approvedControlsByTarget) {
+  const actions = approvedControlsByTarget.get(target.controlTargetId);
+  if (!actions) {
+    return target;
+  }
+
+  const nextTarget = {
+    ...target,
+    doctor: { ...target.doctor },
+    restart: { ...target.restart }
+  };
+
+  for (const action of ["doctor", "restart"]) {
+    const approved = actions.get(action);
+    if (!approved) {
+      continue;
+    }
+    const current = nextTarget[action];
+    nextTarget[action] = {
+      ...current,
+      state: "FOUND",
+      ref: approved.wrapperRef,
+      notes: current?.notes || approved.notes
+    };
+  }
+
+  return nextTarget;
 }
 
 function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, startupByProject, portsByProjectService }) {

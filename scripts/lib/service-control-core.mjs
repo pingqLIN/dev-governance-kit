@@ -45,34 +45,52 @@ export async function executeServiceControl(root, payload, requestMeta = {}) {
     throw new Error(`No runtime authority resolver for ${controlTargetId}/${action}`);
   }
 
-  const result = await runPowerShellWrapper(root, resolved.wrapperPath, [
-    "-ControlTargetId", controlTargetId,
-    "-Action", action
-  ], entry.timeoutSeconds ?? 15);
+  const eventId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  try {
+    const result = await runPowerShellWrapper(root, resolved.wrapperPath, [
+      "-ControlTargetId", controlTargetId,
+      "-Action", action
+    ], entry.timeoutSeconds ?? 15);
 
-  const event = {
-    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-    receivedAt: new Date().toISOString(),
-    controlTargetId,
-    action,
-    ok: result.ok,
-    summary: result.summary,
-    wrapperRef: entry.wrapperRef,
-    runtimeKind: resolved.runtimeKind,
-    requestOrigin: requestMeta.origin ?? "",
-    clientIp: requestMeta.clientIp ?? "",
-    status: result.ok ? "ok" : "error"
-  };
-  await appendServiceControlEvent(root, event);
+    await appendServiceControlEvent(root, {
+      id: eventId,
+      receivedAt: new Date().toISOString(),
+      controlTargetId,
+      action,
+      ok: result.ok,
+      summary: result.summary,
+      wrapperRef: entry.wrapperRef,
+      runtimeKind: resolved.runtimeKind,
+      requestOrigin: requestMeta.origin ?? "",
+      clientIp: requestMeta.clientIp ?? "",
+      status: result.ok ? "ok" : "error"
+    });
 
-  return {
-    ok: result.ok,
-    controlTargetId,
-    action,
-    summary: result.summary,
-    wrapperRef: entry.wrapperRef,
-    eventId: event.id
-  };
+    return {
+      ok: result.ok,
+      controlTargetId,
+      action,
+      summary: result.summary,
+      wrapperRef: entry.wrapperRef,
+      eventId
+    };
+  } catch (error) {
+    const summary = String(error?.message ?? error);
+    await appendServiceControlEvent(root, {
+      id: eventId,
+      receivedAt: new Date().toISOString(),
+      controlTargetId,
+      action,
+      ok: false,
+      summary,
+      wrapperRef: entry.wrapperRef,
+      runtimeKind: resolved.runtimeKind,
+      requestOrigin: requestMeta.origin ?? "",
+      clientIp: requestMeta.clientIp ?? "",
+      status: "error"
+    });
+    throw error;
+  }
 }
 
 export async function readServiceControlEvents(root = ".") {
@@ -128,17 +146,21 @@ function runPowerShellWrapper(root, wrapperPath, args, timeoutSeconds) {
     });
     child.on("close", (code) => {
       clearTimeout(timeout);
-      if (code !== 0) {
-        reject(new Error(stderr.trim() || stdout.trim() || `Wrapper exited with code ${code}`));
-        return;
-      }
       try {
         const parsed = JSON.parse(stdout.trim());
+        if (code !== 0) {
+          reject(new Error(String(parsed.summary ?? parsed.message ?? stderr.trim() ?? stdout.trim() ?? `Wrapper exited with code ${code}`)));
+          return;
+        }
         resolve({
           ok: Boolean(parsed.ok),
           summary: String(parsed.summary ?? parsed.message ?? "Completed")
         });
       } catch {
+        if (code !== 0) {
+          reject(new Error(stderr.trim() || stdout.trim() || `Wrapper exited with code ${code}`));
+          return;
+        }
         resolve({
           ok: true,
           summary: stdout.trim() || "Completed"

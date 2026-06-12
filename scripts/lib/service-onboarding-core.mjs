@@ -201,7 +201,6 @@ function aggregateRestartState(states, hasStartupEntries) {
 function aggregateReadiness(states, quickTestUrl, doctorState, restartState) {
   if (states.includes("READY")) return "READY";
   if (states.includes("PARTIAL")) return "PARTIAL";
-  if (quickTestUrl && doctorState === "FOUND" && restartState === "FOUND") return "READY";
   if (quickTestUrl && (doctorState === "FOUND" || ["FOUND", "REVIEW_REQUIRED"].includes(restartState))) return "PARTIAL";
   return "BLOCKED";
 }

@@ -422,9 +422,9 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.ok(targets.some((target) => target.kind === "public-route"));
   assert.equal(dashboardTarget.doctor.state, "FOUND");
   assert.equal(dashboardTarget.restart.state, "FOUND");
-  assert.equal(dashboardTarget.controlReadiness, "READY");
-  assert.equal(localAgentTarget.doctor.state, "MISSING");
-  assert.equal(localAgentTarget.restart.state, "REVIEW_REQUIRED");
+  assert.equal(dashboardTarget.controlReadiness, "PARTIAL");
+  assert.equal(localAgentTarget.doctor.state, "FOUND");
+  assert.equal(localAgentTarget.restart.state, "FOUND");
   assert.equal(localAgentTarget.controlReadiness, "PARTIAL");
   assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
   assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
@@ -434,7 +434,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(tunnelClientTarget.target, "127.0.0.1:8080");
   assert.equal(tunnelClientTarget.doctor.state, "FOUND");
   assert.equal(tunnelClientTarget.restart.state, "FOUND");
-  assert.equal(tunnelClientTarget.controlReadiness, "READY");
+  assert.equal(tunnelClientTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -492,6 +492,17 @@ test("service control registry exposes tunnel client doctor and restart actions"
   assert.match(result.summary, /Tunnel client doctor passed/i);
 });
 
+test("service control registry exposes local archive maintainer doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "local-archive-maintainer" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "local-archive-maintainer" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
 test("service onboarding audit summarizes registered service gaps", async () => {
   const state = await loadDashboardState(".");
   const audit = buildServiceOnboardingAudit(state);
@@ -500,11 +511,11 @@ test("service onboarding audit summarizes registered service gaps", async () => 
 
   assert.equal(audit.schema, "devgov.service-onboarding-audit.v1");
   assert.ok(audit.summary.services >= state.ports.length);
-  assert.equal(devgov.readiness, "READY");
+  assert.equal(devgov.readiness, "PARTIAL");
   assert.equal(devgov.flags.missingDoctor, false);
   assert.equal(archive.readiness, "PARTIAL");
-  assert.equal(archive.flags.missingDoctor, true);
-  assert.ok(archive.gaps.some((gap) => /Doctor/.test(gap)));
+  assert.equal(archive.flags.missingDoctor, false);
+  assert.ok(archive.quickLinks.some((link) => link.label === "Doctor"));
   assert.ok(archive.quickLinks.some((link) => link.label === "Health"));
 });
 

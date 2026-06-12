@@ -36,6 +36,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed tunnel-client ensure-running repair wrapper through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "local-archive-maintainer" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-local-archive-maintainer.ps1"),
+      runtimeKind: "local-archive-maintainer-windows-service",
+      summary: "Run the reviewed Local Archive Maintainer Windows service doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "local-archive-maintainer" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-local-archive-maintainer.ps1"),
+      runtimeKind: "local-archive-maintainer-windows-service",
+      summary: "Run the reviewed Local Archive Maintainer Windows service restart through DevGov local control."
+    };
+  }
 
   return null;
 }
