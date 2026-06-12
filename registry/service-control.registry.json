@@ -4,6 +4,28 @@
   "sourceOfTruth": "registry/service-control.registry.json",
   "entries": [
     {
+      "id": "devgov-dashboard-doctor",
+      "controlTargetId": "devgov-dashboard",
+      "surfaceTargets": [
+        "devgov-dashboard",
+        "devgov-dashboard-http",
+        "devgov-gov",
+        "devgov-dev"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-devgov-dashboard.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user-supplied runtime arguments. Action runs the reviewed DevGov doctor command against the current repo and summarizes the result.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the reported registry or dashboard health errors before changing runtime state.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the unified DevGov dashboard and its public aliases."
+    },
+    {
       "id": "devgov-dashboard-restart",
       "controlTargetId": "devgov-dashboard",
       "surfaceTargets": [

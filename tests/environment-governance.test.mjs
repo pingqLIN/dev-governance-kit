@@ -410,6 +410,8 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const unitext = buildUniTextAgentInstructionIndex(state.agentInstructions);
   const targets = state.serviceTargets;
   const dashboardTarget = targets.find((target) => target.id === "devgov-dashboard");
+  const devgovGovTarget = targets.find((target) => target.id === "public-route:devgov-gov");
+  const devgovDevTarget = targets.find((target) => target.id === "public-route:devgov-dev");
   const localAgentTarget = targets.find((target) => target.id === "local-agent:local-archive-maintainer");
   const deprecatedRouteTarget = targets.find((target) => target.id === "public-route:mcp-colorgeek");
   const stagingRouteTarget = targets.find((target) => target.id === "public-route:codex-calendar-todo-staging");
@@ -429,6 +431,12 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(dashboardTarget.doctor.state, "FOUND");
   assert.equal(dashboardTarget.restart.state, "FOUND");
   assert.equal(dashboardTarget.controlReadiness, "PARTIAL");
+  assert.equal(devgovGovTarget.doctor.state, "FOUND");
+  assert.equal(devgovGovTarget.restart.state, "FOUND");
+  assert.equal(devgovGovTarget.controlReadiness, "PARTIAL");
+  assert.equal(devgovDevTarget.doctor.state, "FOUND");
+  assert.equal(devgovDevTarget.restart.state, "FOUND");
+  assert.equal(devgovDevTarget.controlReadiness, "PARTIAL");
   assert.equal(localAgentTarget.doctor.state, "FOUND");
   assert.equal(localAgentTarget.restart.state, "FOUND");
   assert.equal(localAgentTarget.controlReadiness, "PARTIAL");
@@ -477,12 +485,22 @@ test("dashboard exposes UniText query records and service targets", async () => 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
   const status = await checkServiceStatuses(".");
   const dashboardTarget = status.services.find((target) => target.id === "devgov-dashboard");
+  const devgovGovTarget = status.services.find((target) => target.id === "public-route:devgov-gov");
+  const devgovDevTarget = status.services.find((target) => target.id === "public-route:devgov-dev");
+  const localArchiveTarget = status.services.find((target) => target.id === "local-agent:local-archive-maintainer");
   const deprecatedRouteTarget = status.services.find((target) => target.id === "public-route:mcp-colorgeek");
   const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
 
   assert.equal(status.schema, "devgov.service-status.v1");
   assert.equal(dashboardTarget.quickTest.state, "ONLINE");
   assert.equal(dashboardTarget.controlReadiness, "READY");
+  assert.equal(devgovGovTarget.quickTest.state, "ONLINE");
+  assert.equal(devgovGovTarget.controlReadiness, "READY");
+  assert.equal(devgovDevTarget.quickTest.state, "ONLINE");
+  assert.equal(devgovDevTarget.controlReadiness, "READY");
+  assert.equal(localArchiveTarget.quickTest.state, "ONLINE");
+  assert.equal(localArchiveTarget.quickTest.statusCode, 401);
+  assert.equal(localArchiveTarget.controlReadiness, "READY");
   assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
   assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
   assert.equal(tunnelClientTarget.quickTest.state, "ONLINE");
@@ -493,18 +511,25 @@ test("service control registry and approved DevGov action are executable through
   const eventsPath = "reports/service-control-events.json";
   const originalEvents = await readFile(eventsPath, "utf8").catch(() => null);
   const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "devgov-dashboard" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "devgov-dashboard" && entry.action === "restart");
 
+  assert.ok(doctorControl);
   assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
   assert.equal(restartControl.status, "approved");
   assert.equal(SERVICE_CONTROL_PORT, 3201);
 
   try {
+    const doctorResult = await executeServiceControl(".", { controlTargetId: "devgov-dashboard", action: "doctor" }, { origin: "http://127.0.0.1:3000", clientIp: "127.0.0.1" });
     const result = await executeServiceControl(".", { controlTargetId: "devgov-dashboard", action: "restart" }, { origin: "http://127.0.0.1:3000", clientIp: "127.0.0.1" });
     const events = await readServiceControlEvents(".");
 
+    assert.equal(doctorResult.ok, true);
+    assert.match(doctorResult.summary, /DevGov doctor passed/i);
     assert.equal(result.ok, true);
     assert.match(result.summary, /DevGov dashboard/i);
+    assert.ok(events.some((event) => event.controlTargetId === "devgov-dashboard" && event.action === "doctor" && event.ok));
     assert.ok(events.some((event) => event.controlTargetId === "devgov-dashboard" && event.action === "restart" && event.ok));
   } finally {
     if (originalEvents === null) {

@@ -9,6 +9,15 @@ export const SERVICE_CONTROL_ALLOWED_ORIGINS = new Set([
 ]);
 
 export function resolveControlTarget(root, controlEntry) {
+  if (controlEntry.controlTargetId === "devgov-dashboard" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-devgov-dashboard.ps1"),
+      runtimeKind: "local-devgov-dashboard",
+      summary: "Bounded local dashboard doctor control path."
+    };
+  }
   if (controlEntry.controlTargetId === "devgov-dashboard" && controlEntry.action === "restart") {
     return {
       controlTargetId: controlEntry.controlTargetId,

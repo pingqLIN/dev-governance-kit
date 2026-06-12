@@ -193,7 +193,15 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
       registryStatus: agent.status,
       url: agent.healthUrl,
       target: agent.serviceId,
-      quickTest: buildQuickTest(agent.healthUrl),
+      quickTest: buildQuickTest(
+        agent.healthUrl,
+        agent.id === "local-archive-maintainer"
+          ? {
+              acceptedStatusCodes: [200, 401],
+              notes: "Safe HTTP auth-boundary check only. 401 confirms the protected local health endpoint is alive."
+            }
+          : {}
+      ),
       doctor: {
         state: "MISSING",
         ref: "",
@@ -263,7 +271,7 @@ export async function checkServiceStatuses(root = ".", options = {}) {
   const state = await loadDashboardState(root);
   const timeoutMs = options.timeoutMs ?? 2500;
   const statuses = await Promise.all(state.serviceTargets.map(async (target) => {
-    const live = await checkUrl(target.url, timeoutMs);
+    const live = await checkUrl(target.url, timeoutMs, target.quickTest);
     const quickTest = {
       ...target.quickTest,
       ...live
@@ -288,11 +296,12 @@ export async function checkServiceStatuses(root = ".", options = {}) {
   };
 }
 
-function buildQuickTest(url) {
+function buildQuickTest(url, options = {}) {
   return {
     state: url ? "CHECKING" : "MISSING",
     url,
-    notes: url ? "Safe HTTP health check only." : "No health URL is registered."
+    notes: url ? (options.notes || "Safe HTTP health check only.") : "No health URL is registered.",
+    acceptedStatusCodes: Array.isArray(options.acceptedStatusCodes) ? options.acceptedStatusCodes : undefined
   };
 }
 
@@ -2559,7 +2568,7 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[ch]));
 }
 
-function checkUrl(url, timeoutMs) {
+function checkUrl(url, timeoutMs, quickTest = {}) {
   if (!url) {
     return Promise.resolve({
       state: "MISSING",
@@ -2574,13 +2583,19 @@ function checkUrl(url, timeoutMs) {
     const started = Date.now();
     const parsed = new URL(url);
     const client = parsed.protocol === "https:" ? https : http;
+    const acceptedStatusCodes = Array.isArray(quickTest.acceptedStatusCodes)
+      ? new Set(quickTest.acceptedStatusCodes)
+      : null;
     const request = client.get(url, { timeout: timeoutMs }, (response) => {
       response.resume();
       response.on("end", () => {
         if (resolved) return;
         resolved = true;
+        const online = acceptedStatusCodes
+          ? acceptedStatusCodes.has(response.statusCode)
+          : response.statusCode >= 200 && response.statusCode < 400;
         resolveStatus({
-          state: response.statusCode >= 200 && response.statusCode < 400 ? "ONLINE" : "ERROR",
+          state: online ? "ONLINE" : "ERROR",
           statusCode: response.statusCode,
           latencyMs: Date.now() - started,
           checkedAt: new Date().toISOString()
