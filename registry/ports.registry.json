@@ -23,12 +23,12 @@
     {
       "project": "codex-calendar-todo",
       "service": "staging-http",
-      "port": 9190,
+      "port": 4321,
       "host": "127.0.0.1",
       "visibility": "public",
       "protocol": "http",
       "source": "public route audit; startup audit",
-      "notes": "Staging route target for codex-calendar-todo-staging.colorgeek.co."
+      "notes": "Verified local runtime authority for codex-calendar-todo-staging.colorgeek.co and the runtime status script."
     },
     {
       "project": "codex-remote",

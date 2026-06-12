@@ -99,14 +99,14 @@
       "hostname": "codex-calendar-todo-staging.colorgeek.co",
       "tunnelId": "8f494f33-5983-4933-bb71-5812b56cad56",
       "localHost": "127.0.0.1",
-      "localPort": 9190,
+      "localPort": 4321,
       "protocol": "http",
       "exposureClass": "staging-private",
       "accessRequired": true,
       "healthUrl": "https://codex-calendar-todo-staging.colorgeek.co/api/health",
       "status": "candidate",
       "source": "public route audit; startup audit",
-      "notes": "Staging app route. Keep candidate until Access and runtime health are verified together."
+      "notes": "Staging app route aligned to the verified local runtime authority on 127.0.0.1:4321. Keep candidate until Access posture is re-confirmed with the live route."
     },
     {
       "id": "taste",

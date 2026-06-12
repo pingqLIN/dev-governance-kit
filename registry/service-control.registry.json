@@ -213,7 +213,7 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for Codex Calendar Todo staging; public route mismatch remains visible until the tunnel target is fixed."
+      "notes": "Reviewed local-only ensure-running action for Codex Calendar Todo staging; any remaining public-route or Access failure stays visible after local recovery."
     },
     {
       "id": "sbs-doctor",

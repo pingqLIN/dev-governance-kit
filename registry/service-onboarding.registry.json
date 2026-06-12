@@ -70,10 +70,10 @@
       "startupProcedure": "Keep startup review-gated through codex-calendar-todo/scripts/windows-persistent-server.ps1 and runtime scripts.",
       "dashboardProcedure": "Service Status public-route row uses approved Doctor and Restart controls through the local-only DevGov control listener.",
       "cloudflareProcedure": "Use the registered staging-private route; confirm Access and runtime health together before approval.",
-      "reviewStatus": "blocked",
+      "reviewStatus": "reviewed",
       "reviewEvidence": "registry/service-control.registry.json#codex-calendar-todo-staging-doctor",
-      "nextAction": "Reconcile the public Cloudflare route target from 127.0.0.1:9190 to the actual runtime authority on 127.0.0.1:4321, then re-run staging health checks.",
-      "notes": "The startup target is a runtime project; do not point login startup at the development worktree."
+      "nextAction": "Decide whether the staging-private route still needs stronger Cloudflare Access enforcement evidence and whether tunnel startup should be promoted into a dedicated reviewed authority.",
+      "notes": "The startup target is a runtime project; do not point login startup at the development worktree. The public route and local runtime now align on 127.0.0.1:4321."
     },
     {
       "id": "codex-remote-services-http",
