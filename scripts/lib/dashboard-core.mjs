@@ -451,6 +451,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const ps3eye = onboardingEntries.find((entry) => entry.id === "ps3eye-windows-virtual-camera-observation");
+  if (ps3eye) {
+    const startup = startupById.get("ps3eye-system-camera-login")
+      ?? startupByProject.get("ps3eye-windows-virtual-camera");
+    targets.push({
+      id: "onboarding:ps3eye-windows-virtual-camera",
+      controlTargetId: "ps3eye-windows-virtual-camera",
+      project: "ps3eye-windows-virtual-camera",
+      label: "PS3 Eye Virtual Camera",
+      kind: "hardware-observation",
+      registryStatus: startup?.status || "candidate",
+      url: "",
+      target: "camera-observation",
+      quickTest: buildQuickTest(""),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: ps3eye.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: ps3eye.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 
@@ -2430,6 +2456,15 @@ function escapeHtml(value) {
 }
 
 function checkUrl(url, timeoutMs) {
+  if (!url) {
+    return Promise.resolve({
+      state: "MISSING",
+      statusCode: null,
+      latencyMs: null,
+      checkedAt: new Date().toISOString(),
+      error: "No health URL registered"
+    });
+  }
   return new Promise((resolveStatus) => {
     let resolved = false;
     const started = Date.now();

@@ -142,6 +142,16 @@
       "protocol": "http",
       "source": "video-render-kit control panel governance review",
       "notes": "Loopback-only FFmpeg control panel for local video render workflows. Must fail closed if the port is not registered, mismatched, or occupied."
+    },
+    {
+      "project": "ComfyUI",
+      "service": "comfyui-local-http",
+      "port": 8188,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "ComfyUI PORTS.md; local service-control onboarding",
+      "notes": "Loopback-only ComfyUI UI and API for local static image generation. Keep localhost-only; do not add --listen during baseline research."
     }
   ]
 }

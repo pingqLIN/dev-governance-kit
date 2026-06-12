@@ -54,6 +54,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed Local Archive Maintainer Windows service restart through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "ps3eye-windows-virtual-camera" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-ps3eye-windows-virtual-camera.ps1"),
+      runtimeKind: "ps3eye-windows-virtual-camera",
+      summary: "Run the reviewed PS3 Eye virtual camera doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "ps3eye-windows-virtual-camera" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-ps3eye-windows-virtual-camera.ps1"),
+      runtimeKind: "ps3eye-windows-virtual-camera",
+      summary: "Run the reviewed PS3 Eye virtual camera repair/start path through DevGov local control."
+    };
+  }
 
   return null;
 }

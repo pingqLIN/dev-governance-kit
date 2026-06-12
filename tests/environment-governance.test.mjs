@@ -414,6 +414,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const deprecatedRouteTarget = targets.find((target) => target.id === "public-route:mcp-colorgeek");
   const stagingRouteTarget = targets.find((target) => target.id === "public-route:codex-calendar-todo-staging");
   const tunnelClientTarget = targets.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
+  const ps3eyeTarget = targets.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -435,6 +436,11 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(tunnelClientTarget.doctor.state, "FOUND");
   assert.equal(tunnelClientTarget.restart.state, "FOUND");
   assert.equal(tunnelClientTarget.controlReadiness, "PARTIAL");
+  assert.equal(ps3eyeTarget.project, "ps3eye-windows-virtual-camera");
+  assert.equal(ps3eyeTarget.quickTest.state, "MISSING");
+  assert.equal(ps3eyeTarget.doctor.state, "FOUND");
+  assert.equal(ps3eyeTarget.restart.state, "FOUND");
+  assert.equal(ps3eyeTarget.controlReadiness, "BLOCKED");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -496,6 +502,17 @@ test("service control registry exposes local archive maintainer doctor and resta
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "local-archive-maintainer" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "local-archive-maintainer" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes ps3eye virtual camera doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "ps3eye-windows-virtual-camera" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "ps3eye-windows-virtual-camera" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);

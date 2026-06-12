@@ -100,6 +100,44 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only restart action for the installed Local Archive Maintainer Windows service."
+    },
+    {
+      "id": "ps3eye-windows-virtual-camera-doctor",
+      "controlTargetId": "ps3eye-windows-virtual-camera",
+      "surfaceTargets": [
+        "ps3eye-windows-virtual-camera"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-ps3eye-windows-virtual-camera.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the PS3 Eye virtual camera doctor in read-only mode and summarize failed checks.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 30,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the target repo doctor output before attempting repair.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for PS3 Eye virtual camera observation."
+    },
+    {
+      "id": "ps3eye-windows-virtual-camera-restart",
+      "controlTargetId": "ps3eye-windows-virtual-camera",
+      "surfaceTargets": [
+        "ps3eye-windows-virtual-camera"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-ps3eye-windows-virtual-camera.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed PS3 Eye repair/start sequence and then re-run doctor checks.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 45,
+      "rollbackNotes": "If repair does not restore the camera pipeline, inspect ffmpeg, VCamSample, and hardware state directly on the target repo.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only repair action for PS3 Eye virtual camera observation."
     }
   ]
 }
