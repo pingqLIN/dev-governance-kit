@@ -473,19 +473,54 @@ export function renderDashboardHtml(state) {
     .status {
       align-items: center;
       display: flex;
-      gap: 8px;
+      gap: 10px;
       font-size: 14px;
       justify-content: end;
       max-width: 34ch;
       overflow-wrap: anywhere;
     }
-    .dot {
-      background: var(--accent);
+    .status-lamp {
+      align-items: center;
+      display: inline-flex;
+      height: 22px;
+      justify-content: center;
+      position: relative;
+      width: 22px;
+    }
+    .status-lamp::before {
+      background: color-mix(in oklab, var(--accent) 72%, white 28%);
       border: 2px solid var(--ink);
       border-radius: 999px;
+      box-shadow:
+        0 0 0 1px color-mix(in oklab, var(--accent) 26%, transparent),
+        0 0 12px color-mix(in oklab, var(--accent) 58%, transparent),
+        0 0 22px color-mix(in oklab, var(--accent) 42%, transparent);
+      content: "";
       height: 14px;
-      transform-origin: center;
+      left: 4px;
+      position: absolute;
+      top: 1px;
       width: 14px;
+    }
+    .status-lamp::after {
+      background: color-mix(in oklab, var(--ink) 84%, white 16%);
+      border-radius: 999px;
+      content: "";
+      height: 4px;
+      left: 8px;
+      position: absolute;
+      top: 16px;
+      width: 6px;
+    }
+    .status-lamp-core {
+      background: color-mix(in oklab, white 78%, var(--accent) 22%);
+      border-radius: 999px;
+      box-shadow: 0 0 10px color-mix(in oklab, var(--accent) 68%, transparent);
+      height: 5px;
+      left: 8px;
+      position: absolute;
+      top: 5px;
+      width: 6px;
     }
     .header-buttons {
       display: flex;
@@ -803,7 +838,7 @@ export function renderDashboardHtml(state) {
       gap: 8px;
     }
     @media (prefers-reduced-motion: no-preference) {
-      .dot {
+      .status-lamp {
         animation: status-pulse 2.8s ease-in-out infinite;
       }
       button, .metric, .pill, tr {
@@ -942,7 +977,7 @@ export function renderDashboardHtml(state) {
         <button class="language-toggle" type="button" id="language-toggle" aria-pressed="true">English</button>
         <button class="theme-toggle" type="button" id="theme-toggle" aria-pressed="false">深色模式</button>
       </div>
-      <div class="status"><span class="dot"></span><span>${escapeHtml(state.app.url)}</span></div>
+      <div class="status"><span class="status-lamp" aria-hidden="true"><span class="status-lamp-core"></span></span><span>${escapeHtml(state.app.url)}</span></div>
     </div>
   </div>
 </header>
@@ -1389,6 +1424,50 @@ function renderAll() {
     : state.serviceTargets.map(target => ({ ...target, live: { state: 'CHECKING' }, quickTest: { ...target.quickTest, state: 'CHECKING' } }));
   renderServiceStatusTable(filterValue('service-status'), rows);
   renderServiceOnboardingTable(filterValue('service-onboarding'), serviceOnboardingRows);
+}
+function reportWebConsoleEvent(eventType, metadata = {}) {
+  const payload = {
+    eventType,
+    project: metadata.project ?? 'devgov-dashboard',
+    source: metadata.source ?? 'dashboard',
+    path: metadata.path ?? (location ? location.pathname : '/'),
+    action: metadata.action ?? eventType,
+    details: serializeEventDetails(metadata),
+    metadata: sanitizeEventMetadata(metadata)
+  };
+  pendingWebConsoleEventReports = pendingWebConsoleEventReports
+    .then(() => sendWebConsoleEvent(payload))
+    .catch(() => { });
+}
+function sanitizeText(value, maxLength = 280) {
+  if (value === undefined || value === null) return '';
+  return String(value).trim().slice(0, maxLength);
+}
+function serializeEventDetails(value) {
+  const body = value.details ?? value.reason ?? value.message;
+  if (body === undefined) return '';
+  if (typeof body === 'string') return sanitizeText(body);
+  try {
+    return sanitizeText(JSON.stringify(body));
+  } catch {
+    return sanitizeText(String(body));
+  }
+}
+function sanitizeEventMetadata(metadata) {
+  const value = { ...metadata };
+  delete value.path;
+  delete value.action;
+  delete value.details;
+  delete value.reason;
+  delete value.message;
+  return value;
+}
+async function sendWebConsoleEvent(payload) {
+  await fetch('/api/web-console-events', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json; charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
 }
 function metricDeckItems() {
   return [
@@ -2113,55 +2192,6 @@ async function readDashboardEvents(filePath) {
   } catch {
     return [];
   }
-}
-
-function reportWebConsoleEvent(eventType, metadata = {}) {
-  const payload = {
-    eventType,
-    project: metadata.project ?? "devgov-dashboard",
-    source: metadata.source ?? "dashboard",
-    path: metadata.path ?? (location ? location.pathname : "/"),
-    action: metadata.action ?? eventType,
-    details: serializeEventDetails(metadata),
-    metadata: sanitizeEventMetadata(metadata)
-  };
-  pendingWebConsoleEventReports = pendingWebConsoleEventReports
-    .then(() => sendWebConsoleEvent(payload))
-    .catch(() => { });
-}
-
-function sanitizeText(value, maxLength = 280) {
-  if (value === undefined || value === null) return "";
-  return String(value).trim().slice(0, maxLength);
-}
-
-function serializeEventDetails(value) {
-  const body = value.details ?? value.reason ?? value.message;
-  if (body === undefined) return "";
-  if (typeof body === "string") return sanitizeText(body);
-  try {
-    return sanitizeText(JSON.stringify(body));
-  } catch {
-    return sanitizeText(String(body));
-  }
-}
-
-function sanitizeEventMetadata(metadata) {
-  const value = { ...metadata };
-  delete value.path;
-  delete value.action;
-  delete value.details;
-  delete value.reason;
-  delete value.message;
-  return value;
-}
-
-async function sendWebConsoleEvent(payload) {
-  await fetch('/api/web-console-events', {
-    method: 'POST',
-    headers: { "content-type": "application/json; charset=utf-8" },
-    body: JSON.stringify(payload)
-  });
 }
 
 function escapeHtml(value) {
