@@ -477,6 +477,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const sbs = onboardingEntries.find((entry) => entry.id === "sbs-local-proxy-http");
+  if (sbs) {
+    const portEntry = portsByProjectService.get("sbs:local-proxy-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/health` : "http://127.0.0.1:3287/health";
+    targets.push({
+      id: "onboarding:sbs-local-proxy-http",
+      controlTargetId: "sbs",
+      project: "sbs",
+      label: "SBS Local Proxy",
+      kind: "runtime-command",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:3287",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: sbs.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: sbs.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 

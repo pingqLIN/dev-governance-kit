@@ -214,6 +214,44 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for Codex Calendar Todo staging; public route mismatch remains visible until the tunnel target is fixed."
+    },
+    {
+      "id": "sbs-doctor",
+      "controlTargetId": "sbs",
+      "surfaceTargets": [
+        "sbs"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-sbs.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the SBS proxy doctor to validate defaults, governed port, launcher registration, and proxy health.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 35,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the SBS proxy doctor output and local proxy health before attempting auto-start.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the SBS local proxy."
+    },
+    {
+      "id": "sbs-restart",
+      "controlTargetId": "sbs",
+      "surfaceTargets": [
+        "sbs"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-sbs.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the SBS proxy doctor in start mode so the protocol launcher and governed port path can ensure the proxy is healthy.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "If ensure-running fails, inspect the SBS protocol launcher, local proxy health, and local-artifacts logs inside the target repo.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the SBS local proxy."
     }
   ]
 }

@@ -108,6 +108,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed Codex Calendar Todo staging ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "sbs" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-sbs.ps1"),
+      runtimeKind: "sbs-local-proxy",
+      summary: "Run the reviewed SBS local proxy doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "sbs" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-sbs.ps1"),
+      runtimeKind: "sbs-local-proxy",
+      summary: "Run the reviewed SBS local proxy ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }

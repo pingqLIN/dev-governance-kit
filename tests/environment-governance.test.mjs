@@ -416,6 +416,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const tunnelClientTarget = targets.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
   const ps3eyeTarget = targets.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
   const tasteTarget = targets.find((target) => target.id === "public-route:taste");
+  const sbsTarget = targets.find((target) => target.id === "onboarding:sbs-local-proxy-http");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -448,6 +449,11 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(tasteTarget.doctor.state, "FOUND");
   assert.equal(tasteTarget.restart.state, "FOUND");
   assert.equal(tasteTarget.controlReadiness, "PARTIAL");
+  assert.equal(sbsTarget.project, "sbs");
+  assert.equal(sbsTarget.target, "127.0.0.1:3287");
+  assert.equal(sbsTarget.doctor.state, "FOUND");
+  assert.equal(sbsTarget.restart.state, "FOUND");
+  assert.equal(sbsTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -542,6 +548,17 @@ test("service control registry exposes codex calendar todo staging doctor and re
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "codex-calendar-todo-staging" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "codex-calendar-todo-staging" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes sbs doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "sbs" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "sbs" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);
