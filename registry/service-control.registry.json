@@ -370,6 +370,46 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the codex-remote runtime authority under Documents/Codex."
+    },
+    {
+      "id": "lm-studio-doctor",
+      "controlTargetId": "lm-studio",
+      "surfaceTargets": [
+        "lm-studio",
+        "lmstudio"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-lm-studio.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Check LM Studio server status plus local/public OpenAI-compatible /v1/models reachability.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 25,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect LM Studio CLI server status, server logs, and the protected public route before attempting repair.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the LM Studio API server using the vendor CLI authority."
+    },
+    {
+      "id": "lm-studio-restart",
+      "controlTargetId": "lm-studio",
+      "surfaceTargets": [
+        "lm-studio",
+        "lmstudio"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-lm-studio.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed LM Studio CLI server start path, then confirm local/public OpenAI-compatible /v1/models.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 30,
+      "rollbackNotes": "If local recovery succeeds but the public route still fails, inspect Cloudflare tunnel state separately from LM Studio itself.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the LM Studio API server."
     }
   ]
 }

@@ -375,7 +375,7 @@ function derivePublicRouteControlTargetId(route) {
   if (byId === "codex-remote") return "codex-remote";
   if (byId === "mcp-colorgeek") return "mcp-colorgeek";
   if (byId === "taste") return "taste";
-  if (byId === "lmstudio") return "lmstudio";
+  if (byId === "lmstudio") return "lm-studio";
   if (byId.startsWith("tb2")) return "tb2";
   return route.serviceId;
 }

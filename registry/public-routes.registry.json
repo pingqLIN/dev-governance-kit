@@ -133,10 +133,10 @@
       "protocol": "http",
       "exposureClass": "prod-protected",
       "accessRequired": true,
-      "healthUrl": "https://lmstudio.colorgeek.co/",
+      "healthUrl": "https://lmstudio.colorgeek.co/v1/models",
       "status": "candidate",
       "source": "public route audit",
-      "notes": "Local model API route from scanned tunnel config. Treat as protected until exposure policy is reviewed."
+      "notes": "Local model API route from scanned tunnel config. Verified OpenAI-compatible health contract is /v1/models on both the loopback and protected public route."
     }
   ]
 }

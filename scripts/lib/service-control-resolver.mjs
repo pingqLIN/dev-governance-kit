@@ -180,6 +180,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed codex-remote ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "lm-studio" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-lm-studio.ps1"),
+      runtimeKind: "lm-studio-local-api",
+      summary: "Run the reviewed LM Studio local API doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "lm-studio" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-lm-studio.ps1"),
+      runtimeKind: "lm-studio-local-api",
+      summary: "Run the reviewed LM Studio local API ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }
