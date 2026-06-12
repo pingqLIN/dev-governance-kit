@@ -28,7 +28,7 @@ Canonical machine-readable source 是 `registry/service-onboarding.registry.json
 | `color-management-Shader:display-shader-control-lab-http` | `BLOCKED` | `needs-implementation` | 將 PORTS verification 轉成 Doctor/start procedure。 |
 | `sbs:local-proxy-http` | `BLOCKED` | `needs-implementation` | 登記既有 proxy Doctor scripts。 |
 | `url-hero:vite-dev` | `BLOCKED` | `needs-implementation` | 補 governed dev-server wrapper 與 Doctor。 |
-| `video-render-kit:control-panel-http` | `BLOCKED` | `needs-owner` | 定位 source owner，或退役 placeholder。 |
+| `photo-hdr-flow:web-ui-http` | `PARTIAL` | `reviewed` | 已透過 `photo_hdr_flow web` loopback authority 登記本機 `/api/health`、Doctor 與 Restart。 |
 
 ## 批次審核
 

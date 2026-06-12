@@ -599,6 +599,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const photoHdrFlow = onboardingEntries.find((entry) => entry.id === "photo-hdr-flow-web-ui-http");
+  if (photoHdrFlow) {
+    const portEntry = portsByProjectService.get("photo-hdr-flow:web-ui-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/api/health` : "http://127.0.0.1:8765/api/health";
+    targets.push({
+      id: "onboarding:photo-hdr-flow-web-ui-http",
+      controlTargetId: "photo-hdr-flow-web",
+      project: "photo-hdr-flow",
+      label: "Photo HDR Flow",
+      kind: "local-web-ui",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:8765",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: photoHdrFlow.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: photoHdrFlow.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 

@@ -243,6 +243,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed ComfyUI localhost-only ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "photo-hdr-flow-web" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-photo-hdr-flow-web.ps1"),
+      runtimeKind: "photo-hdr-flow-web-ui-http",
+      summary: "Run the reviewed Photo HDR Flow doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "photo-hdr-flow-web" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-photo-hdr-flow-web.ps1"),
+      runtimeKind: "photo-hdr-flow-web-ui-http",
+      summary: "Run the reviewed Photo HDR Flow ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }

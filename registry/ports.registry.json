@@ -134,14 +134,14 @@
       "notes": "Loopback app-server for the resident archive/index worker. Requires bearer token for authenticated API calls; token file stays outside registry data."
     },
     {
-      "project": "video-render-kit",
-      "service": "control-panel-http",
+      "project": "photo-hdr-flow",
+      "service": "web-ui-http",
       "port": 8765,
       "host": "127.0.0.1",
       "visibility": "local",
       "protocol": "http",
-      "source": "video-render-kit control panel governance review",
-      "notes": "Loopback-only FFmpeg control panel for local video render workflows. Must fail closed if the port is not registered, mismatched, or occupied."
+      "source": "photo-hdr-flow local web UI authority",
+      "notes": "Loopback-only Photo HDR Flow web UI and local API. The reviewed start path is `python -m photo_hdr_flow web --host 127.0.0.1 --port 8765`, serving `/gui/` and `/api/health` from the source checkout."
     },
     {
       "project": "ComfyUI",

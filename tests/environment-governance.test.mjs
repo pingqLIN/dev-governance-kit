@@ -422,6 +422,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const displayShaderLabTarget = targets.find((target) => target.id === "onboarding:color-management-shader-display-shader-control-lab-http");
   const urlHeroTarget = targets.find((target) => target.id === "onboarding:url-hero-vite-dev");
   const comfyUiTarget = targets.find((target) => target.id === "onboarding:comfyui-local-http");
+  const photoHdrFlowTarget = targets.find((target) => target.id === "onboarding:photo-hdr-flow-web-ui-http");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -480,6 +481,11 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(comfyUiTarget.doctor.state, "FOUND");
   assert.equal(comfyUiTarget.restart.state, "FOUND");
   assert.equal(comfyUiTarget.controlReadiness, "PARTIAL");
+  assert.equal(photoHdrFlowTarget.project, "photo-hdr-flow");
+  assert.equal(photoHdrFlowTarget.target, "127.0.0.1:8765");
+  assert.equal(photoHdrFlowTarget.doctor.state, "FOUND");
+  assert.equal(photoHdrFlowTarget.restart.state, "FOUND");
+  assert.equal(photoHdrFlowTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view blocks deprecated targets and recomputes readiness from probe results", async () => {
@@ -671,6 +677,17 @@ test("service control registry exposes comfyui local doctor and restart actions"
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "comfyui-local" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "comfyui-local" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes photo hdr flow web doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "photo-hdr-flow-web" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "photo-hdr-flow-web" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);

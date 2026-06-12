@@ -28,7 +28,7 @@ Each service record must be reviewed after its procedure is created or updated. 
 | `color-management-Shader:display-shader-control-lab-http` | `BLOCKED` | `needs-implementation` | Convert PORTS verification into Doctor/start procedure. |
 | `sbs:local-proxy-http` | `BLOCKED` | `needs-implementation` | Promote existing proxy Doctor scripts. |
 | `url-hero:vite-dev` | `BLOCKED` | `needs-implementation` | Add governed dev-server wrapper and Doctor. |
-| `video-render-kit:control-panel-http` | `BLOCKED` | `needs-owner` | Locate source owner or retire placeholder. |
+| `photo-hdr-flow:web-ui-http` | `PARTIAL` | `reviewed` | Local `/api/health`, Doctor, and Restart are registered through the `photo_hdr_flow web` loopback authority. |
 
 ## Batch Review
 

@@ -238,22 +238,22 @@
       "notes": "The target repo is an operations workspace, not the upstream ComfyUI source tree; DevGov reuses the repo-level localhost-only service-control scripts rather than editing the dirty worktree."
     },
     {
-      "id": "video-render-kit-control-panel-http",
-      "project": "video-render-kit",
-      "service": "control-panel-http",
-      "readiness": "BLOCKED",
-      "ownerKind": "unresolved-project",
-      "sourceRef": "registry/ports.registry.json#video-render-kit:control-panel-http",
-      "healthProcedure": "No reviewed health endpoint is confirmed yet.",
-      "doctorProcedure": "Create a project-owner discovery procedure before adding Doctor or startup refs.",
-      "resetProcedure": "REVIEW_REQUIRED: do not define reset until the owner, data boundaries, and control panel command are confirmed.",
-      "startupProcedure": "Do not register startup until the source owner and control panel command are confirmed.",
-      "dashboardProcedure": "Do not add a dashboard status row until the owner and health URL are confirmed.",
-      "cloudflareProcedure": "No Cloudflare route is approved; keep local-only until the owner is confirmed.",
-      "reviewStatus": "needs-owner",
-      "reviewEvidence": "reports/service-onboarding-audit.json#video-render-kit:control-panel-http",
-      "nextAction": "Locate the actual video-render-kit source or retire the registry entry if it was only a planning placeholder.",
-      "notes": "Nearby video repos did not confirm ownership of the 127.0.0.1:8765 control panel."
+      "id": "photo-hdr-flow-web-ui-http",
+      "project": "photo-hdr-flow",
+      "service": "web-ui-http",
+      "readiness": "PARTIAL",
+      "ownerKind": "source-repo",
+      "sourceRef": "registry/ports.registry.json#photo-hdr-flow:web-ui-http",
+      "healthProcedure": "Use the local http://127.0.0.1:8765/api/health endpoint exposed by `photo_hdr_flow web`.",
+      "doctorProcedure": "Use the reviewed DevGov Photo HDR Flow doctor wrapper to run `.venv\\Scripts\\python.exe -m photo_hdr_flow doctor --json` from the source checkout.",
+      "resetProcedure": "Use the reviewed DevGov ensure-running wrapper, which starts the loopback-only `photo_hdr_flow web --host 127.0.0.1 --port 8765` server and waits for `/api/health`.",
+      "startupProcedure": "Use the reviewed on-demand web UI start path from the source checkout; no login startup automation is registered in DevGov.",
+      "dashboardProcedure": "Surface Photo HDR Flow as a local service target with approved Health, Doctor, and Restart controls through the local-only DevGov control listener.",
+      "cloudflareProcedure": "No Cloudflare route is approved; keep the web UI and local API loopback-only.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "registry/service-control.registry.json#photo-hdr-flow-web-doctor",
+      "nextAction": "Decide later whether the placeholder `video-render-kit` naming should remain in archived planning docs, now that the actual source authority is the `photo-hdr-flow` repo.",
+      "notes": "The former `video-render-kit` 8765 placeholder resolved to the Photo HDR Flow source checkout. DevGov reuses the reviewed loopback web UI entrypoint without editing the pre-existing dirty target repo."
     }
   ]
 }

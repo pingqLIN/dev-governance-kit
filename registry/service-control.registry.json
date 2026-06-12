@@ -512,6 +512,46 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the ComfyUI localhost-only static image runtime."
+    },
+    {
+      "id": "photo-hdr-flow-web-doctor",
+      "controlTargetId": "photo-hdr-flow-web",
+      "surfaceTargets": [
+        "photo-hdr-flow-web",
+        "photo-hdr-flow-web-ui-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-photo-hdr-flow-web.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed Photo HDR Flow doctor command from the source checkout and summarize the result.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the Photo HDR Flow source checkout and local Python environment before changing project assets.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the Photo HDR Flow loopback web UI authority."
+    },
+    {
+      "id": "photo-hdr-flow-web-restart",
+      "controlTargetId": "photo-hdr-flow-web",
+      "surfaceTargets": [
+        "photo-hdr-flow-web",
+        "photo-hdr-flow-web-ui-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-photo-hdr-flow-web.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed Photo HDR Flow loopback web UI ensure-running wrapper and wait for `/api/health`.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "If ensure-running fails, inspect the source checkout logs and verify that port 8765 is available before retrying.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the Photo HDR Flow web UI and local API surface."
     }
   ]
 }
