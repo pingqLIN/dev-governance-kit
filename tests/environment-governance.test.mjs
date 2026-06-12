@@ -431,7 +431,9 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
   assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
   assert.equal(stagingRouteTarget.controlTargetId, "codex-calendar-todo-staging");
-  assert.equal(stagingRouteTarget.restart.state, "REVIEW_REQUIRED");
+  assert.equal(stagingRouteTarget.doctor.state, "FOUND");
+  assert.equal(stagingRouteTarget.restart.state, "FOUND");
+  assert.equal(stagingRouteTarget.controlReadiness, "PARTIAL");
   assert.equal(tunnelClientTarget.project, "openai-mcp-tunnel");
   assert.equal(tunnelClientTarget.target, "127.0.0.1:8080");
   assert.equal(tunnelClientTarget.doctor.state, "FOUND");
@@ -529,6 +531,17 @@ test("service control registry exposes taste doctor and restart actions", async 
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "taste" && entry.action === "doctor");
   const restartControl = controls.find((entry) => entry.controlTargetId === "taste" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
+test("service control registry exposes codex calendar todo staging doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "codex-calendar-todo-staging" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "codex-calendar-todo-staging" && entry.action === "restart");
 
   assert.ok(doctorControl);
   assert.ok(restartControl);

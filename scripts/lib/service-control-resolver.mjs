@@ -90,6 +90,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed Taste ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "codex-calendar-todo-staging" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-codex-calendar-todo-staging.ps1"),
+      runtimeKind: "codex-calendar-todo-runtime",
+      summary: "Run the reviewed Codex Calendar Todo staging doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "codex-calendar-todo-staging" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-codex-calendar-todo-staging.ps1"),
+      runtimeKind: "codex-calendar-todo-runtime",
+      summary: "Run the reviewed Codex Calendar Todo staging ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }

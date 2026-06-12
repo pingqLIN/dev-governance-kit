@@ -176,6 +176,44 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the Taste Next.js runtime; public route failures remain visible after local start."
+    },
+    {
+      "id": "codex-calendar-todo-staging-doctor",
+      "controlTargetId": "codex-calendar-todo-staging",
+      "surfaceTargets": [
+        "codex-calendar-todo-staging"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-codex-calendar-todo-staging.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Check the local runtime health on 127.0.0.1:4321, the runtime status script, and the public staging health endpoint together.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 35,
+      "rollbackNotes": "Doctor is read-only. If local health passes but public health fails, reconcile the Cloudflare route target before attempting further repair.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the Codex Calendar Todo staging runtime and public route."
+    },
+    {
+      "id": "codex-calendar-todo-staging-restart",
+      "controlTargetId": "codex-calendar-todo-staging",
+      "surfaceTargets": [
+        "codex-calendar-todo-staging"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-codex-calendar-todo-staging.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure the local Codex Calendar Todo runtime is healthy on 127.0.0.1:4321, then recheck the public staging route.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "If local health recovers but public health still fails, update the reviewed Cloudflare route target before treating staging as restored.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for Codex Calendar Todo staging; public route mismatch remains visible until the tunnel target is fixed."
     }
   ]
 }
