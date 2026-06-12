@@ -94,12 +94,12 @@
       "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
       "inputContract": "No user input. Restart the installed WinSW service and wait for the authenticated /health endpoint to recover.",
       "auditLevel": "server-authored-local-log",
-      "timeoutSeconds": 45,
+      "timeoutSeconds": 90,
       "rollbackNotes": "If restart does not restore health, inspect the service home logs and consider reinstall or state repair outside DevGov.",
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only restart action for the installed Local Archive Maintainer Windows service."
+      "notes": "Reviewed local-only restart action for the installed Local Archive Maintainer Windows service using the native service controller plus authenticated health recovery."
     },
     {
       "id": "ps3eye-windows-virtual-camera-doctor",

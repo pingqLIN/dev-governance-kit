@@ -12,6 +12,7 @@ if ($ControlTargetId -ne "local-archive-maintainer" -or $Action -ne "restart") {
 }
 
 $WinSWExe = "C:\svc-local-archive-maintainer\LocalArchiveMaintainerAppServer.exe"
+$ServiceName = "LocalArchiveMaintainerAppServer"
 $ServiceRoot = "C:\svc-local-archive-maintainer"
 $TokenFile = Join-Path $ServiceRoot "secrets\app-server-token.txt"
 $HealthUrl = "http://127.0.0.1:8787/health"
@@ -30,12 +31,47 @@ try {
     throw "Token file is empty: $TokenFile"
   }
 
-  $restartOutput = & $WinSWExe restart 2>&1
-  if ($LASTEXITCODE -ne 0) {
-    throw (($restartOutput | Out-String).Trim())
+  $stdoutFile = Join-Path $env:TEMP ("local-archive-maintainer-restart-{0}-stdout.log" -f [guid]::NewGuid().ToString("N"))
+  $stderrFile = Join-Path $env:TEMP ("local-archive-maintainer-restart-{0}-stderr.log" -f [guid]::NewGuid().ToString("N"))
+  $restartProcess = Start-Process -FilePath $WinSWExe `
+    -ArgumentList @("restart") `
+    -WorkingDirectory $ServiceRoot `
+    -WindowStyle Hidden `
+    -Wait `
+    -PassThru `
+    -RedirectStandardOutput $stdoutFile `
+    -RedirectStandardError $stderrFile
+
+  $restartOutput = @()
+  if (Test-Path -LiteralPath $stdoutFile) {
+    $restartOutput += Get-Content -LiteralPath $stdoutFile
+    Remove-Item -LiteralPath $stdoutFile -Force -ErrorAction SilentlyContinue
+  }
+  if (Test-Path -LiteralPath $stderrFile) {
+    $restartOutput += Get-Content -LiteralPath $stderrFile
+    Remove-Item -LiteralPath $stderrFile -Force -ErrorAction SilentlyContinue
   }
 
-  $deadline = (Get-Date).AddSeconds(15)
+  if ($restartProcess.ExitCode -ne 0) {
+    $restartText = ($restartOutput -join " | ").Trim()
+    throw $(if ($restartText) { $restartText } else { "WinSW restart exited with code $($restartProcess.ExitCode)." })
+  }
+
+  $service = Get-Service -Name $ServiceName -ErrorAction Stop
+  $serviceDeadline = (Get-Date).AddSeconds(45)
+  do {
+    Start-Sleep -Seconds 2
+    $service.Refresh()
+    if ($service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {
+      break
+    }
+  } while ((Get-Date) -lt $serviceDeadline)
+
+  if ($service.Status -ne [System.ServiceProcess.ServiceControllerStatus]::Running) {
+    throw "Windows service $ServiceName did not return to Running state after restart."
+  }
+
+  $deadline = (Get-Date).AddSeconds(30)
   do {
     try {
       $response = Invoke-RestMethod -UseBasicParsing -Uri $HealthUrl -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 5
@@ -45,7 +81,7 @@ try {
           summary = "Restarted Local Archive Maintainer and restored http://127.0.0.1:8787/health"
           controlTargetId = $ControlTargetId
           action = $Action
-          output = ($restartOutput | Out-String).Trim()
+          serviceState = [string]$service.Status
         } | ConvertTo-Json -Compress
         exit 0
       }
