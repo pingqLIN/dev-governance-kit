@@ -600,6 +600,17 @@ test("service control registry exposes url hero doctor and restart actions", asy
   assert.equal(restartControl.status, "approved");
 });
 
+test("service control registry exposes codex remote doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "codex-remote" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "codex-remote" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+});
+
 test("service onboarding audit summarizes registered service gaps", async () => {
   const state = await loadDashboardState(".");
   const audit = buildServiceOnboardingAudit(state);

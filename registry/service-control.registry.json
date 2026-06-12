@@ -332,6 +332,44 @@
       "requiresConfirmation": true,
       "status": "approved",
       "notes": "Reviewed local-only ensure-running action for the root url-hero Vite dev app without editing the pre-existing dirty worktree."
+    },
+    {
+      "id": "codex-remote-doctor",
+      "controlTargetId": "codex-remote",
+      "surfaceTargets": [
+        "codex-remote"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-codex-remote.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Use the existing codex-remote runtime status scripts and confirm local/public healthz and readyz endpoints.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 35,
+      "rollbackNotes": "Doctor is read-only. If public checks fail while local checks pass, inspect the codex-remote tunnel status separately.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the codex-remote runtime authority under Documents/Codex."
+    },
+    {
+      "id": "codex-remote-restart",
+      "controlTargetId": "codex-remote",
+      "surfaceTargets": [
+        "codex-remote"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-codex-remote.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed codex-remote on-login bootstrap and confirm local/public healthz and readyz endpoints recover.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 40,
+      "rollbackNotes": "If local healthz and readyz recover but public checks fail, inspect the codex-remote tunnel logs before treating the route as restored.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the codex-remote runtime authority under Documents/Codex."
     }
   ]
 }

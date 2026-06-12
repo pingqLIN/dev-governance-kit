@@ -43,10 +43,10 @@
       "protocol": "http",
       "exposureClass": "prod-protected",
       "accessRequired": true,
-      "healthUrl": "https://codex-remote.colorgeek.co/health",
+      "healthUrl": "https://codex-remote.colorgeek.co/healthz",
       "status": "candidate",
       "source": "public route audit",
-      "notes": "Active user-level Cloudflare route. Access and health behavior need explicit review before approval."
+      "notes": "Active user-level Cloudflare route. Current verified health contract is /healthz plus /readyz on the codex-remote app-server."
     },
     {
       "id": "mcp-colorgeek",

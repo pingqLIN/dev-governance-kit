@@ -162,6 +162,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed URL Hero ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "codex-remote" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-codex-remote.ps1"),
+      runtimeKind: "codex-remote-app-server",
+      summary: "Run the reviewed codex-remote doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "codex-remote" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-codex-remote.ps1"),
+      runtimeKind: "codex-remote-app-server",
+      summary: "Run the reviewed codex-remote ensure-running path through DevGov local control."
+    };
+  }
 
   return null;
 }
