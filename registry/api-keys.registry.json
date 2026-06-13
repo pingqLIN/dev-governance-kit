@@ -74,6 +74,20 @@
       "notes": "Candidate credential-location record only. Do not store or print the credential value in DevGov registry data."
     },
     {
+      "id": "user-x-goog-api-key",
+      "project": "system-environment",
+      "service": "Google Stitch MCP",
+      "variableName": "X-Goog-Api-Key",
+      "credentialKind": "api-key",
+      "storageLocation": "Windows User environment variables",
+      "accessMethod": "Environment variable consumed by Google Stitch MCP clients that send the X-Goog-Api-Key header.",
+      "settingsUrl": "https://console.cloud.google.com/apis/credentials",
+      "rules": "Restrict the key to the required Google APIs where supported, never commit values, rotate in Google Cloud Console, then restart dependent shells or clients.",
+      "status": "candidate",
+      "source": "Operator Stitch MCP configuration check",
+      "notes": "Candidate credential-location record only. User scope was present during audit; Machine and Process scopes were not present. Do not store or print the credential value in DevGov registry data."
+    },
+    {
       "id": "machine-global-api-key",
       "project": "system-environment",
       "service": "Cloudflare Dashboard",
