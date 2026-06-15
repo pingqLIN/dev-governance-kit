@@ -48,6 +48,17 @@
       "managedByCodex": false
     },
     {
+      "id": "lm-studio-on-demand",
+      "project": "lm-studio",
+      "trigger": "registry-run",
+      "purpose": "Enable reviewed on-demand recovery of the LM Studio local API on 127.0.0.1:1234.",
+      "scriptRef": "scripts/service-control/restart-lm-studio.ps1",
+      "status": "candidate",
+      "source": "LM Studio local API and local agent governance review",
+      "notes": "Recovery uses the reviewed LM Studio restart wrapper; machine-local launch command details remain in wrapper evidence and reports.",
+      "managedByCodex": true
+    },
+    {
       "id": "tips-terminal",
       "project": "Tips-terminel-new-gui",
       "trigger": "registry-run",

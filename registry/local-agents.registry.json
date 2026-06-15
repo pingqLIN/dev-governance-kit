@@ -16,6 +16,20 @@
       "source": "Local Archive Maintainer service inspection",
       "notes": "Resident loopback archive/index worker with agent-helper handoff. Keep bearer token, service home, logs, and generated index data out of canonical registry records.",
       "managedByCodex": true
+    },
+    {
+      "id": "lmstudio-local-agent",
+      "project": "lm-studio",
+      "kind": "on-demand-agent",
+      "serviceId": "lm-studio-local-agent",
+      "displayName": "LM Studio Local Agent",
+      "healthUrl": "http://127.0.0.1:1234/v1/models",
+      "portRef": "lm-studio:local-api-http",
+      "startupRef": "lm-studio-on-demand",
+      "status": "candidate",
+      "source": "LM Studio local agent prototype for local safe filesystem actions",
+      "notes": "Prototype entrypoint uses LM Studio APIs for index/search/ask workflows; keep workspace path, model IDs, and generated indexes out of canonical registry data.",
+      "managedByCodex": true
     }
   ]
 }
