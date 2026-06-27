@@ -92,6 +92,17 @@
       "notes": "Fixed local Vite development server. Vite strictPort is enabled so agents do not silently fall back to another port."
     },
     {
+      "project": "gsdf-eotf-video-adjuster",
+      "service": "vite-dev",
+      "port": 3101,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "range": "frontend",
+      "source": "gsdf-eotf-video-adjuster PORTS.md; project port audit",
+      "notes": "Fixed local Vite development server. Keep loopback-only with strictPort; no public route is approved."
+    },
+    {
       "project": "devgov",
       "service": "dashboard-http",
       "port": 3000,
