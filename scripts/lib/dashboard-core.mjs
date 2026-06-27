@@ -201,6 +201,11 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
               acceptedStatusCodes: [200, 401],
               notes: "Safe HTTP auth-boundary check only. 401 confirms the protected local health endpoint is alive."
             }
+          : agent.id === "lmstudio-local-agent"
+            ? {
+                acceptedStatusCodes: [200, 401],
+                notes: "Safe HTTP auth-boundary check only. 401 confirms the protected local model API is alive."
+              }
           : {}
       ),
       doctor: {
@@ -238,7 +243,15 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
       registryStatus: route.status,
       url: route.healthUrl,
       target: `${route.localHost}:${route.localPort}`,
-      quickTest: buildQuickTest(route.healthUrl),
+      quickTest: buildQuickTest(
+        route.healthUrl,
+        route.id === "lmstudio"
+          ? {
+              acceptedStatusCodes: [200, 401],
+              notes: "Safe HTTP auth-boundary check only. 401 confirms the protected local model API route is alive."
+            }
+          : {}
+      ),
       doctor: {
         state: "MISSING",
         ref: "",
