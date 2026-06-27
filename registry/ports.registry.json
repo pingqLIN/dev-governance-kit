@@ -21,6 +21,26 @@
       "notes": "Durable TB2 loopback origin for MCP HTTP and health routes. Public ingress must stay through reviewed tunnel routes."
     },
     {
+      "project": "chatgpt-local-files-mcp",
+      "service": "mcp-http",
+      "port": 43189,
+      "host": "127.0.0.1",
+      "visibility": "public",
+      "protocol": "http",
+      "source": "chatgpt-local-files-mcp README; public route audit; operator security hardening",
+      "notes": "ChatGPT-facing local-files MCP safety boundary for mcp.colorgeek.co. Keep loopback-only; public ingress must use reviewed tunnel transport and MCP OAuth/tool-call enforcement."
+    },
+    {
+      "project": "chatgpt-local-files-mcp",
+      "service": "nowledge-compat-http",
+      "port": 14242,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "Nowledge extension de-vendor hardening; local compatibility API",
+      "notes": "Loopback-only Nowledge-compatible API shim for the Chrome extension. Do not expose browser-bridge websocket or route this origin through Cloudflare without a separate review."
+    },
+    {
       "project": "codex-calendar-todo",
       "service": "staging-http",
       "port": 4321,
@@ -154,14 +174,14 @@
       "notes": "Loopback-only ComfyUI UI and API for local static image generation. Keep localhost-only; do not add --listen during baseline research."
     },
     {
-      "project": "exc-draw",
+      "project": "draw-draw",
       "service": "web-http",
       "port": 31740,
       "host": "127.0.0.1",
       "visibility": "local",
       "protocol": "http",
-      "source": "exc-draw PORTS.md; project port audit",
-      "notes": "Loopback-only exc-draw UI review canvas Vite app. Keep strictPort and governed preflight before startup; no public route is approved."
+      "source": "draw-draw PORTS.md; project port audit",
+      "notes": "Loopback-only draw-draw UI review canvas Vite app. Keep strictPort and governed preflight before startup; no public route is approved."
     }
   ]
 }

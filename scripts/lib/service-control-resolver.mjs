@@ -5,7 +5,9 @@ export const SERVICE_CONTROL_PORT = 3201;
 export const SERVICE_CONTROL_URL = `http://${SERVICE_CONTROL_HOST}:${SERVICE_CONTROL_PORT}`;
 export const SERVICE_CONTROL_ALLOWED_ORIGINS = new Set([
   "http://127.0.0.1:3000",
-  "http://localhost:3000"
+  "http://localhost:3000",
+  "https://dev.colorgeek.co",
+  "https://gov.colorgeek.co"
 ]);
 
 export function resolveControlTarget(root, controlEntry) {

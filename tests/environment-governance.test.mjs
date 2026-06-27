@@ -9,6 +9,7 @@ import { buildServiceTargets, buildUniTextAgentInstructionIndex, checkServiceSta
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
 import { buildServiceOnboardingAudit } from "../scripts/lib/service-onboarding-core.mjs";
 import { executeServiceControl, loadApprovedServiceControls, readServiceControlEvents, SERVICE_CONTROL_PORT } from "../scripts/lib/service-control-core.mjs";
+import { isAllowedControlOrigin, SERVICE_CONTROL_ALLOWED_ORIGINS } from "../scripts/lib/service-control-resolver.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
 import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validateLocalCloudflareRegistry, validatePublicRoutesRegistry, validateServiceControlRegistry, validateServiceOnboardingRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
@@ -398,6 +399,10 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /Web 入口/);
   assert.match(html, /tb2\.colorgeek\.co\/health/);
   assert.match(html, /Quick Test/);
+  assert.match(html, /status-action/);
+  assert.match(html, /action-key/);
+  assert.match(html, /&#128477;&#65039;/);
+  assert.doesNotMatch(html, /action-button inline-action/);
   assert.doesNotMatch(html, /id="refresh-status"/);
   assert.match(html, /\/file\?path=/);
   assert.match(html, /\/api\/unitext-agent-instructions/);
@@ -413,7 +418,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const devgovGovTarget = targets.find((target) => target.id === "public-route:devgov-gov");
   const devgovDevTarget = targets.find((target) => target.id === "public-route:devgov-dev");
   const localAgentTarget = targets.find((target) => target.id === "local-agent:local-archive-maintainer");
-  const deprecatedRouteTarget = targets.find((target) => target.id === "public-route:mcp-colorgeek");
+  const mcpRouteTarget = targets.find((target) => target.id === "public-route:mcp-colorgeek");
   const stagingRouteTarget = targets.find((target) => target.id === "public-route:codex-calendar-todo-staging");
   const tunnelClientTarget = targets.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
   const ps3eyeTarget = targets.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
@@ -431,18 +436,22 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.ok(targets.some((target) => target.kind === "public-route"));
   assert.equal(dashboardTarget.doctor.state, "FOUND");
   assert.equal(dashboardTarget.restart.state, "FOUND");
+  assert.equal(dashboardTarget.restart.policyReadiness.complete, true);
   assert.equal(dashboardTarget.controlReadiness, "PARTIAL");
   assert.equal(devgovGovTarget.doctor.state, "FOUND");
   assert.equal(devgovGovTarget.restart.state, "FOUND");
+  assert.equal(devgovGovTarget.restart.policyReadiness.complete, true);
   assert.equal(devgovGovTarget.controlReadiness, "PARTIAL");
   assert.equal(devgovDevTarget.doctor.state, "FOUND");
   assert.equal(devgovDevTarget.restart.state, "FOUND");
+  assert.equal(devgovDevTarget.restart.policyReadiness.complete, true);
   assert.equal(devgovDevTarget.controlReadiness, "PARTIAL");
   assert.equal(localAgentTarget.doctor.state, "FOUND");
   assert.equal(localAgentTarget.restart.state, "FOUND");
+  assert.equal(localAgentTarget.restart.policyReadiness.complete, true);
   assert.equal(localAgentTarget.controlReadiness, "PARTIAL");
-  assert.equal(deprecatedRouteTarget.restart.state, "DISABLED");
-  assert.equal(deprecatedRouteTarget.controlReadiness, "BLOCKED");
+  assert.equal(mcpRouteTarget.restart.state, "REVIEW_REQUIRED");
+  assert.equal(mcpRouteTarget.controlReadiness, "PARTIAL");
   assert.equal(stagingRouteTarget.controlTargetId, "codex-calendar-todo-staging");
   assert.equal(stagingRouteTarget.doctor.state, "FOUND");
   assert.equal(stagingRouteTarget.restart.state, "FOUND");
@@ -495,7 +504,7 @@ test("live service-status view excludes retired targets from the active control 
   const devgovDevTarget = status.services.find((target) => target.id === "public-route:devgov-dev");
   const localArchiveTarget = status.services.find((target) => target.id === "local-agent:local-archive-maintainer");
   const ps3eyeTarget = status.services.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
-  const deprecatedRouteTarget = status.services.find((target) => target.id === "public-route:mcp-colorgeek");
+  const mcpRouteTarget = status.services.find((target) => target.id === "public-route:mcp-colorgeek");
   const retiredRouteTarget = status.retiredServices.find((target) => target.id === "public-route:mcp-colorgeek");
   const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
 
@@ -511,9 +520,10 @@ test("live service-status view excludes retired targets from the active control 
   assert.equal(localArchiveTarget.controlReadiness, "READY");
   assert.equal(ps3eyeTarget.quickTest.state, "ONLINE");
   assert.equal(ps3eyeTarget.controlReadiness, "READY");
-  assert.equal(deprecatedRouteTarget, undefined);
-  assert.equal(retiredRouteTarget.restart.state, "DISABLED");
-  assert.equal(retiredRouteTarget.controlReadiness, "BLOCKED");
+  assert.equal(mcpRouteTarget.quickTest.state, "ONLINE");
+  assert.equal(mcpRouteTarget.restart.state, "REVIEW_REQUIRED");
+  assert.equal(mcpRouteTarget.controlReadiness, "PARTIAL");
+  assert.equal(retiredRouteTarget, undefined);
   assert.equal(tunnelClientTarget.quickTest.state, "ONLINE");
   assert.equal(tunnelClientTarget.controlReadiness, "READY");
 });
@@ -549,6 +559,14 @@ test("service control registry and approved DevGov action are executable through
       await writeFile(eventsPath, originalEvents, "utf8");
     }
   }
+});
+
+test("service control allows reviewed local and protected DevGov dashboard origins only", () => {
+  assert.ok(SERVICE_CONTROL_ALLOWED_ORIGINS.has("http://127.0.0.1:3000"));
+  assert.equal(isAllowedControlOrigin("https://dev.colorgeek.co"), true);
+  assert.equal(isAllowedControlOrigin("https://gov.colorgeek.co"), true);
+  assert.equal(isAllowedControlOrigin("https://codex-calendar-todo-staging.colorgeek.co"), false);
+  assert.equal(isAllowedControlOrigin("https://example.com"), false);
 });
 
 test("service control registry exposes tunnel client doctor and restart actions", async () => {

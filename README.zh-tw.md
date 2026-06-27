@@ -194,7 +194,7 @@ DevGov 保留服務：
 
 Agent instruction governance 會記錄在 `registry/agent-instructions.registry.json`。儀表板包含 Agent Instructions view，`/api/agent-instructions` 會回傳 source-of-truth layers、item types 與 entries，`/api/unitext-agent-instructions` 則提供 UniText-style query index，供本機整合使用。
 
-Network service status 可在 Service Status view 與 `/api/service-status` 查看。`Quick Test` table column 會執行安全 health check，並回報每個 service 是否偵測到 Doctor mechanism 與 restart readiness。一鍵 restart 目前刻意停用，直到每個 service 都有已審查的 restart command、backup / rollback expectation 與 permission boundary。標準化合約記錄在 `docs/service-control-readiness-spec.zh-tw.md`，agent workflow 則在 `registry/skills/service-control-readiness/SKILL.md`。
+Network service status 可在 Service Status view 與 `/api/service-status` 查看。`Quick Test` table column 會執行安全 health check，並回報每個 service 是否偵測到 Doctor mechanism 與 restart readiness。已審查的 Doctor/restart control 會直接掛在狀態 flag 上；一鍵 restart 仍維持 review-gated，直到該 service 有 approved restart command、backup / rollback expectation 與 permission boundary。標準化合約記錄在 `docs/service-control-readiness-spec.zh-tw.md`，agent workflow 則在 `registry/skills/service-control-readiness/SKILL.md`。
 
 開發用 API key 存放位置由 `registry/api-keys.registry.json` 追蹤。這些 records 保存 service、variable name、storage location type、access method、usage rules、review status 與 provider settings page。Credential values、credential file contents、本機 secret paths、shell history 與完整 command lines 都不得放進 canonical registry data。
 

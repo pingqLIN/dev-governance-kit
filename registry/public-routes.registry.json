@@ -59,9 +59,9 @@
       "exposureClass": "prod-protected",
       "accessRequired": true,
       "healthUrl": "https://mcp.colorgeek.co/health",
-      "status": "deprecated",
-      "source": "public route audit; local-files MCP retirement",
-      "notes": "Retired with the ChatGPT Local-Files MCP path. Do not approve or recreate; removing the actual Cloudflare tunnel route requires a separate operator-approved cleanup step."
+      "status": "candidate",
+      "source": "public route audit; ChatGPT Local Files MCP security hardening",
+      "notes": "Candidate protected ChatGPT local-files MCP route. Public discovery and MCP OAuth challenge are allowed to reach the origin; protected file and bridge tools must require OAuth/tool-call enforcement. Approval is blocked until a normal signed-in ChatGPT Web session completes protected OAuth write acceptance."
     },
     {
       "id": "tb2-web-prod",

@@ -16,6 +16,7 @@ Service control readiness 是觀測模型。它用來告訴 operator 某個 serv
 - `doctor.ref`: 穩定的 npm script、script path、registry ID、或文件參照
 - `restart.state`: `FOUND`、`MISSING`、`DISABLED`、或 `REVIEW_REQUIRED`
 - `restart.ref`: 可用時提供穩定 startup 或 restart 參照
+- `restart.policyReadiness`: 可執行 restart control 的審查 metadata，可用時提供
 - `controlReadiness`: `READY`、`PARTIAL`、或 `BLOCKED`
 
 `controlReadiness` 推導規則：
@@ -32,12 +33,15 @@ Service control readiness 是觀測模型。它用來告訴 operator 某個 serv
 - 若有 startup 或 service reference，但尚未安全到可由 dashboard 執行，restart 必須標為 `REVIEW_REQUIRED`。
 - 即使有輔助 script，只要 policy 明確禁止 dashboard restart，restart 必須標為 `DISABLED`。
 - Reset/restart operations 和 Doctor 分開。標為 `REVIEW_REQUIRED` 的 reset path 是候選 control path，不是已核准的 dashboard action。
+- 可執行的 restart control 必須有 approved registry entry，且具備 permission boundary、backup expectation 與 rollback expectation 審查 metadata。
 
 ## UI 規則
 
 - `Network Service Status` 必須把 `Quick Test` 呈現為 table column，而不是獨立 action button。
 - `Quick Test` cell 應同時呈現該 service 的 health、Doctor、restart 與 readiness。
-- dashboard 不得提供一鍵 restart，直到另一次已審查的 apply path 定義 command 邊界、權限、backup 或 rollback expectation，以及 audit evidence。
+- 同一個 cell 不得重複顯示狀態 label 與可執行 control。Doctor 或 restart 已核准可執行時，狀態 flag 本身就是一鍵控制，並帶有 reviewed-control marker。
+- dashboard 不得提供一鍵 restart，直到另一次已審查的 apply path 定義 command 邊界、權限、backup 或 rollback expectation，以及 audit evidence。缺少完整審查 metadata 的 service 必須維持 `REVIEW_REQUIRED` 或 disabled。
+- 受保護的 DevGov dashboard public origins 可以作為 loopback service-control listener 的 browser Origin allowlist，但 service-control listener 本身必須維持 loopback-only，不得作為 Cloudflare route 發布。
 
 ## API 規則
 
@@ -74,4 +78,4 @@ npm run validate:registry
 npm run doctor
 ```
 
-若修改 UI，也要用瀏覽器實測 dashboard，確認 service table 顯示 `Quick Test` 欄位，且沒有獨立 quick-test restart control。
+若修改 UI，也要用瀏覽器實測 dashboard，確認 service table 顯示 `Quick Test` 欄位、Doctor/Restart 狀態 flag 下方不再重複出現動作 label，且缺少完整審查 metadata 的 service 不會出現可執行 restart control。

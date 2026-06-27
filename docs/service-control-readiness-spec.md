@@ -16,6 +16,7 @@ Each service status row must expose:
 - `doctor.ref`: stable npm script, script path, registry ID, or documentation reference
 - `restart.state`: `FOUND`, `MISSING`, `DISABLED`, or `REVIEW_REQUIRED`
 - `restart.ref`: stable startup or restart reference when available
+- `restart.policyReadiness`: review metadata for executable restart controls when available
 - `controlReadiness`: `READY`, `PARTIAL`, or `BLOCKED`
 
 `controlReadiness` is derived:
@@ -32,12 +33,15 @@ Each service status row must expose:
 - Restart is `REVIEW_REQUIRED` when a startup or service reference exists but is not safe for dashboard execution.
 - Restart is `DISABLED` when policy intentionally forbids dashboard restart even if supporting scripts exist.
 - Reset/restart operations are separate from Doctor. A reset path marked `REVIEW_REQUIRED` is a candidate control path, not an approved dashboard action.
+- Executable restart controls require an approved registry entry with permission boundary, backup expectation, and rollback expectation review metadata.
 
 ## UI Rules
 
 - `Network Service Status` must render `Quick Test` as a table column, not as a standalone action button.
 - The `Quick Test` cell should show health, Doctor, restart, and readiness together for each service.
-- The dashboard must not expose one-click restart until a separate reviewed apply path defines command boundaries, permissions, backup or rollback expectations, and audit evidence.
+- Status labels and executable controls must not be duplicated in the same cell. When Doctor or restart is approved for execution, the status flag itself becomes the one-click control and carries the reviewed-control marker.
+- The dashboard must not expose one-click restart until a separate reviewed apply path defines command boundaries, permissions, backup or rollback expectations, and audit evidence. Services without complete review metadata stay `REVIEW_REQUIRED` or disabled.
+- Protected DevGov dashboard public origins may be allowed as browser Origins for the loopback service-control listener, but the service-control listener itself must remain loopback-only and must not be published as a Cloudflare route.
 
 ## API Rules
 
@@ -74,4 +78,4 @@ npm run validate:registry
 npm run doctor
 ```
 
-For UI changes, also verify the dashboard in a browser and confirm that the service table shows the `Quick Test` column and no standalone quick-test restart control.
+For UI changes, also verify the dashboard in a browser and confirm that the service table shows the `Quick Test` column, no duplicated Doctor/Restart action label under the status flag, and no executable restart control for services without complete review metadata.

@@ -432,6 +432,17 @@ function applyApprovedControlRefs(target, approvedControlsByTarget) {
       continue;
     }
     const current = nextTarget[action];
+    if (action === "restart") {
+      const readiness = restartPolicyReadiness(approved);
+      nextTarget[action] = {
+        ...current,
+        state: readiness.complete ? "FOUND" : "REVIEW_REQUIRED",
+        ref: approved.wrapperRef,
+        notes: approved.notes || current?.notes || "",
+        policyReadiness: readiness
+      };
+      continue;
+    }
     nextTarget[action] = {
       ...current,
       state: "FOUND",
@@ -441,6 +452,24 @@ function applyApprovedControlRefs(target, approvedControlsByTarget) {
   }
 
   return nextTarget;
+}
+
+function restartPolicyReadiness(controlEntry) {
+  const policy = controlEntry?.restartPolicy ?? {};
+  const missing = [
+    { key: "permissionBoundary", value: policy.permissionBoundary },
+    { key: "backupExpectation", value: policy.backupExpectation },
+    { key: "rollbackExpectation", value: policy.rollbackExpectation }
+  ].filter((item) => typeof item.value !== "string" || !item.value.trim());
+
+  if (!missing.length) {
+    return { complete: true, state: "READY", policyMessage: "Policy reviewed." };
+  }
+  return {
+    complete: false,
+    state: "INCOMPLETE",
+    policyMessage: `Missing ${missing.map((item) => item.key).join(", ")}`
+  };
 }
 
 function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, startupByProject, portsByProjectService }) {
@@ -948,11 +977,6 @@ export function renderDashboardHtml(state) {
       padding: 7px 12px;
       width: auto;
     }
-    .action-button.inline-action {
-      min-height: 26px;
-      padding: 2px 8px;
-      font-size: 12px;
-    }
     .action-button[disabled] {
       color: var(--muted);
       cursor: not-allowed;
@@ -1142,10 +1166,11 @@ export function renderDashboardHtml(state) {
       min-width: 220px;
     }
     .check-row {
-      align-items: start;
+      align-items: center;
       display: grid;
       gap: 4px 8px;
-      grid-template-columns: 84px minmax(0, 1fr);
+      grid-template-columns: 84px max-content minmax(0, 1fr);
+      min-height: 26px;
     }
     .check-label {
       color: var(--muted);
@@ -1153,6 +1178,14 @@ export function renderDashboardHtml(state) {
       font-weight: 700;
       line-height: 1.6;
       text-transform: uppercase;
+    }
+    .check-status {
+      align-items: center;
+      display: inline-flex;
+      min-width: 0;
+    }
+    .check-detail {
+      min-width: 0;
     }
     table {
       background: var(--panel);
@@ -1189,6 +1222,37 @@ export function renderDashboardHtml(state) {
       transform-origin: center;
       white-space: nowrap;
     }
+    .status-action {
+      align-items: center;
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      cursor: pointer;
+      display: inline-flex;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      gap: 4px;
+      justify-content: center;
+      line-height: 1.35;
+      min-height: 24px;
+      padding: 2px 7px;
+      text-align: center;
+      transform-origin: center;
+      white-space: nowrap;
+      width: auto;
+    }
+    .status-action:hover {
+      box-shadow: inset 0 0 0 999px color-mix(in oklab, white 16%, transparent);
+    }
+    .status-action[disabled] {
+      color: var(--muted);
+      cursor: not-allowed;
+      opacity: .72;
+    }
+    .action-key {
+      font-size: 13px;
+      line-height: 1;
+    }
     .inline-actions {
       display: flex;
       flex-wrap: wrap;
@@ -1207,10 +1271,10 @@ export function renderDashboardHtml(state) {
       nav button .glyph {
         transition: transform 160ms ease-out;
       }
-      .theme-toggle, .language-toggle, .action-button, nav button {
-        transition: background-color 160ms ease-out, color 160ms ease-out, transform 160ms ease-out;
+      .theme-toggle, .language-toggle, .action-button, .status-action, nav button {
+        transition: background-color 160ms ease-out, box-shadow 160ms ease-out, color 160ms ease-out, transform 160ms ease-out;
       }
-      .theme-toggle:active, .language-toggle:active, .action-button:active, nav button:active {
+      .theme-toggle:active, .language-toggle:active, .action-button:active, .status-action:active, nav button:active {
         transform: translateY(1px);
       }
       body.deck-mode .metric {
@@ -1402,7 +1466,7 @@ export function renderDashboardHtml(state) {
         </div>
       </div>
       <div class="guidance">
-        <div><strong data-i18n="restartPolicy.label">Restart policy:</strong> <span data-i18n="restartPolicy.body">Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。一鍵 restart 會維持停用，直到每個 service 都有已審查的 restart command、backup/rollback expectation 與 permission boundary。</span></div>
+        <div><strong data-i18n="restartPolicy.label">Restart policy:</strong> <span data-i18n="restartPolicy.body">Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。已審查的 Doctor/restart 控制會直接顯示在狀態 flag 上；未通過 restart policy 的 service 仍維持 review-gated。</span></div>
       </div>
       <table data-table="service-status"></table>
     </section>
@@ -1489,7 +1553,7 @@ const messages = {
     },
     restartPolicy: {
       label: 'Restart policy:',
-      body: 'the Quick Test column runs safe health checks and reports Doctor/restart readiness. One-click restart stays disabled until each service has a reviewed restart command, backup/rollback expectation, and permission boundary.'
+      body: 'the Quick Test column runs safe health checks and reports Doctor/restart readiness. Reviewed Doctor/restart controls attach to the status flag itself; services without a complete restart policy stay review-gated.'
     },
     serviceOnboarding: {
       label: 'Procedure:',
@@ -1617,7 +1681,7 @@ const messages = {
     },
     restartPolicy: {
       label: 'Restart policy:',
-      body: 'Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。一鍵 restart 會維持停用，直到每個 service 都有已審查的 restart command、backup/rollback expectation 與 permission boundary。'
+      body: 'Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。已審查的 Doctor/restart 控制會直接顯示在狀態 flag 上；未通過 restart policy 的 service 仍維持 review-gated。'
     },
     serviceOnboarding: {
       label: 'Procedure:',
@@ -2253,21 +2317,41 @@ function renderQuickTestCell(row) {
     + '</div>';
 }
 function checkRow(label, state, ref) {
-  return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span>' + (ref ? linkedPill(state, ref, label) : pill(state)) + '</span></div>';
+  return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span class="check-status">' + (ref ? linkedPill(state, ref, label) : pill(state)) + '</span><span class="check-detail"></span></div>';
 }
 function renderActionRow(row, action, actionStatus) {
   const actionKey = String(row.controlTargetId) + ':' + String(action);
   const control = serviceControlMap.get(actionKey);
   const actionState = controlActionStates[actionKey];
   const label = t('labels.' + action);
-  let body = actionStatus?.ref ? linkedPill(actionStatus?.state || 'MISSING', actionStatus?.ref, label) : pill(actionStatus?.state || 'MISSING');
-  if (control?.approved) {
-    body += ' <button class="action-button inline-action" type="button" data-service-action="' + esc(action) + '" data-control-target="' + esc(row.controlTargetId) + '"' + (actionState?.pending ? ' disabled' : '') + '>' + esc(control.uiLabel || label) + '</button>';
+  const state = actionStatus?.state || 'MISSING';
+  const isRestart = action === "restart";
+  const restartPolicyReady = isRestart ? actionStatus?.policyReadiness?.complete === true : true;
+  const restartBlocked = isRestart && !restartPolicyReady;
+  const status = control?.approved && !restartBlocked
+    ? actionControlPill(row, action, state, control, actionState)
+    : (actionStatus?.ref ? linkedPill(state, actionStatus.ref, label) : pill(state));
+  const details = [];
+  if (isRestart && actionStatus?.policyReadiness) {
+    if (!actionStatus.policyReadiness.complete) {
+      details.push('<span class="inline-meta">' + esc(actionStatus.policyReadiness.policyMessage || 'Restart policy is incomplete') + '</span>');
+    }
+  } else if (isRestart && control?.approved) {
+    details.push('<span class="inline-meta">Restart policy evidence missing in registry</span>');
   }
   if (actionState?.message) {
-    body += '<span class="inline-meta">' + esc(actionState.message) + '</span>';
+    details.push('<span class="inline-meta">' + esc(actionState.message) + '</span>');
   }
-  return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span>' + body + '</span></div>';
+  return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span class="check-status">' + status + '</span><span class="check-detail">' + details.join('') + '</span></div>';
+}
+function actionControlPill(row, action, state, control, actionState) {
+  const label = t('labels.' + action);
+  const targetLabel = row.label || row.id || row.controlTargetId;
+  const actionText = currentLanguage === 'zhTw'
+    ? '執行 ' + label + ': ' + targetLabel
+    : 'Run ' + label + ': ' + targetLabel;
+  const title = control?.wrapperRef ? actionText + ' (' + control.wrapperRef + ')' : actionText;
+  return '<button class="pill status-action ' + esc(String(state).toLowerCase()) + '" type="button" data-service-action="' + esc(action) + '" data-control-target="' + esc(row.controlTargetId) + '"' + (actionState?.pending ? ' disabled' : '') + ' title="' + esc(title) + '" aria-label="' + esc(actionText) + '"><span>' + esc(state) + '</span><span class="action-key" aria-hidden="true">&#128477;&#65039;</span></button>';
 }
 function renderServiceCell(row) {
   return '<div class="service-cell">'

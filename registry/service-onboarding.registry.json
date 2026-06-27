@@ -112,6 +112,42 @@
       "notes": "The Windows entrypoint keeps source and runtime boundaries separate. DevGov control now confirms local health, public prod/staging health, and prod/staging runtime verify together."
     },
     {
+      "id": "chatgpt-local-files-mcp-http",
+      "project": "chatgpt-local-files-mcp",
+      "service": "mcp-http",
+      "readiness": "PARTIAL",
+      "ownerKind": "source-repo-and-user-level-cloudflared",
+      "sourceRef": "registry/public-routes.registry.json#mcp-colorgeek",
+      "healthProcedure": "Use local /health on the governed 127.0.0.1:43189 origin plus the public MCP metadata and discovery probe.",
+      "doctorProcedure": "Use the project status-production and test-public-mcp scripts to confirm origin health, public protected-resource metadata, tool discovery, and protected-tool OAuth challenge.",
+      "resetProcedure": "Use the reviewed project start-windows-production path; it must require the dedicated local-files Cloudflare config or a reviewed override before starting tunnel transport.",
+      "startupProcedure": "Keep startup as a candidate through registry/startup.registry.json#chatgpt-local-files-mcp-windows-runtime until normal ChatGPT Web protected OAuth write acceptance passes.",
+      "dashboardProcedure": "Surface as a public-route/service candidate after the registry and public probe are green; do not mark approved until live protected OAuth write acceptance passes.",
+      "cloudflareProcedure": "Route mcp.colorgeek.co only to the ChatGPT-facing local-files MCP safety boundary. Do not route ChatGPT directly to the TB2 runtime or the Nowledge browser bridge.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "registry/public-routes.registry.json#mcp-colorgeek",
+      "nextAction": "Complete normal signed-in ChatGPT Web connector acceptance for protected OAuth governance, bridge, and file write tools, then promote status if all probes remain green.",
+      "notes": "This record resolves the previous mcp.colorgeek.co drift by making chatgpt-local-files-mcp the registered ChatGPT-facing safety boundary while keeping TB2 behind a narrow probe."
+    },
+    {
+      "id": "chatgpt-local-files-mcp-nowledge-compat-http",
+      "project": "chatgpt-local-files-mcp",
+      "service": "nowledge-compat-http",
+      "readiness": "PARTIAL",
+      "ownerKind": "source-repo-and-loopback-runtime",
+      "sourceRef": "registry/ports.registry.json#chatgpt-local-files-mcp:nowledge-compat-http",
+      "healthProcedure": "Use local http://127.0.0.1:14242/health after scripts/start-nowledge-compat.ps1 starts the runtime.",
+      "doctorProcedure": "Run npm test with test/nowledge-compat.test.ts plus /health, /threads, /memories/search smoke probes.",
+      "resetProcedure": "Use scripts/start-nowledge-compat.ps1 to reuse or start the governed loopback runtime.",
+      "startupProcedure": "No login startup is approved yet. Keep this on-demand until extension acceptance and data-egress checks are complete.",
+      "dashboardProcedure": "Surface later as a local service target only after live extension testing proves the compatibility contract.",
+      "cloudflareProcedure": "No public route. Keep loopback-only; do not publish 127.0.0.1:14242 or browser-bridge websocket through Cloudflare.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "chatgpt-local-files-mcp/test/nowledge-compat.test.ts",
+      "nextAction": "Complete live Chrome extension setup against the local API and verify mem.nowledge.co egress is no longer required.",
+      "notes": "This service is a local replacement boundary for Nowledge Memory Exchange API calls, not a browser automation bridge."
+    },
+    {
       "id": "taste-web-http",
       "project": "taste",
       "service": "web-http",
@@ -256,22 +292,22 @@
       "notes": "The former `video-render-kit` 8765 placeholder resolved to the Photo HDR Flow source checkout. DevGov reuses the reviewed loopback web UI entrypoint without editing the pre-existing dirty target repo."
     },
     {
-      "id": "exc-draw-web-http",
-      "project": "exc-draw",
+      "id": "draw-draw-web-http",
+      "project": "draw-draw",
       "service": "web-http",
       "readiness": "PARTIAL",
       "ownerKind": "source-repo-and-personal-local-tool",
-      "sourceRef": "registry/ports.registry.json#exc-draw:web-http",
-      "healthProcedure": "Use local http://127.0.0.1:31740/ and confirm the exc-draw title and Import screenshot panel load.",
+      "sourceRef": "registry/ports.registry.json#draw-draw:web-http",
+      "healthProcedure": "Use local http://127.0.0.1:31740/ and confirm the draw-draw title and Import screenshot panel load.",
       "doctorProcedure": "Run npm exec -- tsc --noEmit and corepack yarn --cwd ./excalidraw-app build:app from the source checkout.",
       "resetProcedure": "Use npm run dev from the source checkout to run the governed preflight and strict Vite server.",
       "startupProcedure": "No login startup is approved. Personal launcher tooling may locate or start the local app, but it remains outside canonical registry data.",
       "dashboardProcedure": "Surface later as a local service target after adding a dedicated health URL or approved quick probe.",
       "cloudflareProcedure": "No public route. Keep loopback-only; do not publish 127.0.0.1:31740 without separate exposure review.",
       "reviewStatus": "reviewed",
-      "reviewEvidence": "exc-draw PORTS.md; ops/local-ports.json; local Playwright smoke",
+      "reviewEvidence": "draw-draw PORTS.md; ops/local-ports.json; local Playwright smoke",
       "nextAction": "Add a lightweight health endpoint or quick probe if DevGov dashboard Service Status should track readiness automatically.",
-      "notes": "Local UI review canvas for screenshot annotation. The personal exc-draw-workflow plugin wrapper is intentionally not recorded in canonical registry data."
+      "notes": "Local UI review canvas for screenshot annotation. The personal workflow wrapper is intentionally not recorded in canonical registry data."
     }
   ]
 }

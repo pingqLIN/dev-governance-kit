@@ -39,6 +39,9 @@ export async function executeServiceControl(root, payload, requestMeta = {}) {
   if (!entry) {
     throw new Error(`No approved service control action for ${controlTargetId}/${action}`);
   }
+  if (action === "restart" && !isRestartPolicyReady(entry)) {
+    throw new Error(`Restart action is not review-ready for ${controlTargetId}: permissionBoundary, backupExpectation, and rollbackExpectation must all be present.`);
+  }
 
   const resolved = resolveControlTarget(root, entry);
   if (!resolved?.wrapperPath) {
@@ -91,6 +94,15 @@ export async function executeServiceControl(root, payload, requestMeta = {}) {
     });
     throw error;
   }
+}
+
+function isRestartPolicyReady(controlEntry = {}) {
+  const policy = controlEntry.restartPolicy ?? {};
+  return [
+    policy.permissionBoundary,
+    policy.backupExpectation,
+    policy.rollbackExpectation
+  ].every((value) => typeof value === "string" && value.trim().length > 0);
 }
 
 export async function readServiceControlEvents(root = ".") {

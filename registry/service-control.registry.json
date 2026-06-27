@@ -45,7 +45,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "This first approved action is intentionally bounded to local DevGov dashboard ensure-running semantics on the non-public control listener."
+      "notes": "This first approved action is intentionally bounded to local DevGov dashboard ensure-running semantics on the non-public control listener.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If the action fails, inspect reports/service-control-events.json and rerun the reviewed local dashboard start path manually. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "tunnel-client-local-filesystem-mcp-doctor",
@@ -83,7 +88,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running restart action for the tunnel-client local filesystem MCP bridge."
+      "notes": "Reviewed local-only ensure-running restart action for the tunnel-client local filesystem MCP bridge.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "Use the openai-mcp-tunnel runtime scripts directly if DevGov control is unavailable. Runtime process restarts remain loopback-only. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "local-archive-maintainer-doctor",
@@ -121,7 +131,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only restart action for the installed Local Archive Maintainer Windows service using the native service controller plus authenticated health recovery."
+      "notes": "Reviewed local-only restart action for the installed Local Archive Maintainer Windows service using the native service controller plus authenticated health recovery.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If restart does not restore health, inspect the service home logs and consider reinstall or state repair outside DevGov. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "ps3eye-windows-virtual-camera-doctor",
@@ -159,7 +174,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only repair action for PS3 Eye virtual camera observation."
+      "notes": "Reviewed local-only repair action for PS3 Eye virtual camera observation.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If repair does not restore the camera pipeline, inspect ffmpeg, VCamSample, and hardware state directly on the target repo. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "taste-doctor",
@@ -197,7 +217,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the Taste Next.js runtime; public route failures remain visible after local start."
+      "notes": "Reviewed local-only ensure-running action for the Taste Next.js runtime; public route failures remain visible after local start.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If restart restores the local app but public checks still fail, inspect the cloudflared service and route health separately. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "codex-calendar-todo-staging-doctor",
@@ -235,7 +260,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for Codex Calendar Todo staging; any remaining public-route or Access failure stays visible after local recovery."
+      "notes": "Reviewed local-only ensure-running action for Codex Calendar Todo staging; any remaining public-route or Access failure stays visible after local recovery.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If local health recovers but public health still fails, update the reviewed Cloudflare route target before treating staging as restored. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "sbs-doctor",
@@ -273,7 +303,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the SBS local proxy."
+      "notes": "Reviewed local-only ensure-running action for the SBS local proxy.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect the SBS protocol launcher, local proxy health, and local-artifacts logs inside the target repo. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "color-management-shader-doctor",
@@ -313,7 +348,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the color-management-Shader Display Shader Control Lab."
+      "notes": "Reviewed local-only ensure-running action for the color-management-Shader Display Shader Control Lab.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect the preview server logs and the governed port state before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "url-hero-doctor",
@@ -353,7 +393,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the root url-hero Vite dev app without editing the pre-existing dirty worktree."
+      "notes": "Reviewed local-only ensure-running action for the root url-hero Vite dev app without editing the pre-existing dirty worktree.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect the url-hero dev server logs and the existing dirty target repo before changing any project code. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "codex-remote-doctor",
@@ -391,7 +436,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the codex-remote runtime authority under Documents/Codex."
+      "notes": "Reviewed local-only ensure-running action for the codex-remote runtime authority under Documents/Codex.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If local healthz and readyz recover but public checks fail, inspect the codex-remote tunnel logs before treating the route as restored. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "lm-studio-doctor",
@@ -431,7 +481,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the LM Studio API server."
+      "notes": "Reviewed local-only ensure-running action for the LM Studio API server.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If local recovery succeeds but the public route still fails, inspect Cloudflare tunnel state separately from LM Studio itself. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "tb2-doctor",
@@ -471,7 +526,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the TB2 Windows entrypoint layer. It intentionally fails closed when staging or public health remain broken."
+      "notes": "Reviewed local-only ensure-running action for the TB2 Windows entrypoint layer. It intentionally fails closed when staging or public health remain broken.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If local listener recovers but public health still fails, inspect cloudflared routing or runtime stage drift before treating TB2 as restored. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "comfyui-local-doctor",
@@ -511,7 +571,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the ComfyUI localhost-only static image runtime."
+      "notes": "Reviewed local-only ensure-running action for the ComfyUI localhost-only static image runtime.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If restart does not restore localhost health, inspect the ComfyUI portable runtime console and repo-level start script before changing models or runtime flags. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     },
     {
       "id": "photo-hdr-flow-web-doctor",
@@ -551,7 +616,12 @@
       "uiLabel": "Restart",
       "requiresConfirmation": true,
       "status": "approved",
-      "notes": "Reviewed local-only ensure-running action for the Photo HDR Flow web UI and local API surface."
+      "notes": "Reviewed local-only ensure-running action for the Photo HDR Flow web UI and local API surface.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect the source checkout logs and verify that port 8765 is available before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
     }
   ]
 }

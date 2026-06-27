@@ -7,11 +7,11 @@
       "id": "chatgpt-local-files-mcp-windows-runtime",
       "project": "chatgpt-local-files-mcp",
       "trigger": "startup-folder",
-      "purpose": "Retired Windows-host ChatGPT local-files MCP runtime startup entry.",
+      "purpose": "Start the Windows-host ChatGPT local-files MCP runtime and reviewed tunnel connector on operator login.",
       "scriptRef": "chatgpt-local-files-mcp/scripts/startup-production.ps1",
-      "status": "deprecated",
-      "source": "startup audit; local-files MCP retirement",
-      "notes": "Do not approve or recreate. Keep full local command line in reports only; removing the actual Windows startup entry requires a separate operator-approved cleanup step.",
+      "status": "candidate",
+      "source": "startup audit; ChatGPT Local Files MCP security hardening",
+      "notes": "Candidate startup authority for the reviewed local-files MCP runtime. Startup must use the dedicated chatgpt-local-files-mcp Cloudflare config or an explicitly reviewed override; full local command lines and config paths stay in reports.",
       "managedByCodex": true
     },
     {
