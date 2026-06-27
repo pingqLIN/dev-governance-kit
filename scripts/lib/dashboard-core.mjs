@@ -573,7 +573,7 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
   const displayShaderLab = onboardingEntries.find((entry) => entry.id === "color-management-shader-display-shader-control-lab-http");
   if (displayShaderLab) {
     const portEntry = portsByProjectService.get("color-management-Shader:display-shader-control-lab-http");
-    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/api/shaderglass/status` : "http://127.0.0.1:4174/api/shaderglass/status";
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/index.html` : "http://127.0.0.1:4173/index.html";
     targets.push({
       id: "onboarding:color-management-shader-display-shader-control-lab-http",
       controlTargetId: "color-management-shader",
@@ -582,7 +582,7 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       kind: "preview-runtime",
       registryStatus: "candidate",
       url: healthUrl,
-      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:4174",
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:4173",
       quickTest: buildQuickTest(healthUrl),
       doctor: {
         state: "MISSING",

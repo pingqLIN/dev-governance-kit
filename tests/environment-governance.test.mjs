@@ -476,7 +476,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(sbsTarget.restart.state, "FOUND");
   assert.equal(sbsTarget.controlReadiness, "PARTIAL");
   assert.equal(displayShaderLabTarget.project, "color-management-Shader");
-  assert.equal(displayShaderLabTarget.target, "127.0.0.1:4174");
+  assert.equal(displayShaderLabTarget.target, "127.0.0.1:4173");
   assert.equal(displayShaderLabTarget.doctor.state, "FOUND");
   assert.equal(displayShaderLabTarget.restart.state, "FOUND");
   assert.equal(displayShaderLabTarget.controlReadiness, "PARTIAL");

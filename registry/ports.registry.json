@@ -125,7 +125,7 @@
     {
       "project": "color-management-Shader",
       "service": "display-shader-control-lab-http",
-      "port": 4174,
+      "port": 4173,
       "host": "127.0.0.1",
       "visibility": "local",
       "protocol": "http",

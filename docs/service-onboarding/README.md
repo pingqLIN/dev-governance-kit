@@ -25,7 +25,7 @@ Each service record must be reviewed after its procedure is created or updated. 
 | `tb2:tb2-mcp-http` | `BLOCKED` | `needs-implementation` | Promote TB2 status/start scripts as stable refs. |
 | `taste:web-http` | `BLOCKED` | `needs-implementation` | Promote `runtime:check` as Doctor and add start governance. |
 | `lm-studio:local-api-http` | `BLOCKED` | `needs-owner` | Confirm startup owner for the external app. |
-| `color-management-Shader:display-shader-control-lab-http` | `BLOCKED` | `needs-implementation` | Convert PORTS verification into Doctor/start procedure. |
+| `color-management-Shader:display-shader-control-lab-http` | `PARTIAL` | `reviewed` | Govern the static preview server and local health check. |
 | `sbs:local-proxy-http` | `BLOCKED` | `needs-implementation` | Promote existing proxy Doctor scripts. |
 | `url-hero:vite-dev` | `BLOCKED` | `needs-implementation` | Add governed dev-server wrapper and Doctor. |
 | `photo-hdr-flow:web-ui-http` | `PARTIAL` | `reviewed` | Local `/api/health`, Doctor, and Restart are registered through the `photo_hdr_flow web` loopback authority. |

@@ -25,7 +25,7 @@ Canonical machine-readable source 是 `registry/service-onboarding.registry.json
 | `tb2:tb2-mcp-http` | `BLOCKED` | `needs-implementation` | 將 TB2 status/start scripts 提升為穩定 refs。 |
 | `taste:web-http` | `BLOCKED` | `needs-implementation` | 將 `runtime:check` 提升為 Doctor，並補 start governance。 |
 | `lm-studio:local-api-http` | `BLOCKED` | `needs-owner` | 確認 external app startup owner。 |
-| `color-management-Shader:display-shader-control-lab-http` | `BLOCKED` | `needs-implementation` | 將 PORTS verification 轉成 Doctor/start procedure。 |
+| `color-management-Shader:display-shader-control-lab-http` | `PARTIAL` | `reviewed` | 治理靜態 preview server 與本機健康檢查。 |
 | `sbs:local-proxy-http` | `BLOCKED` | `needs-implementation` | 登記既有 proxy Doctor scripts。 |
 | `url-hero:vite-dev` | `BLOCKED` | `needs-implementation` | 補 governed dev-server wrapper 與 Doctor。 |
 | `photo-hdr-flow:web-ui-http` | `PARTIAL` | `reviewed` | 已透過 `photo_hdr_flow web` loopback authority 登記本機 `/api/health`、Doctor 與 Restart。 |
