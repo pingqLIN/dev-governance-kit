@@ -622,6 +622,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const skill0Gui = onboardingEntries.find((entry) => entry.id === "skill-0-gui-review-studio-http");
+  if (skill0Gui) {
+    const portEntry = portsByProjectService.get("skill-0-GUI:review-studio-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/healthz` : "http://127.0.0.1:3102/healthz";
+    targets.push({
+      id: "onboarding:skill-0-gui-review-studio-http",
+      controlTargetId: "skill-0-gui",
+      project: "skill-0-GUI",
+      label: "Skill-0 Review Studio",
+      kind: "local-web-ui",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:3102",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0Gui.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0Gui.resetProcedure
+      }
+    });
+  }
   const comfyui = onboardingEntries.find((entry) => entry.id === "comfyui-local-http");
   if (comfyui) {
     const portEntry = portsByProjectService.get("ComfyUI:comfyui-local-http");

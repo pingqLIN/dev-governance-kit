@@ -103,6 +103,17 @@
       "notes": "Fixed local Vite development server. Keep loopback-only with strictPort; no public route is approved."
     },
     {
+      "project": "skill-0-GUI",
+      "service": "review-studio-http",
+      "port": 3102,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "range": "frontend",
+      "source": "skill-0-GUI README; project runtime verification",
+      "notes": "Loopback-only Skill-0 Review Studio web interface. Use the production server with PORT=3102 and loopback binding; no public route is approved."
+    },
+    {
       "project": "devgov",
       "service": "dashboard-http",
       "port": 3000,

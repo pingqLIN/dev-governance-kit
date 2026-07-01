@@ -292,6 +292,24 @@
       "notes": "The former `video-render-kit` 8765 placeholder resolved to the Photo HDR Flow source checkout. DevGov reuses the reviewed loopback web UI entrypoint without editing the pre-existing dirty target repo."
     },
     {
+      "id": "skill-0-gui-review-studio-http",
+      "project": "skill-0-GUI",
+      "service": "review-studio-http",
+      "readiness": "PARTIAL",
+      "ownerKind": "source-repo",
+      "sourceRef": "registry/ports.registry.json#skill-0-GUI:review-studio-http",
+      "healthProcedure": "Use local http://127.0.0.1:3102/healthz and confirm the Review Studio shell plus runtime admin settings route load.",
+      "doctorProcedure": "Run npm run lint, npm test, npm run docs:check, npm run verify:public-build, and npm run verify:build-size from the source checkout.",
+      "resetProcedure": "Build the app, then start the production server with PORT=3102, SKILL0_HOST=127.0.0.1, and SKILL0_MODE=standalone.",
+      "startupProcedure": "Use on-demand startup only. No login startup automation is registered in DevGov.",
+      "dashboardProcedure": "Surface as a local service target through the /healthz quick test; approved Doctor and Restart controls are not registered yet.",
+      "cloudflareProcedure": "No Cloudflare route is approved; keep the Review Studio interface loopback-only unless a later exposure review explicitly changes that boundary.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "skill-0-GUI README; local validation; runtime smoke",
+      "nextAction": "Add reviewed service-control wrappers only if DevGov should manage Doctor or Restart actions for this interface.",
+      "notes": "Review-first Skill-0 workbench with optional runtime LLM settings. API keys and transient runtime overrides must not be stored in canonical registry data."
+    },
+    {
       "id": "draw-draw-web-http",
       "project": "draw-draw",
       "service": "web-http",
