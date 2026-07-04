@@ -158,8 +158,8 @@ function buildServiceOnboardingRow(entry, state) {
 
 function targetMatchesEntry(target, entry, publicRoutes, localAgents) {
   const socket = `${entry.host}:${entry.port}`;
-  if (target.project === entry.project) return true;
   if (target.target === socket) return true;
+  if (target.project === entry.project && target.service === entry.service) return true;
   if (publicRoutes.some((route) => `public-route:${route.id}` === target.id)) return true;
   if (localAgents.some((agent) => `local-agent:${agent.id}` === target.id)) return true;
   return false;

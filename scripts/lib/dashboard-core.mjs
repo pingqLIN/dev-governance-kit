@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import http from "node:http";
 import https from "node:https";
 import path from "node:path";
-import { loadApprovedServiceControls, SERVICE_CONTROL_URL } from "./service-control-core.mjs";
+import { loadApprovedServiceControls, SERVICE_CONTROL_HOST, SERVICE_CONTROL_PORT, SERVICE_CONTROL_URL } from "./service-control-core.mjs";
 
 export const DASHBOARD_HOST = "127.0.0.1";
 export const DASHBOARD_PORT = 3000;
@@ -23,6 +23,10 @@ export async function loadDashboardState(root = ".") {
     loadApprovedServiceControls(root)
   ]);
   const webConsoleEvents = await readDashboardEvents(path.join(root, "reports", "web-console-events.json"));
+  const localFileCompanions = await buildLocalFileCompanions(root, [
+    agentInstructions.sourceOfTruth,
+    ...agentInstructions.entries.map((entry) => entry.evidence)
+  ]);
 
   const dashboardPort = ports.entries.find((entry) => (
     entry.project === "devgov"
@@ -68,6 +72,7 @@ export async function loadDashboardState(root = ".") {
       baseUrl: SERVICE_CONTROL_URL,
       entries: serviceControls
     },
+    localFileCompanions,
     webConsoleEvents,
     webEntrypoints,
     serviceTargets: buildServiceTargets({
@@ -80,6 +85,40 @@ export async function loadDashboardState(root = ".") {
       serviceControls
     })
   };
+}
+
+async function buildLocalFileCompanions(root, values = []) {
+  const companions = {};
+  for (const value of values) {
+    const pathPart = localDashboardFilePathPart(value);
+    if (!pathPart || !pathPart.endsWith(".md") || pathPart.endsWith(".zh-tw.md")) continue;
+    if (!isDashboardFileRefAllowed(pathPart)) continue;
+
+    const companion = pathPart.replace(/\.md$/, ".zh-tw.md");
+    if (!isDashboardFileRefAllowed(companion)) continue;
+    if (await fileExists(path.join(root, companion))) companions[pathPart] = companion;
+  }
+  return companions;
+}
+
+function localDashboardFilePathPart(value) {
+  const text = String(value ?? "");
+  let pathPart = text.split("#")[0];
+  if (pathPart.startsWith("devgov/")) pathPart = pathPart.slice("devgov/".length);
+  return pathPart;
+}
+
+function isDashboardFileRefAllowed(pathPart) {
+  return /^(?:AGENTS|README)\.zh-tw\.md$|^(?:AGENTS|README)\.md$|^package\.json$|^(?:registry|scripts|templates|docs|reports)\/[A-Za-z0-9._\/-]+\.(?:md|json|txt|yml|yaml|mjs|ps1|html)$/.test(pathPart);
+}
+
+async function fileExists(filePath) {
+  try {
+    const stats = await fs.stat(filePath);
+    return stats.isFile();
+  } catch {
+    return false;
+  }
 }
 
 export function buildWebEntrypoints({ dashboardPort, publicRoutes = [] }) {
@@ -127,6 +166,26 @@ export function buildWebEntrypoints({ dashboardPort, publicRoutes = [] }) {
   ));
 }
 
+const serviceStatusKindOrder = new Map([
+  ["dashboard", 0],
+  ["local-agent", 1],
+  ["public-route", 2],
+  ["local-web-ui", 3],
+  ["portable-runtime", 4],
+  ["preview-runtime", 5],
+  ["vite-dev-runtime", 6],
+  ["runtime-command", 7],
+  ["hardware-observation", 8]
+]);
+
+function sortServiceTargetsForDashboard(targets = []) {
+  return targets.sort((left, right) => (
+    (serviceStatusKindOrder.get(left.kind) ?? 99) - (serviceStatusKindOrder.get(right.kind) ?? 99)
+    || (left.project || "").localeCompare(right.project || "")
+    || (left.label || "").localeCompare(right.label || "")
+  ));
+}
+
 function webEntrypointProject(route) {
   const text = `${route.id} ${route.serviceId} ${route.hostname}`.toLowerCase();
   if (text.includes("tb2")) return "tb2";
@@ -149,6 +208,7 @@ function inferRouteStage(route) {
 
 export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAgents = [], startupEntries = [], onboardingEntries = [], ports = [], serviceControls = [] }) {
   const targets = [];
+  const serviceControlPort = ports.find((entry) => entry.project === "devgov" && entry.service === "service-control-http");
   const startupById = new Map(startupEntries.map((entry) => [entry.id, entry]));
   const startupByProject = new Map(startupEntries.map((entry) => [entry.project, entry]));
   const startupByControlTarget = buildStartupByControlTarget(startupEntries);
@@ -175,6 +235,32 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
         state: "FOUND",
         ref: "scripts/open-dashboard.mjs",
         notes: "Reviewed on-demand starter exists. Dashboard execution remains disabled."
+      }
+    };
+    targets.push(withControlReadiness(applyApprovedControlRefs(target, approvedControlsByTarget)));
+  }
+
+  if (serviceControlPort) {
+    const healthUrl = `${serviceControlPort.protocol}://${serviceControlPort.host}:${serviceControlPort.port}/health`;
+    const target = {
+      id: "devgov-service-control",
+      controlTargetId: "devgov-service-control",
+      project: "devgov",
+      label: "DevGov Service Control",
+      kind: "dashboard",
+      registryStatus: serviceControlPort.visibility,
+      url: healthUrl,
+      target: `${SERVICE_CONTROL_HOST}:${SERVICE_CONTROL_PORT}`,
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: "Use the reviewed DevGov service-control Doctor wrapper to validate the local-only listener and canonical registries."
+      },
+      restart: {
+        state: "REVIEW_REQUIRED",
+        ref: "scripts/open-dashboard.mjs",
+        notes: "The control listener is started with the dashboard process, but self-restart from the control listener remains review-gated."
       }
     };
     targets.push(withControlReadiness(applyApprovedControlRefs(target, approvedControlsByTarget)));
@@ -278,7 +364,7 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
     targets.push(withControlReadiness(applyApprovedControlRefs(target, approvedControlsByTarget)));
   }
 
-  return targets;
+  return sortServiceTargetsForDashboard(targets);
 }
 
 export async function checkServiceStatuses(root = ".", options = {}) {
@@ -596,6 +682,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const nowledgeCompat = onboardingEntries.find((entry) => entry.id === "chatgpt-local-files-mcp-nowledge-compat-http");
+  if (nowledgeCompat) {
+    const portEntry = portsByProjectService.get("chatgpt-local-files-mcp:nowledge-compat-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/health` : "http://127.0.0.1:14242/health";
+    targets.push({
+      id: "onboarding:chatgpt-local-files-mcp-nowledge-compat-http",
+      controlTargetId: "chatgpt-local-files-mcp-nowledge-compat",
+      project: "chatgpt-local-files-mcp",
+      label: "Nowledge Compat API",
+      kind: "runtime-command",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:14242",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: nowledgeCompat.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: nowledgeCompat.resetProcedure
+      }
+    });
+  }
   const urlHero = onboardingEntries.find((entry) => entry.id === "url-hero-vite-dev");
   if (urlHero) {
     const portEntry = portsByProjectService.get("url-hero:vite-dev");
@@ -619,6 +731,58 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
         state: "MISSING",
         ref: "",
         notes: urlHero.resetProcedure
+      }
+    });
+  }
+  const gsdfEotf = onboardingEntries.find((entry) => entry.id === "gsdf-eotf-video-adjuster-vite-dev");
+  if (gsdfEotf) {
+    const portEntry = portsByProjectService.get("gsdf-eotf-video-adjuster:vite-dev");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/` : "http://127.0.0.1:3101/";
+    targets.push({
+      id: "onboarding:gsdf-eotf-video-adjuster-vite-dev",
+      controlTargetId: "gsdf-eotf-video-adjuster",
+      project: "gsdf-eotf-video-adjuster",
+      label: "LumaLift GSDF/EOTF Dev UI",
+      kind: "vite-dev-runtime",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:3101",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: gsdfEotf.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: gsdfEotf.resetProcedure
+      }
+    });
+  }
+  const drawDraw = onboardingEntries.find((entry) => entry.id === "draw-draw-web-http");
+  if (drawDraw) {
+    const portEntry = portsByProjectService.get("draw-draw:web-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/` : "http://127.0.0.1:31700/";
+    targets.push({
+      id: "onboarding:draw-draw-web-http",
+      controlTargetId: "draw-draw",
+      project: "draw-draw",
+      label: "draw-draw UI Review Canvas",
+      kind: "vite-dev-runtime",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:31700",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: drawDraw.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: drawDraw.resetProcedure
       }
     });
   }
@@ -697,6 +861,32 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
         state: "MISSING",
         ref: "",
         notes: photoHdrFlow.resetProcedure
+      }
+    });
+  }
+  const videoRenderKit = onboardingEntries.find((entry) => entry.id === "video-render-kit-control-panel-http");
+  if (videoRenderKit) {
+    const portEntry = portsByProjectService.get("video-render-kit:control-panel-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/api/state` : "http://127.0.0.1:5001/api/state";
+    targets.push({
+      id: "onboarding:video-render-kit-control-panel-http",
+      controlTargetId: "video-render-kit-web",
+      project: "video-render-kit",
+      label: "FFmpeg 轉檔控制台",
+      kind: "local-web-ui",
+      registryStatus: "candidate",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:5001",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: videoRenderKit.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: videoRenderKit.resetProcedure
       }
     });
   }
@@ -784,6 +974,7 @@ export function renderDashboardHtml(state) {
       --accent: oklch(47% 0.106 183);
       --accent-ink: oklch(99% 0.007 86);
       --blue: oklch(45% 0.13 261);
+      --green: oklch(42% 0.12 155);
       --ok-bg: oklch(90% 0.067 170);
       --warn-bg: oklch(91% 0.08 86);
       --bad-bg: oklch(90% 0.07 27);
@@ -805,6 +996,7 @@ export function renderDashboardHtml(state) {
         --accent: oklch(70% 0.116 176);
         --accent-ink: oklch(16% 0.018 248);
         --blue: oklch(76% 0.102 253);
+        --green: oklch(78% 0.112 155);
         --ok-bg: oklch(34% 0.063 170);
         --warn-bg: oklch(36% 0.064 86);
         --bad-bg: oklch(35% 0.064 27);
@@ -826,6 +1018,7 @@ export function renderDashboardHtml(state) {
       --accent: oklch(47% 0.106 183);
       --accent-ink: oklch(99% 0.007 86);
       --blue: oklch(45% 0.13 261);
+      --green: oklch(42% 0.12 155);
       --ok-bg: oklch(90% 0.067 170);
       --warn-bg: oklch(91% 0.08 86);
       --bad-bg: oklch(90% 0.07 27);
@@ -846,6 +1039,7 @@ export function renderDashboardHtml(state) {
       --accent: oklch(70% 0.116 176);
       --accent-ink: oklch(16% 0.018 248);
       --blue: oklch(76% 0.102 253);
+      --green: oklch(78% 0.112 155);
       --ok-bg: oklch(34% 0.063 170);
       --warn-bg: oklch(36% 0.064 86);
       --bad-bg: oklch(35% 0.064 27);
@@ -1252,6 +1446,15 @@ export function renderDashboardHtml(state) {
       font-family: "Cascadia Mono", Consolas, monospace;
       font-size: 13px;
     }
+    .file-ref-stack {
+      align-items: flex-start;
+      display: inline-flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .file-ref-companion code {
+      color: var(--green);
+    }
     .pill {
       border: 1px solid var(--ink);
       display: inline-block;
@@ -1296,6 +1499,83 @@ export function renderDashboardHtml(state) {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+    }
+    .control-modal[hidden] {
+      display: none;
+    }
+    .control-modal {
+      align-items: center;
+      background: oklch(18% 0.018 248 / .62);
+      display: flex;
+      inset: 0;
+      justify-content: center;
+      padding: clamp(14px, 4vw, 34px);
+      position: fixed;
+      z-index: 20;
+    }
+    .control-modal-panel {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      box-shadow: 12px 16px 0 oklch(23% 0.018 248 / .24);
+      display: grid;
+      gap: 12px;
+      max-height: min(78vh, 720px);
+      max-width: 760px;
+      padding: 16px;
+      width: min(100%, 760px);
+    }
+    .control-modal-header {
+      align-items: start;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .control-modal-header h3 {
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1;
+      margin: 0;
+    }
+    .control-modal-header button {
+      border: 2px solid var(--ink);
+      min-height: 34px;
+      padding: 4px 10px;
+      width: auto;
+    }
+    .control-modal-status {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .control-log {
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      color: var(--ink);
+      font: 13px/1.45 "Cascadia Mono", Consolas, monospace;
+      margin: 0;
+      max-height: 310px;
+      min-height: 168px;
+      overflow: auto;
+      padding: 12px;
+      white-space: pre-wrap;
+    }
+    .control-modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .control-modal-actions button {
+      border: 2px solid var(--ink);
+      min-height: 38px;
+      padding: 7px 12px;
+      width: auto;
+    }
+    .control-modal-actions button[hidden] {
+      display: none;
+    }
+    body.modal-open {
+      overflow: hidden;
     }
     @media (prefers-reduced-motion: no-preference) {
       .status-lamp {
@@ -1528,6 +1808,27 @@ export function renderDashboardHtml(state) {
     </section>
   </div>
 </main>
+<div class="control-modal" id="service-control-dialog" role="dialog" aria-modal="true" aria-labelledby="control-dialog-title" hidden>
+  <div class="control-modal-panel">
+    <div class="control-modal-header">
+      <div>
+        <h3 id="control-dialog-title" data-i18n="controlDialog.title">Service Control</h3>
+        <div class="muted" id="control-dialog-subtitle"></div>
+      </div>
+      <button type="button" id="control-dialog-close" aria-label="Close">×</button>
+    </div>
+    <div class="control-modal-status">
+      <span class="pill checking" id="control-dialog-state">PENDING</span>
+      <span class="inline-meta" id="control-dialog-target"></span>
+    </div>
+    <pre class="control-log" id="control-dialog-log"></pre>
+    <div class="control-modal-actions">
+      <button class="action-button" type="button" id="control-dialog-confirm" data-i18n="controlDialog.confirm" hidden>Run</button>
+      <button class="action-button" type="button" id="control-dialog-cancel" data-i18n="controlDialog.cancel" hidden>Cancel</button>
+      <button class="action-button" type="button" id="control-dialog-ok" data-i18n="controlDialog.close">Close</button>
+    </div>
+  </div>
+</div>
 <script>
 const state = ${stateJson};
 const messages = {
@@ -1599,6 +1900,17 @@ const messages = {
       body: 'This audit cross-checks the port registry, startup registry, public routes, local agents, and Service Status readiness so we can see which registered projects still need Doctor, Quick Test, or startup supplementation.',
       runAudit: 'Run audit'
     },
+    controlDialog: {
+      title: 'Service Control',
+      confirm: 'Run',
+      cancel: 'Cancel',
+      close: 'Close',
+      preparing: 'Preparing',
+      running: 'Running',
+      completed: 'Completed',
+      failed: 'Failed',
+      canceled: 'Canceled'
+    },
     labels: {
       dashboard: 'Dashboard',
       socket: 'Socket',
@@ -1656,7 +1968,8 @@ const messages = {
       details: 'Details',
       action: 'Action',
       time: 'Time',
-      openCard: 'Open'
+      openCard: 'Open',
+      zhTwCompanion: 'Traditional Chinese'
     }
   },
   zhTw: {
@@ -1727,6 +2040,17 @@ const messages = {
       body: '這份 audit 會交叉比對 port registry、startup registry、public routes、local agents 與 Service Status readiness，快速找出哪些已登記專案還缺 Doctor、Quick Test 或 startup 補件。',
       runAudit: '重跑 audit'
     },
+    controlDialog: {
+      title: 'Service Control',
+      confirm: '執行',
+      cancel: '取消',
+      close: '關閉',
+      preparing: '準備執行',
+      running: '執行中',
+      completed: '已完成',
+      failed: '失敗',
+      canceled: '已取消'
+    },
     labels: {
       dashboard: 'Dashboard',
       socket: 'Socket',
@@ -1784,7 +2108,8 @@ const messages = {
       details: '詳細',
       action: '動作',
       time: '時間',
-      openCard: '進入'
+      openCard: '進入',
+      zhTwCompanion: '中文版'
     }
   }
 };
@@ -1802,6 +2127,17 @@ const serviceControlMap = new Map((state.serviceControl?.entries || []).map((ent
 const themeButton = document.getElementById('theme-toggle');
 const languageButton = document.getElementById('language-toggle');
 const onboardingButton = document.getElementById('refresh-service-onboarding');
+const controlDialog = document.getElementById('service-control-dialog');
+const controlDialogTitle = document.getElementById('control-dialog-title');
+const controlDialogSubtitle = document.getElementById('control-dialog-subtitle');
+const controlDialogState = document.getElementById('control-dialog-state');
+const controlDialogTarget = document.getElementById('control-dialog-target');
+const controlDialogLog = document.getElementById('control-dialog-log');
+const controlDialogClose = document.getElementById('control-dialog-close');
+const controlDialogConfirm = document.getElementById('control-dialog-confirm');
+const controlDialogCancel = document.getElementById('control-dialog-cancel');
+const controlDialogOk = document.getElementById('control-dialog-ok');
+let controlDialogConfirmResolver = null;
 const savedTheme = localStorage.getItem('devgov-theme');
 if (savedTheme === 'light' || savedTheme === 'dark') {
   document.documentElement.dataset.theme = savedTheme;
@@ -1829,7 +2165,7 @@ const views = [...document.querySelectorAll('section')];
 const buttons = [...document.querySelectorAll('nav button')];
 buttons.forEach(button => button.addEventListener('click', () => {
   const view = button.dataset.view;
-  activateView(view);
+  activateView(view, { updateUrl: true });
   reportWebConsoleEvent('view-switch', { view });
 }));
 function activateView(viewId, options = {}) {
@@ -1840,8 +2176,35 @@ function activateView(viewId, options = {}) {
   const button = document.querySelector('nav button[data-view="' + viewId + '"]') || buttons[0];
   buttons.forEach(item => item.setAttribute('aria-selected', String(item === button)));
   views.forEach(view => view.classList.toggle('active', view.id === button.dataset.view));
+  if (options.updateUrl) {
+    syncViewUrl(button.dataset.view);
+  }
   Motion.switchView(document.getElementById(button.dataset.view), button);
 }
+function syncViewUrl(viewId) {
+  const hash = '#' + encodeURIComponent(viewId);
+  if (location.hash !== hash) {
+    history.pushState({ view: viewId }, '', hash);
+  }
+}
+function viewFromLocation() {
+  const hash = decodeURIComponent(location.hash.replace(/^#/, ''));
+  return views.some((view) => view.id === hash) ? hash : '';
+}
+addEventListener('hashchange', () => {
+  const view = viewFromLocation();
+  if (view) {
+    activateView(view, { enterDashboard: true });
+    reportWebConsoleEvent('view-switch', { view, source: 'url-hash' });
+  }
+});
+addEventListener('popstate', () => {
+  const view = viewFromLocation();
+  if (view) {
+    activateView(view, { enterDashboard: true });
+    reportWebConsoleEvent('view-switch', { view, source: 'browser-history' });
+  }
+});
 document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase();
@@ -1892,7 +2255,7 @@ function reportWebConsoleEvent(eventType, metadata = {}) {
     eventType,
     project: metadata.project ?? 'devgov-dashboard',
     source: metadata.source ?? 'dashboard',
-    path: metadata.path ?? (location ? location.pathname : '/'),
+    path: metadata.path ?? (location ? location.pathname + location.hash : '/'),
     action: metadata.action ?? eventType,
     details: serializeEventDetails(metadata),
     metadata: sanitizeEventMetadata(metadata)
@@ -1952,7 +2315,7 @@ function bindMetricCards() {
         card.dataset.dragged = 'false';
         return;
       }
-      tapMetricCard(card, () => activateView(card.dataset.cardView, { enterDashboard: true }));
+      tapMetricCard(card, () => activateView(card.dataset.cardView, { enterDashboard: true, updateUrl: true }));
     });
     card.addEventListener('pointerdown', startCardDrag);
   });
@@ -2257,7 +2620,7 @@ function renderApiKeys(query) {
 }
 function renderAgentInstructions(query) {
   const rows = state.agentInstructions.entries.filter(row => match(row, query));
-  renderTable('agent-instructions', [t('labels.id'), t('labels.type'), t('labels.layer'), t('labels.requirement'), t('labels.evidence'), t('labels.status')], rows.map(row => [textCell(row.id), textCell(row.type), textCell(row.layer), linkify(row.requirement), fileRef(row.evidence), pill(row.status)]));
+  renderTable('agent-instructions', [t('labels.id'), t('labels.type'), t('labels.layer'), t('labels.requirement'), t('labels.evidence'), t('labels.status')], rows.map(row => [textCell(row.id), textCell(row.type), textCell(row.layer), linkify(row.requirement), fileRefWithCompanion(row.evidence), pill(row.status)]));
 }
 function renderWebEntrypoints(query) {
   const rows = state.webEntrypoints.filter(row => match(row, query));
@@ -2285,7 +2648,7 @@ function renderWebConsoleEventsTable(query, rows) {
 }
 function renderAgentStorageGuidance() {
   document.getElementById('agent-storage-guidance').innerHTML = [
-    [t('labels.runtimeSource'), fileRef(state.agentInstructions.sourceOfTruth)],
+    [t('labels.runtimeSource'), fileRefWithCompanion(state.agentInstructions.sourceOfTruth)],
     [t('labels.canonicalRegistry'), fileRef('registry/agent-instructions.registry.json')],
     [t('labels.generatedJson'), fileRef('reports/agent-instructions-index.json')],
     [t('labels.generatedText'), fileRef('reports/agent-instructions-index.txt')],
@@ -2362,7 +2725,7 @@ function renderActionRow(row, action, actionStatus) {
   const actionKey = String(row.controlTargetId) + ':' + String(action);
   const control = serviceControlMap.get(actionKey);
   const actionState = controlActionStates[actionKey];
-  const label = t('labels.' + action);
+  const label = control?.uiLabel || t('labels.' + action);
   const state = actionStatus?.state || 'MISSING';
   const isRestart = action === "restart";
   const restartPolicyReady = isRestart ? actionStatus?.policyReadiness?.complete === true : true;
@@ -2384,7 +2747,7 @@ function renderActionRow(row, action, actionStatus) {
   return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span class="check-status">' + status + '</span><span class="check-detail">' + details.join('') + '</span></div>';
 }
 function actionControlPill(row, action, state, control, actionState) {
-  const label = t('labels.' + action);
+  const label = control?.uiLabel || t('labels.' + action);
   const targetLabel = row.label || row.id || row.controlTargetId;
   const actionText = currentLanguage === 'zhTw'
     ? '執行 ' + label + ': ' + targetLabel
@@ -2441,14 +2804,31 @@ function bindServiceControlButtons() {
 async function runServiceControl(controlTargetId, action) {
   const actionKey = String(controlTargetId) + ':' + String(action);
   const control = serviceControlMap.get(actionKey);
+  const target = findServiceControlTarget(controlTargetId);
+  openControlDialog({
+    controlTargetId,
+    action,
+    title: t('labels.' + action),
+    targetLabel: target?.label || controlTargetId,
+    wrapperRef: control?.wrapperRef || ''
+  });
   if (control?.requiresConfirmation) {
-    const confirmed = window.confirm(currentLanguage === 'zhTw'
-      ? '要執行這個重新啟動動作嗎？'
-      : 'Run this restart action?');
+    setControlDialogMode('confirm');
+    appendControlLog(currentLanguage === 'zhTw'
+      ? '這個動作會嘗試調整本機 runtime，需先確認。'
+      : 'This action may adjust the local runtime and requires confirmation.');
+    const confirmed = await waitForControlDialogConfirmation();
     if (!confirmed) {
+      setControlDialogMode('canceled');
+      appendControlLog(currentLanguage === 'zhTw' ? '使用者取消執行。' : 'Canceled by operator.');
+      controlActionStates[actionKey] = { pending: false, message: t('controlDialog.canceled') };
+      renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
       return;
     }
   }
+  setControlDialogMode('running');
+  appendControlLog((currentLanguage === 'zhTw' ? '送出控制請求: ' : 'Sending control request: ') + actionKey);
+  if (control?.wrapperRef) appendControlLog('wrapper=' + control.wrapperRef);
   controlActionStates[actionKey] = { pending: true, message: currentLanguage === 'zhTw' ? '執行中...' : 'Running...' };
   renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
   try {
@@ -2461,16 +2841,97 @@ async function runServiceControl(controlTargetId, action) {
     if (!response.ok || !payload.ok) {
       throw new Error(payload.error || payload.summary || 'Control action failed');
     }
+    appendControlLog('eventId=' + (payload.eventId || 'n/a'));
+    appendControlLog('summary=' + (payload.summary || 'Completed'));
     controlActionStates[actionKey] = {
       pending: false,
       message: payload.summary || (currentLanguage === 'zhTw' ? '已完成' : 'Completed')
     };
     await refreshServiceStatus();
+    appendControlLog(currentLanguage === 'zhTw' ? '服務狀態已刷新。' : 'Service Status refreshed.');
+    setControlDialogMode('completed');
   } catch (error) {
+    appendControlLog('error=' + error.message);
+    setControlDialogMode('failed');
     controlActionStates[actionKey] = { pending: false, message: error.message };
     renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
   }
 }
+function findServiceControlTarget(controlTargetId) {
+  return serviceStatusRows.find((row) => row.controlTargetId === controlTargetId)
+    || state.serviceTargets.find((row) => row.controlTargetId === controlTargetId);
+}
+function openControlDialog({ controlTargetId, action, title, targetLabel, wrapperRef }) {
+  controlDialogTitle.textContent = title || t('controlDialog.title');
+  controlDialogSubtitle.textContent = wrapperRef || '';
+  controlDialogTarget.textContent = targetLabel || controlTargetId;
+  controlDialogLog.textContent = '';
+  appendControlLog((currentLanguage === 'zhTw' ? '目標: ' : 'Target: ') + (targetLabel || controlTargetId));
+  appendControlLog((currentLanguage === 'zhTw' ? '動作: ' : 'Action: ') + action);
+  setControlDialogMode('preparing');
+  controlDialog.hidden = false;
+  document.body.classList.add('modal-open');
+  controlDialogOk.focus();
+}
+function setControlDialogMode(mode) {
+  const labelKey = {
+    preparing: 'preparing',
+    confirm: 'preparing',
+    running: 'running',
+    completed: 'completed',
+    failed: 'failed',
+    canceled: 'canceled'
+  }[mode] || 'preparing';
+  const classKey = {
+    preparing: 'checking',
+    confirm: 'review_required',
+    running: 'checking',
+    completed: 'ready',
+    failed: 'error',
+    canceled: 'disabled'
+  }[mode] || 'checking';
+  controlDialogState.className = 'pill ' + classKey;
+  controlDialogState.textContent = t('controlDialog.' + labelKey);
+  controlDialogConfirm.hidden = mode !== 'confirm';
+  controlDialogCancel.hidden = mode !== 'confirm';
+  controlDialogOk.hidden = mode === 'confirm' || mode === 'running';
+  if (mode === 'confirm') controlDialogConfirm.focus();
+}
+function appendControlLog(message) {
+  const timestamp = new Date().toLocaleTimeString();
+  controlDialogLog.textContent += '[' + timestamp + '] ' + message + '\\n';
+  controlDialogLog.scrollTop = controlDialogLog.scrollHeight;
+}
+function closeControlDialog() {
+  controlDialog.hidden = true;
+  document.body.classList.remove('modal-open');
+  if (controlDialogConfirmResolver) {
+    controlDialogConfirmResolver(false);
+    controlDialogConfirmResolver = null;
+  }
+}
+function waitForControlDialogConfirmation() {
+  return new Promise((resolve) => {
+    controlDialogConfirmResolver = (value) => {
+      controlDialogConfirmResolver = null;
+      resolve(value);
+    };
+  });
+}
+controlDialogConfirm.addEventListener('click', () => {
+  if (controlDialogConfirmResolver) controlDialogConfirmResolver(true);
+});
+controlDialogCancel.addEventListener('click', () => {
+  if (controlDialogConfirmResolver) controlDialogConfirmResolver(false);
+});
+controlDialogClose.addEventListener('click', closeControlDialog);
+controlDialogOk.addEventListener('click', closeControlDialog);
+controlDialog.addEventListener('click', (event) => {
+  if (event.target === controlDialog && controlDialogOk.hidden === false) closeControlDialog();
+});
+addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !controlDialog.hidden && controlDialogOk.hidden === false) closeControlDialog();
+});
 function pill(value) {
   return '<span class="pill ' + esc(String(value).toLowerCase()) + '">' + esc(value) + '</span>';
 }
@@ -2504,6 +2965,20 @@ function fileRef(value) {
   if (linked) return linked;
   return '<code>' + esc(String(value ?? '')) + '</code>';
 }
+function fileRefWithCompanion(value) {
+  const primary = fileRef(value);
+  const companion = companionFileRef(value);
+  if (!companion) return primary;
+  return '<span class="file-ref-stack">' + primary + companion + '</span>';
+}
+function companionFileRef(value) {
+  const pathPart = localFilePathPart(value);
+  const companion = state.localFileCompanions?.[pathPart];
+  if (!companion) return '';
+  const target = localFileTarget(companion);
+  if (!target) return '';
+  return '<a class="file-ref-companion" href="' + esc(target.href) + '" target="_blank" rel="noreferrer"><code>' + esc(t('labels.zhTwCompanion') + ': ' + target.text) + '</code></a>';
+}
 function fileRefLink(label, value) {
   const target = localFileTarget(value);
   if (target) {
@@ -2514,8 +2989,7 @@ function fileRefLink(label, value) {
 }
 function localFileTarget(value) {
   const text = String(value ?? '');
-  let pathPart = text.split('#')[0];
-  if (pathPart.startsWith('devgov/')) pathPart = pathPart.slice('devgov/'.length);
+  const pathPart = localFilePathPart(text);
   if (/^(?:AGENTS|README)\\.zh-tw\\.md$|^(?:AGENTS|README)\\.md$|^package\\.json$|^(?:registry|scripts|templates|docs|reports)\\/[A-Za-z0-9._\\/-]+\\.(?:md|json|txt|yml|yaml|mjs|ps1|html)$/.test(pathPart)) {
     return {
       href: '/file?path=' + encodeURIComponent(pathPart),
@@ -2523,6 +2997,12 @@ function localFileTarget(value) {
     };
   }
   return null;
+}
+function localFilePathPart(value) {
+  const text = String(value ?? '');
+  let pathPart = text.split('#')[0];
+  if (pathPart.startsWith('devgov/')) pathPart = pathPart.slice('devgov/'.length);
+  return pathPart;
 }
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
@@ -2698,13 +3178,18 @@ const Motion = {
   }
 };
 renderAll();
-Motion.intro();
+const initialView = viewFromLocation();
+if (initialView) {
+  activateView(initialView, { enterDashboard: true });
+} else {
+  Motion.intro();
+}
 refreshServiceStatus();
 refreshServiceOnboarding();
 refreshWebConsoleEvents();
 onboardingButton.addEventListener('click', () => refreshServiceOnboarding());
 reportWebConsoleEvent('dashboard-open', {
-  path: location.pathname,
+  path: location.pathname + location.hash,
   title: document.title,
   source: 'inline-dashboard'
 });

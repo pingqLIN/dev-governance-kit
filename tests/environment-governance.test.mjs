@@ -383,6 +383,7 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.ok(state.localAgents.some((agent) => agent.id === "local-archive-maintainer"));
   assert.equal(state.summary.agentInstructions, state.agentInstructions.entries.length);
   assert.ok(state.agentInstructions.entries.some((entry) => entry.id === "agent.authority.single-runtime-source"));
+  assert.equal(state.localFileCompanions["AGENTS.md"], "AGENTS.zh-tw.md");
   assert.ok(state.serviceTargets.some((target) => target.id === "devgov-dashboard"));
   assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2.colorgeek.co/health"));
   assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2-health-staging.colorgeek.co/health"));
@@ -401,12 +402,19 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /Quick Test/);
   assert.match(html, /status-action/);
   assert.match(html, /action-key/);
+  assert.match(html, /service-control-dialog/);
+  assert.match(html, /control-dialog-log/);
+  assert.match(html, /syncViewUrl/);
+  assert.match(html, /hashchange/);
+  assert.match(html, /popstate/);
   assert.match(html, /&#128477;&#65039;/);
   assert.doesNotMatch(html, /action-button inline-action/);
   assert.doesNotMatch(html, /id="refresh-status"/);
   assert.match(html, /\/file\?path=/);
   assert.match(html, /\/api\/unitext-agent-instructions/);
   assert.match(html, /agent\.authority\.single-runtime-source/);
+  assert.match(html, /file-ref-companion/);
+  assert.match(html, /"AGENTS\.md":"AGENTS\.zh-tw\.md"/);
   assert.match(html, /127\.0\.0\.1:3000/);
 });
 
@@ -415,6 +423,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const unitext = buildUniTextAgentInstructionIndex(state.agentInstructions);
   const targets = state.serviceTargets;
   const dashboardTarget = targets.find((target) => target.id === "devgov-dashboard");
+  const serviceControlTarget = targets.find((target) => target.id === "devgov-service-control");
   const devgovGovTarget = targets.find((target) => target.id === "public-route:devgov-gov");
   const devgovDevTarget = targets.find((target) => target.id === "public-route:devgov-dev");
   const localAgentTarget = targets.find((target) => target.id === "local-agent:local-archive-maintainer");
@@ -428,6 +437,9 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const urlHeroTarget = targets.find((target) => target.id === "onboarding:url-hero-vite-dev");
   const comfyUiTarget = targets.find((target) => target.id === "onboarding:comfyui-local-http");
   const photoHdrFlowTarget = targets.find((target) => target.id === "onboarding:photo-hdr-flow-web-ui-http");
+  const gsdfEotfTarget = targets.find((target) => target.id === "onboarding:gsdf-eotf-video-adjuster-vite-dev");
+  const skill0GuiTarget = targets.find((target) => target.id === "onboarding:skill-0-gui-review-studio-http");
+  const nowledgeCompatTarget = targets.find((target) => target.id === "onboarding:chatgpt-local-files-mcp-nowledge-compat-http");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
@@ -438,6 +450,11 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(dashboardTarget.restart.state, "FOUND");
   assert.equal(dashboardTarget.restart.policyReadiness.complete, true);
   assert.equal(dashboardTarget.controlReadiness, "PARTIAL");
+  assert.equal(serviceControlTarget.project, "devgov");
+  assert.equal(serviceControlTarget.target, "127.0.0.1:3201");
+  assert.equal(serviceControlTarget.doctor.state, "FOUND");
+  assert.equal(serviceControlTarget.restart.state, "REVIEW_REQUIRED");
+  assert.equal(serviceControlTarget.controlReadiness, "PARTIAL");
   assert.equal(devgovGovTarget.doctor.state, "FOUND");
   assert.equal(devgovGovTarget.restart.state, "FOUND");
   assert.equal(devgovGovTarget.restart.policyReadiness.complete, true);
@@ -450,6 +467,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(localAgentTarget.restart.state, "FOUND");
   assert.equal(localAgentTarget.restart.policyReadiness.complete, true);
   assert.equal(localAgentTarget.controlReadiness, "PARTIAL");
+  assert.equal(mcpRouteTarget.doctor.state, "FOUND");
   assert.equal(mcpRouteTarget.restart.state, "REVIEW_REQUIRED");
   assert.equal(mcpRouteTarget.controlReadiness, "PARTIAL");
   assert.equal(stagingRouteTarget.controlTargetId, "codex-calendar-todo-staging");
@@ -495,11 +513,27 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(photoHdrFlowTarget.doctor.state, "FOUND");
   assert.equal(photoHdrFlowTarget.restart.state, "FOUND");
   assert.equal(photoHdrFlowTarget.controlReadiness, "PARTIAL");
+  assert.equal(gsdfEotfTarget.project, "gsdf-eotf-video-adjuster");
+  assert.equal(gsdfEotfTarget.target, "127.0.0.1:3101");
+  assert.equal(gsdfEotfTarget.doctor.state, "FOUND");
+  assert.equal(gsdfEotfTarget.restart.state, "FOUND");
+  assert.equal(gsdfEotfTarget.controlReadiness, "PARTIAL");
+  assert.equal(skill0GuiTarget.project, "skill-0-GUI");
+  assert.equal(skill0GuiTarget.target, "127.0.0.1:3102");
+  assert.equal(skill0GuiTarget.doctor.state, "FOUND");
+  assert.equal(skill0GuiTarget.restart.state, "FOUND");
+  assert.equal(skill0GuiTarget.controlReadiness, "PARTIAL");
+  assert.equal(nowledgeCompatTarget.project, "chatgpt-local-files-mcp");
+  assert.equal(nowledgeCompatTarget.target, "127.0.0.1:14242");
+  assert.equal(nowledgeCompatTarget.doctor.state, "FOUND");
+  assert.equal(nowledgeCompatTarget.restart.state, "FOUND");
+  assert.equal(nowledgeCompatTarget.controlReadiness, "PARTIAL");
 });
 
 test("live service-status view excludes retired targets from the active control surface and recomputes readiness from probe results", async () => {
   const status = await checkServiceStatuses(".");
   const dashboardTarget = status.services.find((target) => target.id === "devgov-dashboard");
+  const serviceControlTarget = status.services.find((target) => target.id === "devgov-service-control");
   const devgovGovTarget = status.services.find((target) => target.id === "public-route:devgov-gov");
   const devgovDevTarget = status.services.find((target) => target.id === "public-route:devgov-dev");
   const localArchiveTarget = status.services.find((target) => target.id === "local-agent:local-archive-maintainer");
@@ -512,6 +546,7 @@ test("live service-status view excludes retired targets from the active control 
 
   assert.equal(status.schema, "devgov.service-status.v1");
   assertLiveReadiness(dashboardTarget);
+  assertLiveReadiness(serviceControlTarget);
   assertLiveReadiness(devgovGovTarget);
   assertLiveReadiness(devgovDevTarget);
   assertLiveReadiness(localArchiveTarget);
@@ -529,6 +564,7 @@ test("live service-status view excludes retired targets from the active control 
   if (lmStudioRouteTarget.quickTest.statusCode === 401) {
     assert.equal(lmStudioRouteTarget.quickTest.state, "ONLINE");
   }
+  assert.equal(mcpRouteTarget.doctor.state, "FOUND");
   assert.equal(mcpRouteTarget.restart.state, "REVIEW_REQUIRED");
   assert.equal(mcpRouteTarget.controlReadiness, "PARTIAL");
   assert.equal(retiredRouteTarget, undefined);
@@ -615,6 +651,16 @@ test("service control registry exposes local archive maintainer doctor and resta
   assert.equal(restartControl.status, "approved");
 });
 
+test("service control registry exposes the DevGov service-control listener doctor without self-restart", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "devgov-service-control" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "devgov-service-control" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl, undefined);
+});
+
 test("service control registry exposes ps3eye virtual camera doctor and restart actions", async () => {
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "ps3eye-windows-virtual-camera" && entry.action === "doctor");
@@ -681,6 +727,18 @@ test("service control registry exposes url hero doctor and restart actions", asy
   assert.equal(restartControl.status, "approved");
 });
 
+test("service control registry exposes draw-draw doctor and restart actions", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const doctorControl = controls.find((entry) => entry.controlTargetId === "draw-draw" && entry.action === "doctor");
+  const restartControl = controls.find((entry) => entry.controlTargetId === "draw-draw" && entry.action === "restart");
+
+  assert.ok(doctorControl);
+  assert.ok(restartControl);
+  assert.equal(doctorControl.status, "approved");
+  assert.equal(restartControl.status, "approved");
+  assert.equal(restartControl.restartPolicy.permissionBoundary.includes("loopback-only"), true);
+});
+
 test("service control registry exposes codex remote doctor and restart actions", async () => {
   const controls = await loadApprovedServiceControls(".");
   const doctorControl = controls.find((entry) => entry.controlTargetId === "codex-remote" && entry.action === "doctor");
@@ -736,20 +794,57 @@ test("service control registry exposes photo hdr flow web doctor and restart act
   assert.equal(restartControl.status, "approved");
 });
 
+test("service control registry exposes reviewed controls for newly supplemented service rows", async () => {
+  const controls = await loadApprovedServiceControls(".");
+  const gsdfDoctor = controls.find((entry) => entry.controlTargetId === "gsdf-eotf-video-adjuster" && entry.action === "doctor");
+  const gsdfRestart = controls.find((entry) => entry.controlTargetId === "gsdf-eotf-video-adjuster" && entry.action === "restart");
+  const skill0Doctor = controls.find((entry) => entry.controlTargetId === "skill-0-gui" && entry.action === "doctor");
+  const skill0Restart = controls.find((entry) => entry.controlTargetId === "skill-0-gui" && entry.action === "restart");
+  const mcpDoctor = controls.find((entry) => entry.controlTargetId === "mcp-colorgeek" && entry.action === "doctor");
+  const nowledgeDoctor = controls.find((entry) => entry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && entry.action === "doctor");
+  const nowledgeRestart = controls.find((entry) => entry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && entry.action === "restart");
+
+  for (const control of [gsdfDoctor, gsdfRestart, skill0Doctor, skill0Restart, mcpDoctor, nowledgeDoctor, nowledgeRestart]) {
+    assert.ok(control);
+    assert.equal(control.status, "approved");
+  }
+  assert.equal(gsdfRestart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
+  assert.equal(skill0Restart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
+  assert.equal(nowledgeRestart.uiLabel, "Reset");
+});
+
 test("service onboarding audit summarizes registered service gaps", async () => {
   const state = await loadDashboardState(".");
   const audit = buildServiceOnboardingAudit(state);
   const devgov = audit.services.find((row) => row.id === "devgov:dashboard-http");
+  const devgovServiceControl = audit.services.find((row) => row.id === "devgov:service-control-http");
   const archive = audit.services.find((row) => row.id === "local-archive-maintainer:app-server-http");
+  const gsdfEotf = audit.services.find((row) => row.id === "gsdf-eotf-video-adjuster:vite-dev");
+  const skill0Gui = audit.services.find((row) => row.id === "skill-0-GUI:review-studio-http");
+  const nowledgeCompat = audit.services.find((row) => row.id === "chatgpt-local-files-mcp:nowledge-compat-http");
 
   assert.equal(audit.schema, "devgov.service-onboarding-audit.v1");
   assert.ok(audit.summary.services >= state.ports.length);
+  assert.equal(audit.summary.missingDoctor, 0);
+  assert.equal(audit.summary.missingDashboardStatus, 0);
   assert.equal(devgov.readiness, "PARTIAL");
   assert.equal(devgov.flags.missingDoctor, false);
+  assert.equal(devgovServiceControl.readiness, "PARTIAL");
+  assert.equal(devgovServiceControl.flags.missingDoctor, false);
+  assert.equal(devgovServiceControl.flags.missingRestart, false);
+  assert.equal(devgovServiceControl.flags.missingDashboardStatus, false);
   assert.equal(archive.readiness, "PARTIAL");
   assert.equal(archive.flags.missingDoctor, false);
   assert.ok(archive.quickLinks.some((link) => link.label === "Doctor"));
   assert.ok(archive.quickLinks.some((link) => link.label === "Health"));
+  for (const row of [gsdfEotf, skill0Gui, nowledgeCompat]) {
+    assert.ok(row);
+    assert.equal(row.flags.missingDoctor, false);
+    assert.equal(row.flags.missingRestart, false);
+    assert.equal(row.flags.missingDashboardStatus, false);
+    assert.ok(row.quickLinks.some((link) => link.label === "Doctor"));
+    assert.ok(row.quickLinks.some((link) => link.label === "Health"));
+  }
 });
 
 test("doctor verifies DevGov dashboard governance without modifying canonical registries", async () => {
@@ -765,6 +860,7 @@ test("doctor verifies DevGov dashboard governance without modifying canonical re
   assert.ok(result.checks.some((check) => check.id === "script-scripts/start-gov-public-route.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/register-gov-public-route-startup.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/require-governed-port.mjs" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "script-scripts/service-control/doctor-devgov-service-control.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "registry-service-onboarding.registry.json" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "registry-local-cloudflare.registry.json" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "local-agent-registry" && check.ok));

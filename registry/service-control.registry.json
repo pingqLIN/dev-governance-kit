@@ -26,6 +26,26 @@
       "notes": "Reviewed local-only doctor action for the unified DevGov dashboard and its public aliases."
     },
     {
+      "id": "devgov-service-control-doctor",
+      "controlTargetId": "devgov-service-control",
+      "surfaceTargets": [
+        "devgov-service-control",
+        "devgov-service-control-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-devgov-service-control.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user-supplied runtime arguments. Action checks the loopback-only service-control /health endpoint and validates canonical registries.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 30,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the service-control listener, registry validation output, and dashboard process state before changing startup behavior.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the DevGov service-control listener. Restart is intentionally not approved because the listener is the executor."
+    },
+    {
       "id": "devgov-dashboard-restart",
       "controlTargetId": "devgov-dashboard",
       "surfaceTargets": [
@@ -621,6 +641,251 @@
         "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
         "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
         "rollbackExpectation": "If ensure-running fails, inspect the source checkout logs and verify that port 8765 is available before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
+    },
+    {
+      "id": "video-render-kit-web-doctor",
+      "controlTargetId": "video-render-kit-web",
+      "surfaceTargets": [
+        "video-render-kit-web",
+        "video-render-kit-control-panel-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-video-render-kit-web.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "Run the reviewed Video Render Kit doctor wrapper and summarize binary/runtime state.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect ffmpeg/ffprobe availability and the source checkout before changing scripts or runtime settings.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the Video Render Kit control panel."
+    },
+    {
+      "id": "video-render-kit-web-restart",
+      "controlTargetId": "video-render-kit-web",
+      "surfaceTargets": [
+        "video-render-kit-web",
+        "video-render-kit-control-panel-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-video-render-kit-web.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed Video Render Kit ensure-running wrapper and wait for `/api/state`.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "If ensure-running fails, verify 127.0.0.1:5001 is available in the port registry and check local service logs before retrying. If it does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the Video Render Kit control panel.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts (reports, process logs, and local checkpoints) before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, check local logs and port-binding state on 5001 before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
+    },
+    {
+      "id": "draw-draw-doctor",
+      "controlTargetId": "draw-draw",
+      "surfaceTargets": [
+        "draw-draw",
+        "draw-draw-web-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-draw-draw.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Validate the governed draw-draw port, source shape, workspace names, and live root response when online.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 45,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the draw-draw source checkout, port registry, and current 31700 listener before attempting restart.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the draw-draw UI review canvas."
+    },
+    {
+      "id": "draw-draw-restart",
+      "controlTargetId": "draw-draw",
+      "surfaceTargets": [
+        "draw-draw",
+        "draw-draw-web-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-draw-draw.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure the draw-draw Vite server is listening on 127.0.0.1:31700 through the reviewed governed npm dev script.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "If ensure-running fails, inspect reports/service-control-logs/draw-draw.*.log and the governed port state before retrying.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the draw-draw UI review canvas.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts, process logs, and local checkpoints before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect draw-draw logs and port-binding state on 31700 before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
+    },
+    {
+      "id": "gsdf-eotf-video-adjuster-doctor",
+      "controlTargetId": "gsdf-eotf-video-adjuster",
+      "surfaceTargets": [
+        "gsdf-eotf-video-adjuster",
+        "gsdf-eotf-video-adjuster-vite-dev"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-gsdf-eotf-video-adjuster.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Validate the governed Vite port and run the GSDF/EOTF lint and regression tests from the source checkout.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the GSDF/EOTF source checkout, tests, and governed port state before attempting restart.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the GSDF/EOTF video adjuster Vite UI."
+    },
+    {
+      "id": "gsdf-eotf-video-adjuster-restart",
+      "controlTargetId": "gsdf-eotf-video-adjuster",
+      "surfaceTargets": [
+        "gsdf-eotf-video-adjuster",
+        "gsdf-eotf-video-adjuster-vite-dev"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-gsdf-eotf-video-adjuster.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure the loopback-only Vite dev server is listening on 127.0.0.1:3101 through the reviewed npm dev script.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "If ensure-running fails, inspect reports/service-control-logs/gsdf-eotf-video-adjuster.*.log and the governed port state before retrying.",
+      "uiLabel": "Reset",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the GSDF/EOTF video adjuster Vite UI.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts, process logs, and local checkpoints before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect GSDF/EOTF dev server logs and port-binding state on 3101 before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
+    },
+    {
+      "id": "skill-0-gui-doctor",
+      "controlTargetId": "skill-0-gui",
+      "surfaceTargets": [
+        "skill-0-gui",
+        "skill-0-gui-review-studio-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-skill-0-gui.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Validate the Skill-0 Review Studio server entry, governed port, lint, tests, and docs sync checks.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the Skill-0 GUI source checkout and generated docs sync output before attempting restart.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the Skill-0 Review Studio."
+    },
+    {
+      "id": "skill-0-gui-restart",
+      "controlTargetId": "skill-0-gui",
+      "surfaceTargets": [
+        "skill-0-gui",
+        "skill-0-gui-review-studio-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-skill-0-gui.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Build and ensure the loopback-only Skill-0 Review Studio production server is listening on 127.0.0.1:3102.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "If ensure-running fails, inspect reports/service-control-logs/skill-0-gui.*.log and the governed port state before retrying.",
+      "uiLabel": "Reset",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the Skill-0 Review Studio.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts, process logs, and local checkpoints before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect Skill-0 GUI build output, server logs, and port-binding state on 3102 before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
+      }
+    },
+    {
+      "id": "chatgpt-local-files-mcp-doctor",
+      "controlTargetId": "mcp-colorgeek",
+      "surfaceTargets": [
+        "mcp-colorgeek",
+        "chatgpt-local-files-mcp-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-chatgpt-local-files-mcp.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the production status script and confirm origin/public health for the protected ChatGPT local-files MCP boundary without exposing credential values.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the origin runtime, public route, and OAuth acceptance evidence before considering restart.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed doctor-only action for the ChatGPT-facing local-files MCP boundary. Restart remains review-gated by protected OAuth acceptance evidence."
+    },
+    {
+      "id": "chatgpt-local-files-mcp-nowledge-compat-doctor",
+      "controlTargetId": "chatgpt-local-files-mcp-nowledge-compat",
+      "surfaceTargets": [
+        "chatgpt-local-files-mcp-nowledge-compat",
+        "chatgpt-local-files-mcp-nowledge-compat-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-chatgpt-local-files-mcp-nowledge-compat.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run Nowledge compatibility tests and summarize local health state without reading token values.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect Nowledge compatibility tests and the local API shim before restart.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for the Nowledge compatibility API shim."
+    },
+    {
+      "id": "chatgpt-local-files-mcp-nowledge-compat-restart",
+      "controlTargetId": "chatgpt-local-files-mcp-nowledge-compat",
+      "surfaceTargets": [
+        "chatgpt-local-files-mcp-nowledge-compat",
+        "chatgpt-local-files-mcp-nowledge-compat-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-chatgpt-local-files-mcp-nowledge-compat.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed loopback-only Nowledge compatibility start script and confirm /health.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "If ensure-running fails, inspect the local Nowledge compatibility logs and token file boundary before retrying.",
+      "uiLabel": "Reset",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only ensure-running action for the Nowledge compatibility API shim.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service control artifacts, process logs, and local checkpoints before invoking restart; the wrapper itself does not perform stateful data backup.",
+        "rollbackExpectation": "If ensure-running fails, inspect Nowledge compatibility logs and port-binding state on 14242 before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
       }
     }
   ]

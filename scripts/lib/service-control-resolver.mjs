@@ -20,6 +20,15 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Bounded local dashboard doctor control path."
     };
   }
+  if (controlEntry.controlTargetId === "devgov-service-control" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-devgov-service-control.ps1"),
+      runtimeKind: "local-devgov-service-control",
+      summary: "Bounded local service-control listener doctor path."
+    };
+  }
   if (controlEntry.controlTargetId === "devgov-dashboard" && controlEntry.action === "restart") {
     return {
       controlTargetId: controlEntry.controlTargetId,
@@ -261,6 +270,105 @@ export function resolveControlTarget(root, controlEntry) {
       wrapperPath: path.join(root, "scripts", "service-control", "restart-photo-hdr-flow-web.ps1"),
       runtimeKind: "photo-hdr-flow-web-ui-http",
       summary: "Run the reviewed Photo HDR Flow ensure-running path through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "video-render-kit-web" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-video-render-kit-web.ps1"),
+      runtimeKind: "video-render-kit-control-panel-http",
+      summary: "Run the reviewed Video Render Kit doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "video-render-kit-web" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-video-render-kit-web.ps1"),
+      runtimeKind: "video-render-kit-control-panel-http",
+      summary: "Run the reviewed Video Render Kit ensure-running path through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "gsdf-eotf-video-adjuster" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-gsdf-eotf-video-adjuster.ps1"),
+      runtimeKind: "gsdf-eotf-video-adjuster-vite-dev",
+      summary: "Run the reviewed GSDF/EOTF video adjuster doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "gsdf-eotf-video-adjuster" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-gsdf-eotf-video-adjuster.ps1"),
+      runtimeKind: "gsdf-eotf-video-adjuster-vite-dev",
+      summary: "Run the reviewed GSDF/EOTF video adjuster ensure-running path through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "skill-0-gui" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-skill-0-gui.ps1"),
+      runtimeKind: "skill-0-gui-review-studio-http",
+      summary: "Run the reviewed Skill-0 Review Studio doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "skill-0-gui" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-skill-0-gui.ps1"),
+      runtimeKind: "skill-0-gui-review-studio-http",
+      summary: "Run the reviewed Skill-0 Review Studio ensure-running path through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "mcp-colorgeek" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-chatgpt-local-files-mcp.ps1"),
+      runtimeKind: "chatgpt-local-files-mcp-public-boundary",
+      summary: "Run the reviewed ChatGPT local-files MCP doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-chatgpt-local-files-mcp-nowledge-compat.ps1"),
+      runtimeKind: "chatgpt-local-files-mcp-nowledge-compat-http",
+      summary: "Run the reviewed Nowledge compatibility API doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-chatgpt-local-files-mcp-nowledge-compat.ps1"),
+      runtimeKind: "chatgpt-local-files-mcp-nowledge-compat-http",
+      summary: "Run the reviewed Nowledge compatibility API ensure-running path through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "draw-draw" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-draw-draw.ps1"),
+      runtimeKind: "draw-draw-web-http",
+      summary: "Run the reviewed draw-draw doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "draw-draw" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-draw-draw.ps1"),
+      runtimeKind: "draw-draw-web-http",
+      summary: "Run the reviewed draw-draw ensure-running path through DevGov local control."
     };
   }
 

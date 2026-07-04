@@ -186,6 +186,16 @@
       "notes": "Loopback-only Photo HDR Flow web UI and local API. The reviewed start path is `python -m photo_hdr_flow web --host 127.0.0.1 --port 8765`, serving `/gui/` and `/api/health` from the source checkout."
     },
     {
+      "project": "video-render-kit",
+      "service": "control-panel-http",
+      "port": 5001,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "video-render-kit README.zh-tw.md",
+      "notes": "Portable FFmpeg control-panel UI bound to localhost for local transcoding workflows."
+    },
+    {
       "project": "ComfyUI",
       "service": "comfyui-local-http",
       "port": 8188,
@@ -198,7 +208,7 @@
     {
       "project": "draw-draw",
       "service": "web-http",
-      "port": 31740,
+      "port": 31700,
       "host": "127.0.0.1",
       "visibility": "local",
       "protocol": "http",
