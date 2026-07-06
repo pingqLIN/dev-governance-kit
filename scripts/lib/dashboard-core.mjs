@@ -27,6 +27,7 @@ export async function loadDashboardState(root = ".") {
     agentInstructions.sourceOfTruth,
     ...agentInstructions.entries.map((entry) => entry.evidence)
   ]);
+  const workspacePrediction = buildWorkspaceGovernancePredictionModel(agentInstructions);
 
   const dashboardPort = ports.entries.find((entry) => (
     entry.project === "devgov"
@@ -35,6 +36,23 @@ export async function loadDashboardState(root = ".") {
   const webEntrypoints = buildWebEntrypoints({
     dashboardPort,
     publicRoutes: publicRoutes.routes
+  });
+  const serviceTargets = buildServiceTargets({
+    dashboardPort,
+    publicRoutes: publicRoutes.routes,
+    localAgents: localAgents.agents,
+    startupEntries: startup.entries,
+    onboardingEntries: serviceOnboarding.entries,
+    ports: ports.entries,
+    serviceControls
+  });
+  const registeredProjects = buildRegisteredProjects({
+    onboardingEntries: serviceOnboarding.entries,
+    ports: ports.entries,
+    publicRoutes: publicRoutes.routes,
+    localAgents: localAgents.agents,
+    startupEntries: startup.entries,
+    serviceTargets
   });
 
   return {
@@ -53,6 +71,8 @@ export async function loadDashboardState(root = ".") {
       localAgents: localAgents.agents.length,
       apiKeys: apiKeys.entries.length,
       agentInstructions: agentInstructions.entries.length,
+      workspacePredictionRules: workspacePrediction.rules.length,
+      registeredProjects: registeredProjects.length,
       webEntrypoints: webEntrypoints.length,
       webConsoleEvents: webConsoleEvents.length
     },
@@ -72,18 +92,12 @@ export async function loadDashboardState(root = ".") {
       baseUrl: SERVICE_CONTROL_URL,
       entries: serviceControls
     },
+    workspacePrediction,
+    registeredProjects,
     localFileCompanions,
     webConsoleEvents,
     webEntrypoints,
-    serviceTargets: buildServiceTargets({
-      dashboardPort,
-      publicRoutes: publicRoutes.routes,
-      localAgents: localAgents.agents,
-      startupEntries: startup.entries,
-      onboardingEntries: serviceOnboarding.entries,
-      ports: ports.entries,
-      serviceControls
-    })
+    serviceTargets
   };
 }
 
@@ -184,6 +198,189 @@ function sortServiceTargetsForDashboard(targets = []) {
     || (left.project || "").localeCompare(right.project || "")
     || (left.label || "").localeCompare(right.label || "")
   ));
+}
+
+export function buildRegisteredProjects({ onboardingEntries = [], ports = [], publicRoutes = [], localAgents = [], startupEntries = [], serviceTargets = [] } = {}) {
+  const projects = new Map();
+  const publicRouteProjectByTargetId = new Map(publicRoutes.map((route) => [`public-route:${route.id}`, webEntrypointProject(route)]));
+
+  for (const entry of onboardingEntries) {
+    const project = ensureRegisteredProject(projects, entry.project);
+    project.onboardingEntries.push(entry.id);
+    project.services.add(entry.service);
+    project.ownerKinds.add(entry.ownerKind);
+    project.sourceRefs.add(entry.sourceRef);
+    project.reviewEvidence.add(entry.reviewEvidence);
+    project.nextActions.push(entry.nextAction);
+    increment(project.readinessCounts, entry.readiness || "UNKNOWN");
+    increment(project.reviewStatusCounts, entry.reviewStatus || "unknown");
+  }
+
+  for (const port of ports) {
+    const project = ensureRegisteredProject(projects, port.project);
+    project.ports.push(`${port.host}:${port.port}`);
+    project.services.add(port.service);
+    project.visibilities.add(port.visibility);
+    project.sourceRefs.add(`registry/ports.registry.json#${port.project}:${port.service}`);
+  }
+
+  for (const route of publicRoutes) {
+    const projectId = webEntrypointProject(route);
+    const project = ensureRegisteredProject(projects, projectId);
+    project.publicRoutes.push(route.hostname);
+    project.visibilities.add(route.exposureClass || "public-route");
+  }
+
+  for (const agent of localAgents) {
+    const project = ensureRegisteredProject(projects, agent.project);
+    project.localAgents.push(agent.displayName);
+    project.services.add(agent.serviceId);
+    project.sourceRefs.add(`registry/local-agents.registry.json#${agent.id}`);
+    increment(project.reviewStatusCounts, agent.status || "unknown");
+  }
+
+  for (const startup of startupEntries) {
+    const project = ensureRegisteredProject(projects, startup.project);
+    project.startupRefs.push(startup.id);
+    project.sourceRefs.add(`registry/startup.registry.json#${startup.id}`);
+  }
+
+  for (const target of serviceTargets) {
+    const projectId = publicRouteProjectByTargetId.get(target.id) || target.project;
+    const project = ensureRegisteredProject(projects, projectId);
+    project.serviceTargets.push(target.id);
+    increment(project.controlReadinessCounts, target.controlReadiness || "UNKNOWN");
+  }
+
+  return [...projects.values()]
+    .map(finalizeRegisteredProject)
+    .sort((left, right) => (
+      progressRank(left.progressTag) - progressRank(right.progressTag)
+      || left.project.localeCompare(right.project)
+    ));
+}
+
+function ensureRegisteredProject(projects, projectId) {
+  const id = String(projectId || "unknown-project");
+  if (!projects.has(id)) {
+    projects.set(id, {
+      id,
+      project: id,
+      services: new Set(),
+      ownerKinds: new Set(),
+      visibilities: new Set(),
+      sourceRefs: new Set(),
+      reviewEvidence: new Set(),
+      nextActions: [],
+      readinessCounts: new Map(),
+      reviewStatusCounts: new Map(),
+      controlReadinessCounts: new Map(),
+      onboardingEntries: [],
+      ports: [],
+      publicRoutes: [],
+      localAgents: [],
+      startupRefs: [],
+      serviceTargets: []
+    });
+  }
+  return projects.get(id);
+}
+
+function finalizeRegisteredProject(project) {
+  const readinessCounts = mapToObject(project.readinessCounts);
+  const reviewStatusCounts = mapToObject(project.reviewStatusCounts);
+  const controlReadinessCounts = mapToObject(project.controlReadinessCounts);
+  const progressTag = aggregateProjectProgress(project.readinessCounts, project.controlReadinessCounts);
+  const progressPercent = projectProgressPercent(project.readinessCounts, project.controlReadinessCounts);
+  const reviewTags = sortedKeys(project.reviewStatusCounts);
+  const visibilityTags = [...project.visibilities].filter(Boolean).sort();
+  const ownerTags = [...project.ownerKinds].filter(Boolean).sort();
+
+  return {
+    id: project.id,
+    project: project.project,
+    progressTag,
+    progressPercent,
+    readinessCounts,
+    controlReadinessCounts,
+    reviewStatusCounts,
+    serviceCount: project.services.size,
+    services: [...project.services].filter(Boolean).sort(),
+    ownerKinds: ownerTags,
+    visibility: visibilityTags,
+    reviewStatuses: reviewTags,
+    tags: uniqueStrings([progressTag, ...reviewTags, ...visibilityTags, ...ownerTags]),
+    nextAction: firstAction(project.nextActions),
+    sourceRefs: uniqueStrings([...project.sourceRefs].filter(Boolean)),
+    reviewEvidence: uniqueStrings([...project.reviewEvidence].filter(Boolean)),
+    onboardingEntries: project.onboardingEntries.sort(),
+    ports: project.ports.sort(),
+    publicRoutes: project.publicRoutes.sort(),
+    localAgents: project.localAgents.sort(),
+    startupRefs: project.startupRefs.sort(),
+    serviceTargets: project.serviceTargets.sort()
+  };
+}
+
+function aggregateProjectProgress(readinessCounts, controlReadinessCounts) {
+  const values = [...readinessCounts.keys()];
+  const fallbackValues = [...controlReadinessCounts.keys()];
+  const source = values.length ? values : fallbackValues;
+  if (!source.length) return "UNTRACKED";
+  if (source.every((value) => value === "READY")) return "READY";
+  if (source.some((value) => value === "READY" || value === "PARTIAL")) return "PARTIAL";
+  if (source.some((value) => value === "BLOCKED")) return "BLOCKED";
+  return "UNTRACKED";
+}
+
+function projectProgressPercent(readinessCounts, controlReadinessCounts) {
+  const values = expandCountMap(readinessCounts);
+  const fallbackValues = expandCountMap(controlReadinessCounts);
+  const source = values.length ? values : fallbackValues;
+  if (!source.length) return 0;
+  const score = source.reduce((total, value) => total + progressValue(value), 0) / source.length;
+  return Math.round(score);
+}
+
+function progressValue(value) {
+  if (value === "READY") return 100;
+  if (value === "PARTIAL") return 60;
+  if (value === "BLOCKED") return 20;
+  return 0;
+}
+
+function progressRank(value) {
+  return new Map([
+    ["BLOCKED", 0],
+    ["PARTIAL", 1],
+    ["UNTRACKED", 2],
+    ["READY", 3]
+  ]).get(value) ?? 9;
+}
+
+function firstAction(actions) {
+  return actions.find((action) => typeof action === "string" && action.trim()) || "";
+}
+
+function increment(map, key) {
+  const normalized = String(key || "unknown");
+  map.set(normalized, (map.get(normalized) ?? 0) + 1);
+}
+
+function mapToObject(map) {
+  return Object.fromEntries([...map.entries()].sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function sortedKeys(map) {
+  return [...map.keys()].filter(Boolean).sort();
+}
+
+function expandCountMap(map) {
+  return [...map.entries()].flatMap(([key, count]) => Array.from({ length: count }, () => key));
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
 }
 
 function webEntrypointProject(route) {
@@ -365,6 +562,160 @@ export function buildServiceTargets({ dashboardPort, publicRoutes = [], localAge
   }
 
   return sortServiceTargetsForDashboard(targets);
+}
+
+export function buildWorkspaceGovernancePredictionModel(agentInstructions = {}) {
+  const entries = Array.isArray(agentInstructions.entries) ? agentInstructions.entries : [];
+  const layers = Array.isArray(agentInstructions.layers) ? agentInstructions.layers : [];
+  const itemTypes = Array.isArray(agentInstructions.itemTypes) ? agentInstructions.itemTypes : [];
+
+  return {
+    schema: "devgov.workspace-governance-predictor.v1",
+    defaultWorkspaceRoot: "Q:\\Projects",
+    qDriveRoot: "Q:\\",
+    devgovProjectId: "dev-governance-kit",
+    layers: layers.map((layer) => ({
+      id: layer.id,
+      scope: layer.scope,
+      precedence: layer.precedence,
+      appliesTo: layer.appliesTo,
+      source: layer.source,
+      status: layer.status
+    })),
+    itemTypes: itemTypes.map((itemType) => ({
+      id: itemType.id,
+      label: itemType.label,
+      description: itemType.description,
+      status: itemType.status
+    })),
+    entries: entries.map((entry) => ({
+      id: entry.id,
+      type: entry.type,
+      layer: entry.layer,
+      appliesTo: entry.appliesTo,
+      requirement: entry.requirement,
+      enforcement: entry.enforcement,
+      evidence: entry.evidence,
+      status: entry.status,
+      source: entry.source
+    })),
+    rules: [
+      {
+        id: "workspace.location.q-projects",
+        type: "safety-gate",
+        layer: "workspace",
+        requirement: "Project development should use the governed Q:\\Projects workspace by default.",
+        enforcement: "Locations outside Q:\\ require operator direction before project work continues.",
+        execution: [
+          { label: "Path scope validation", command: "Normalize path and verify it is under Q:\\Projects, then verify Q:\\ and Q:\\Projects governance rules." , when: "Before predicting or editing." }
+        ],
+        evidence: "global AGENTS.md#Project Workspace Location",
+        status: "approved"
+      },
+      {
+        id: "workspace.git.pre-edit",
+        type: "safety-gate",
+        layer: "repo-local",
+        requirement: "Detect the repository root, branch, and worktree state before editing.",
+        enforcement: "Run git status --short --branch when Git is available and stop on unclear pre-existing dirty state.",
+        execution: [
+          { label: "Repository pre-flight", command: "git status --short --branch", when: "Before changing files." }
+        ],
+        evidence: "global AGENTS.md#Git and Workspace Safety",
+        status: "approved"
+      },
+      {
+        id: "workspace.repo-instruction-discovery",
+        type: "workflow-control",
+        layer: "repo-local",
+        requirement: "After a workspace path is selected, inspect the nearest repo-local AGENTS.md before changing files.",
+        enforcement: "Treat missing or unreadable repo-local instructions as unresolved, not invented.",
+        execution: [
+          { label: "Repo rule discovery", command: "Inspect AGENTS.md and any subtree overlays for the selected path before editing", when: "After repo root is confirmed." }
+        ],
+        evidence: "AGENTS.md#Instruction Scope And Precedence",
+        status: "approved"
+      },
+      {
+        id: "workspace.subtree-instruction-discovery",
+        type: "workflow-control",
+        layer: "subtree",
+        requirement: "Folder-local AGENTS overlays may narrow behavior for the selected subtree.",
+        enforcement: "Inspect relevant subtree instructions only after the selected path is inside the target repo.",
+        execution: [
+          { label: "Subtree discovery", command: "Inspect subtree AGENTS overlays only for the selected workspace path depth", when: "When the path is inside a repo-local tree." }
+        ],
+        evidence: "AGENTS.md#Instruction Scope And Precedence",
+        status: "approved"
+      },
+      {
+        id: "workspace.worktree-container",
+        type: "workflow-control",
+        layer: "workspace",
+        requirement: "Worktree containers are operational storage, not standalone projects.",
+        enforcement: "Scan worktrees read-only and require a separate review gate before cleanup.",
+        execution: [
+          { label: "Worktree container check", command: "Scan worktree container membership and refuse cleanup actions without an extra reviewed step", when: "Before any cleanup action." }
+        ],
+        evidence: "AGENTS.md#Worktree Governance Rules",
+        status: "approved"
+      },
+      {
+        id: "workspace.registry-redaction-boundary",
+        type: "data-contract",
+        layer: "repo-local",
+        requirement: "Canonical registry records use stable IDs and must not store machine-local paths or secret values.",
+        enforcement: "Keep selected-path evidence in generated reports or UI state, not canonical registry data.",
+        execution: [
+          { label: "Registry boundary check", command: "Keep local-only paths and raw command output in reports only; only stable fields in registry JSON", when: "Before persisting canonical records." }
+        ],
+        evidence: "AGENTS.md#Data Entry Contract",
+        status: "approved"
+      },
+      {
+        id: "workspace.scan-readonly-first",
+        type: "tool-entry",
+        layer: "repo-local",
+        requirement: "Use the narrowest read-only scan before considering mutation.",
+        enforcement: "Prefer DevGov scan commands for ports, worktrees, startup, public routes, and AGENTS indexing.",
+        execution: [
+          { label: "Read-only scan gate", command: "Run the scan command for the relevant scope before any write operation", when: "Whenever touching files, services, or startup settings." }
+        ],
+        evidence: "AGENTS.md#Execution Principles",
+        status: "approved"
+      }
+    ],
+    checks: [
+      {
+        id: "check.git-status",
+        label: "Git safety",
+        command: "git status --short --branch",
+        when: "Before editing a selected repository",
+        forRules: ["workspace.git.pre-edit"]
+      },
+      {
+        id: "check.repo-instructions",
+        label: "Repo instructions",
+        command: "Inspect AGENTS.md and any narrower overlays",
+        when: "After confirming the project root",
+        forRules: ["workspace.repo-instruction-discovery"]
+      },
+      {
+        id: "check.scan-project",
+        label: "Port scan",
+        command: "node scripts/scan-project.mjs <workspace> --out reports/<project>-port-audit.md",
+        when: "When the selected project may bind local ports",
+        forRules: ["workspace.scan-readonly-first"]
+      },
+      {
+        id: "check.worktrees",
+        label: "Worktree scan",
+        command: "npm run scan:worktrees -- Q:\\Projects --out reports/worktree-audit.md",
+        when: "When the selected path is a linked worktree or worktree container",
+        forRules: ["workspace.worktree-container", "workspace.subtree-instruction-discovery"]
+      }
+    ]
+  };
 }
 
 export async function checkServiceStatuses(root = ".", options = {}) {
@@ -890,6 +1241,34 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const chromeAiModelStore = onboardingEntries.find((entry) => entry.id === "chrome-ai-model-store-filesystem");
+  if (chromeAiModelStore) {
+    targets.push({
+      id: "onboarding:chrome-ai-model-store-filesystem",
+      controlTargetId: "chrome-ai-model-store",
+      project: "chrome-ai-model-store",
+      label: "Chrome AI Model Store",
+      kind: "runtime-command",
+      registryStatus: "approved",
+      url: "",
+      target: "filesystem-model-cache",
+      quickTest: buildQuickTest("", {
+        notes: "Safe local filesystem probe only. Confirms the Stable primary model store and linked Chrome channel model directories.",
+        probeRef: "scripts/service-control/quickcheck-chrome-ai-model-store.ps1",
+        timeoutSeconds: 45
+      }),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: chromeAiModelStore.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: chromeAiModelStore.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 
@@ -976,7 +1355,7 @@ export function renderDashboardHtml(state) {
       --blue: oklch(45% 0.13 261);
       --green: oklch(42% 0.12 155);
       --ok-bg: oklch(90% 0.067 170);
-      --warn-bg: oklch(91% 0.08 86);
+      --wan-bg: oklch(91% 0.08 86);
       --bad-bg: oklch(90% 0.07 27);
       --neutral-bg: oklch(92% 0.021 248);
       --grid-line: oklch(23% 0.018 248 / .045);
@@ -998,7 +1377,7 @@ export function renderDashboardHtml(state) {
         --blue: oklch(76% 0.102 253);
         --green: oklch(78% 0.112 155);
         --ok-bg: oklch(34% 0.063 170);
-        --warn-bg: oklch(36% 0.064 86);
+        --wan-bg: oklch(36% 0.064 86);
         --bad-bg: oklch(35% 0.064 27);
         --neutral-bg: oklch(30% 0.025 248);
         --grid-line: oklch(92% 0.012 248 / .045);
@@ -1020,7 +1399,7 @@ export function renderDashboardHtml(state) {
       --blue: oklch(45% 0.13 261);
       --green: oklch(42% 0.12 155);
       --ok-bg: oklch(90% 0.067 170);
-      --warn-bg: oklch(91% 0.08 86);
+      --wan-bg: oklch(91% 0.08 86);
       --bad-bg: oklch(90% 0.07 27);
       --neutral-bg: oklch(92% 0.021 248);
       --grid-line: oklch(23% 0.018 248 / .045);
@@ -1041,7 +1420,7 @@ export function renderDashboardHtml(state) {
       --blue: oklch(76% 0.102 253);
       --green: oklch(78% 0.112 155);
       --ok-bg: oklch(34% 0.063 170);
-      --warn-bg: oklch(36% 0.064 86);
+      --wan-bg: oklch(36% 0.064 86);
       --bad-bg: oklch(35% 0.064 27);
       --neutral-bg: oklch(30% 0.025 248);
       --grid-line: oklch(92% 0.012 248 / .045);
@@ -1361,6 +1740,148 @@ export function renderDashboardHtml(state) {
       gap: 8px;
       grid-template-columns: 180px minmax(0, 1fr);
     }
+    .predictor-actions {
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+      min-width: min(100%, 520px);
+    }
+    .predictor-actions input {
+      max-width: min(100%, 520px);
+    }
+    .prediction-layout {
+      display: grid;
+      gap: 12px;
+    }
+    .prediction-summary {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+      padding: 12px;
+    }
+    .prediction-headline {
+      display: grid;
+      gap: 6px;
+    }
+    .prediction-headline strong {
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1;
+    }
+    .prediction-facts {
+      display: grid;
+      gap: 6px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .prediction-facts .guidance-row {
+      grid-template-columns: 140px minmax(0, 1fr);
+    }
+    .prediction-facts span {
+      overflow-wrap: anywhere;
+    }
+    .prediction-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .prediction-tabs button {
+      border: 2px solid var(--ink);
+      background: var(--panel);
+      min-height: 38px;
+      padding: 7px 12px;
+      width: auto;
+    }
+    .prediction-tabs button[aria-selected="true"] {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .prediction-panel {
+      display: grid;
+      gap: 12px;
+    }
+    .prediction-cards {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .prediction-card {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+    }
+    .prediction-card h3 {
+      font-size: 16px;
+      line-height: 1.2;
+      margin: 0;
+    }
+    .prediction-rule-summary {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+    .prediction-rule-summary p {
+      margin: 0;
+      opacity: 0.8;
+    }
+    .prediction-rule-layer {
+      border: 2px solid var(--ink);
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      background: var(--panel);
+    }
+    .prediction-rule-layer h4 {
+      margin: 0;
+    }
+    .prediction-rule-group {
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      padding: 8px;
+    }
+    .prediction-rule-group + .prediction-rule-group,
+    .prediction-rule-group + .prediction-rule-layer,
+    .prediction-rule-layer + .prediction-rule-layer {
+      margin-top: 8px;
+    }
+    .prediction-rule-group summary {
+      cursor: pointer;
+      font-weight: 700;
+      list-style: none;
+    }
+    .prediction-rule-group summary::-webkit-details-marker {
+      display: none;
+    }
+    .prediction-rule-group summary span {
+      color: var(--muted);
+      font-size: 0.95em;
+      margin-left: 8px;
+    }
+    .prediction-rule-group table {
+      margin-top: 8px;
+    }
+    .prediction-rule-exec-list {
+      margin: 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 6px;
+    }
+    .prediction-rule-exec-item {
+      margin: 0;
+      padding: 0;
+    }
+    .prediction-rule-exec-list li {
+      margin: 0;
+      line-height: 1.35;
+    }
+    .prediction-rule-exec-list code {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
     table[data-table="service-status"] {
       table-layout: fixed;
     }
@@ -1369,6 +1890,38 @@ export function renderDashboardHtml(state) {
     table[data-table="service-status"] th:nth-child(4) { width: 19%; }
     table[data-table="service-status"] td {
       overflow-wrap: normal;
+    }
+    table[data-table="registered-projects"] {
+      table-layout: fixed;
+    }
+    table[data-table="registered-projects"] th:nth-child(1) { width: 18%; }
+    table[data-table="registered-projects"] th:nth-child(2) { width: 18%; }
+    table[data-table="registered-projects"] th:nth-child(5) { width: 24%; }
+    .project-progress-cell, .project-services-cell, .next-action-cell, .source-link-list {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+    .progress-track {
+      background: var(--neutral-bg);
+      border: 1px solid var(--ink);
+      height: 10px;
+      overflow: hidden;
+      width: 100%;
+    }
+    .progress-bar {
+      background: var(--accent);
+      height: 100%;
+      min-width: 2px;
+    }
+    .tag-list {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .project-services-cell span, .next-action-cell span {
+      overflow-wrap: anywhere;
     }
     .service-cell, .endpoint-cell, .last-check-cell {
       display: grid;
@@ -1611,16 +2164,16 @@ export function renderDashboardHtml(state) {
       text-underline-offset: 2px;
     }
     .local { background: var(--ok-bg); }
-    .public, .candidate { background: var(--warn-bg); }
+    .public, .candidate { background: var(--wan-bg); }
     .blocked { background: var(--bad-bg); }
     .approved { background: var(--ok-bg); }
     .ONLINE { background: var(--ok-bg); }
     .OFFLINE { background: var(--bad-bg); }
-    .ERROR { background: var(--warn-bg); }
+    .ERROR { background: var(--wan-bg); }
     .CHECKING { background: var(--neutral-bg); }
     .online, .found, .ready { background: var(--ok-bg); }
     .offline, .missing, .blocked { background: var(--bad-bg); }
-    .error, .review_required, .partial { background: var(--warn-bg); }
+    .error, .review_required, .partial { background: var(--wan-bg); }
     .checking, .disabled, .not_applicable { background: var(--neutral-bg); }
     .inline-meta {
       color: var(--muted);
@@ -1664,6 +2217,9 @@ export function renderDashboardHtml(state) {
       .status { justify-content: start; }
       .toolbar { align-items: stretch; flex-direction: column; }
       .guidance-row { grid-template-columns: 1fr; }
+      .prediction-facts { grid-template-columns: 1fr; }
+      .prediction-facts .guidance-row { grid-template-columns: 1fr; }
+      .predictor-actions { justify-content: flex-start; min-width: 0; }
       table {
         display: block;
         font-size: 14px;
@@ -1725,16 +2281,18 @@ export function renderDashboardHtml(state) {
   <nav aria-label="儀表板檢視">
     <button data-view="overview" aria-selected="true"><span class="glyph">01</span> <span data-i18n="nav.overview">總覽</span></button>
     <button data-view="ports"><span class="glyph">02</span> <span data-i18n="nav.ports">Ports</span></button>
-    <button data-view="agents"><span class="glyph">03</span> <span data-i18n="nav.agents">本機 Agents</span></button>
-    <button data-view="startup"><span class="glyph">04</span> <span data-i18n="nav.startup">啟動治理</span></button>
-    <button data-view="routes"><span class="glyph">05</span> <span data-i18n="nav.routes">公開路由</span></button>
-    <button data-view="terminal"><span class="glyph">06</span> <span data-i18n="nav.terminal">Terminal Profiles</span></button>
-    <button data-view="api-keys"><span class="glyph">07</span> <span data-i18n="nav.apiKeys">API Key 治理</span></button>
-    <button data-view="agent-instructions"><span class="glyph">08</span> <span data-i18n="nav.agentInstructions">Agent Instructions</span></button>
-    <button data-view="web-entrypoints"><span class="glyph">09</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
-    <button data-view="service-status"><span class="glyph">10</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
-    <button data-view="service-onboarding"><span class="glyph">11</span> <span data-i18n="nav.serviceOnboarding">補充程序</span></button>
-    <button data-view="web-console-events"><span class="glyph">12</span> <span data-i18n="nav.webConsoleEvents">Web Console Events</span></button>
+    <button data-view="registered-projects"><span class="glyph">03</span> <span data-i18n="nav.registeredProjects">本機登記專案</span></button>
+    <button data-view="agents"><span class="glyph">04</span> <span data-i18n="nav.agents">本機 Agents</span></button>
+    <button data-view="startup"><span class="glyph">05</span> <span data-i18n="nav.startup">啟動治理</span></button>
+    <button data-view="routes"><span class="glyph">06</span> <span data-i18n="nav.routes">公開路由</span></button>
+    <button data-view="terminal"><span class="glyph">07</span> <span data-i18n="nav.terminal">Terminal Profiles</span></button>
+    <button data-view="api-keys"><span class="glyph">08</span> <span data-i18n="nav.apiKeys">API Key 治理</span></button>
+    <button data-view="agent-instructions"><span class="glyph">09</span> <span data-i18n="nav.agentInstructions">Agent Instructions</span></button>
+    <button data-view="workspace-predictor"><span class="glyph">10</span> <span data-i18n="nav.workspacePredictor">工作區預測</span></button>
+    <button data-view="web-entrypoints"><span class="glyph">11</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
+    <button data-view="service-status"><span class="glyph">12</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
+    <button data-view="service-onboarding"><span class="glyph">13</span> <span data-i18n="nav.serviceOnboarding">補充程序</span></button>
+    <button data-view="web-console-events"><span class="glyph">14</span> <span data-i18n="nav.webConsoleEvents">Web Console Events</span></button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -1744,6 +2302,13 @@ export function renderDashboardHtml(state) {
     <section id="ports" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.ports">Port Registry</h2><input data-filter="ports" placeholder="篩選 ports"></div>
       <table data-table="ports"></table>
+    </section>
+    <section id="registered-projects" class="table-view">
+      <div class="toolbar"><h2 data-i18n="sections.registeredProjects">本機登記專案</h2><input data-filter="registered-projects" placeholder="篩選本機登記專案"></div>
+      <div class="guidance">
+        <div><strong data-i18n="registeredProjects.label">Progress tags:</strong> <span data-i18n="registeredProjects.body">Project progress is aggregated from existing DevGov registry fields: readiness, review status, visibility, service coverage, and next action.</span></div>
+      </div>
+      <table data-table="registered-projects"></table>
     </section>
     <section id="agents" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.agents">本機服務 Agents</h2><input data-filter="agents" placeholder="篩選本機 agents"></div>
@@ -1769,6 +2334,29 @@ export function renderDashboardHtml(state) {
       <div class="toolbar"><h2 data-i18n="sections.agentInstructions">Agent Instructions</h2><input data-filter="agent-instructions" placeholder="篩選 agent instructions"></div>
       <div class="guidance" id="agent-storage-guidance"></div>
       <table data-table="agent-instructions"></table>
+    </section>
+    <section id="workspace-predictor" class="table-view">
+      <div class="toolbar">
+        <h2 data-i18n="sections.workspacePredictor">Workspace Rule Predictor</h2>
+        <div class="inline-actions predictor-actions">
+          <input id="workspace-predictor-path" placeholder="Q:\\\\Projects\\\\example-app" aria-label="Workspace path">
+          <button class="action-button" type="button" id="workspace-predictor-run" data-i18n="workspacePredictor.run">Predict</button>
+          <button class="action-button" type="button" id="workspace-predictor-rules-mode" data-rules-mode="compact" data-i18n="workspacePredictor.ruleList.showFull">Show full rules</button>
+          <button class="action-button" type="button" id="workspace-predictor-clear" data-i18n="workspacePredictor.clear">Clear</button>
+        </div>
+      </div>
+      <div class="guidance">
+        <div><strong data-i18n="workspacePredictor.label">Prediction model:</strong> <span data-i18n="workspacePredictor.body">Enter a local workspace path to preview which governance layers, safety gates, and verification checks an agent should expect before touching the project.</span></div>
+      </div>
+      <div class="prediction-layout">
+        <div class="prediction-summary" id="workspace-prediction-summary"></div>
+        <div class="prediction-tabs" role="tablist" aria-label="Workspace prediction tabs">
+          <button type="button" data-prediction-tab="summary" aria-selected="true" data-i18n="workspacePredictor.tabs.summary">Summary</button>
+          <button type="button" data-prediction-tab="rules" aria-selected="false" data-i18n="workspacePredictor.tabs.rules">Rules</button>
+          <button type="button" data-prediction-tab="checks" aria-selected="false" data-i18n="workspacePredictor.tabs.checks">Checks</button>
+        </div>
+        <div class="prediction-panel" id="workspace-prediction-panel"></div>
+      </div>
     </section>
     <section id="web-entrypoints" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.webEntrypoints">Web 入口</h2><input data-filter="web-entrypoints" placeholder="篩選 web 入口"></div>
@@ -1839,12 +2427,14 @@ const messages = {
     nav: {
       overview: 'Overview',
       ports: 'Ports',
+      registeredProjects: 'Registered Projects',
       agents: 'Local Agents',
       startup: 'Startup',
       routes: 'Routes',
       terminal: 'Terminal',
       apiKeys: 'API Keys',
       agentInstructions: 'Agent Instructions',
+      workspacePredictor: 'Workspace Predictor',
       webEntrypoints: 'Web Entrypoints',
       serviceStatus: 'Service Status',
       serviceOnboarding: 'Onboarding',
@@ -1852,12 +2442,14 @@ const messages = {
     },
     sections: {
       ports: 'Port Registry',
+      registeredProjects: 'Registered Projects',
       agents: 'Local Service Agents',
       startup: 'Startup Governance',
       routes: 'Public Routes',
       terminal: 'Terminal Profiles',
       apiKeys: 'API Key Governance',
       agentInstructions: 'Agent Instructions',
+      workspacePredictor: 'Workspace Rule Predictor',
       webEntrypoints: 'Web Entrypoints',
       serviceStatus: 'Network Service Status',
       serviceOnboarding: 'Existing Project Onboarding',
@@ -1865,12 +2457,14 @@ const messages = {
     },
     placeholders: {
       ports: 'Filter ports',
+      registeredProjects: 'Filter registered projects',
       agents: 'Filter local agents',
       startup: 'Filter startup',
       routes: 'Filter routes',
       terminal: 'Filter terminal',
       apiKeys: 'Filter API keys',
       agentInstructions: 'Filter agent instructions',
+      workspacePredictor: 'Q:\\\\Projects\\\\example-app',
       webEntrypoints: 'Filter web entrypoints',
       serviceStatus: 'Filter services',
       serviceOnboarding: 'Filter onboarding rows',
@@ -1878,6 +2472,7 @@ const messages = {
     },
     metrics: {
       ports: 'Ports',
+      registeredProjects: 'Projects',
       agents: 'Agents',
       startup: 'Startup',
       routes: 'Routes',
@@ -1900,6 +2495,90 @@ const messages = {
       body: 'This audit cross-checks the port registry, startup registry, public routes, local agents, and Service Status readiness so we can see which registered projects still need Doctor, Quick Test, or startup supplementation.',
       runAudit: 'Run audit'
     },
+    registeredProjects: {
+      label: 'Progress tags:',
+      body: 'Project progress is aggregated from existing DevGov registry fields: readiness, review status, visibility, service coverage, and next action.'
+    },
+      workspacePredictor: {
+        label: 'Prediction model:',
+        body: 'Enter a local workspace path to preview which governance layers, safety gates, and verification checks an agent should expect before touching the project.',
+        run: 'Predict',
+        clear: 'Clear',
+        ruleList: {
+          showFull: 'Show full rules',
+          showCompact: 'Show compact rules',
+          modeCompact: 'Compact list',
+          modeFull: 'Full list',
+          fullHint: 'Switch to compact mode to preview only a subset.',
+          compactHint: 'Switch to full rules mode to see the complete list.'
+        },
+        empty: 'Enter a workspace path to generate a prediction.',
+        ready: 'Governed workspace',
+      review: 'Review required',
+      blocked: 'Blocked by workspace policy',
+      unresolved: 'Unresolved until repo files are inspected',
+      detectedProject: 'Detected project',
+      pathClass: 'Path class',
+      tabs: {
+        summary: 'Summary',
+        rules: 'Rules',
+        checks: 'Checks'
+      },
+      summaryTitle: 'Expected governance before agent work',
+      summaryBody: 'The prediction is read-only and based on registered DevGov instruction taxonomy plus local workspace rules. It does not scan or mutate the selected path.',
+      rulesTitle: 'Predicted rules',
+      checksTitle: 'Next checks',
+      risksTitle: 'Decision notes',
+      ruleHeaders: {
+        rule: 'Rule',
+        type: 'Type',
+        layer: 'Layer',
+        applies: 'Applies',
+        evidence: 'Evidence',
+        reason: 'Reason',
+        execution: 'Execution'
+      },
+      ruleTypes: {
+        'scope-layer': 'scope-layer',
+        'authority-order': 'authority-order',
+        'safety-gate': 'safety-gate',
+        'data-contract': 'data-contract',
+        'tool-entry': 'tool-entry',
+        'context-budget': 'context-budget',
+        'verification': 'verification',
+        'workflow-control': 'workflow-control'
+      },
+      ruleLayers: {
+        'platform-runtime': 'platform-runtime',
+        'global-home': 'global-home',
+        workspace: 'workspace',
+        'repo-local': 'repo-local',
+        subtree: 'subtree',
+        'task-request': 'task-request'
+      },
+      ruleApplicability: {
+        PENDING: 'PENDING',
+        REVIEW_REQUIRED: 'REVIEW_REQUIRED',
+        BLOCKED: 'BLOCKED',
+        READY: 'READY',
+        EFFECTIVE: 'EFFECTIVE',
+        UNRESOLVED: 'UNRESOLVED',
+        NOT_APPLICABLE: 'NOT_APPLICABLE',
+        REFERENCE: 'REFERENCE'
+      },
+      reasons: {
+        empty: 'Enter a workspace path to generate a prediction.',
+        workspaceOutsideQ: 'Selected path is outside the governed Q: workspace.',
+        repoInstructionsUnknown: 'Target repo AGENTS.md must be inspected after selecting the workspace.',
+        subtreeUnknown: 'Narrower folder overlays are unknown until the target tree is inspected.',
+        loadedTaxonomy: 'Predicted from the loaded DevGov instruction taxonomy.',
+        projectOutsideQ: 'Project work outside Q:\\\\ needs explicit operator direction.',
+        outsideProjects: 'Q: is available, but this is not under Q:\\\\Projects.',
+        selectedRepoUnknown: 'The selected repo may have its own AGENTS.md that is not loaded by this dashboard.',
+        worktreeContainer: 'The path matches a governed linked-worktree container pattern.',
+        loadedPolicyPathClass: 'Predicted from loaded policy and the selected path class.'
+      }
+    },
     controlDialog: {
       title: 'Service Control',
       confirm: 'Run',
@@ -1918,7 +2597,9 @@ const messages = {
       notes: 'Notes',
       missingDashboard: 'Dashboard port entry missing',
       project: 'Project',
+      progress: 'Progress',
       service: 'Service',
+      services: 'Services',
       visibility: 'Visibility',
       agent: 'Agent',
       kind: 'Kind',
@@ -1953,12 +2634,16 @@ const messages = {
       generatedJson: 'Generated local JSON',
       generatedText: 'Generated text index',
       unitextEndpoint: 'UniText query endpoint',
+      count: 'Count',
       required: 'required',
       notRequired: 'not required',
       pending: 'pending',
       doctor: 'Doctor',
       restart: 'Restart',
       readiness: 'Readiness',
+      nextAction: 'Next Action',
+      tags: 'Tags',
+      sources: 'Sources',
       gaps: 'Gaps',
       links: 'Quick Links',
       noGaps: 'none',
@@ -1968,6 +2653,11 @@ const messages = {
       details: 'Details',
       action: 'Action',
       time: 'Time',
+      rule: 'Rule',
+      applies: 'Applies',
+      reason: 'Reason',
+      command: 'Command',
+      when: 'When',
       openCard: 'Open',
       zhTwCompanion: 'Traditional Chinese'
     }
@@ -1979,12 +2669,14 @@ const messages = {
     nav: {
       overview: '總覽',
       ports: 'Ports',
+      registeredProjects: '本機登記專案',
       agents: '本機 Agents',
       startup: '啟動治理',
       routes: '公開路由',
       terminal: 'Terminal Profiles',
       apiKeys: 'API Key 治理',
       agentInstructions: 'Agent Instructions',
+      workspacePredictor: '工作區預測',
       webEntrypoints: 'Web 入口',
       serviceStatus: '服務狀態',
       serviceOnboarding: '補充程序',
@@ -1992,12 +2684,14 @@ const messages = {
     },
     sections: {
       ports: 'Port Registry',
+      registeredProjects: '本機登記專案',
       agents: '本機服務 Agents',
       startup: '啟動治理',
       routes: '公開路由',
       terminal: 'Terminal Profiles',
       apiKeys: 'API Key 治理',
       agentInstructions: 'Agent Instructions',
+      workspacePredictor: '工作區規則預測',
       webEntrypoints: 'Web 入口',
       serviceStatus: 'Network Service Status',
       serviceOnboarding: '既有專案補充程序',
@@ -2005,12 +2699,14 @@ const messages = {
     },
     placeholders: {
       ports: '篩選 ports',
+      registeredProjects: '篩選本機登記專案',
       agents: '篩選本機 agents',
       startup: '篩選啟動項目',
       routes: '篩選公開路由',
       terminal: '篩選 terminal',
       apiKeys: '篩選 API keys',
       agentInstructions: '篩選 agent instructions',
+      workspacePredictor: 'Q:\\\\Projects\\\\example-app',
       webEntrypoints: '篩選 web 入口',
       serviceStatus: '篩選服務',
       serviceOnboarding: '篩選補充程序',
@@ -2018,6 +2714,7 @@ const messages = {
     },
     metrics: {
       ports: 'Ports',
+      registeredProjects: '專案',
       agents: 'Agents',
       startup: '啟動項目',
       routes: 'Routes',
@@ -2040,6 +2737,90 @@ const messages = {
       body: '這份 audit 會交叉比對 port registry、startup registry、public routes、local agents 與 Service Status readiness，快速找出哪些已登記專案還缺 Doctor、Quick Test 或 startup 補件。',
       runAudit: '重跑 audit'
     },
+    registeredProjects: {
+      label: '進度標籤:',
+      body: '專案進度由現有 DevGov registry 欄位彙整：readiness、review status、visibility、service coverage 與 next action。'
+    },
+      workspacePredictor: {
+        label: '預測模型:',
+        body: '輸入本機工作區路徑後，先預覽 agent 在動手前會受到哪些治理層、safety gate 與驗證檢查約束。',
+        run: '預測',
+        clear: '清除',
+        ruleList: {
+          showFull: '顯示完整規則',
+          showCompact: '顯示精簡規則',
+          modeCompact: '精簡列表',
+          modeFull: '完整列表',
+          fullHint: '切到精簡列表只顯示部份預覽。',
+          compactHint: '切到完整列表可查看全部規則。'
+        },
+        empty: '輸入工作區路徑後即可生成預測。',
+      ready: '符合治理工作區',
+      review: '需要審查',
+      blocked: '被工作區政策擋下',
+      unresolved: '需讀取 repo 文件後才可判定',
+      detectedProject: '辨識專案',
+      pathClass: '路徑分類',
+      tabs: {
+        summary: '摘要',
+        rules: '規則',
+        checks: '檢查'
+      },
+      summaryTitle: 'Agent 工作前的預期治理',
+      summaryBody: '這個預測只讀取已載入的 DevGov 指令分類與本機工作區規則；不掃描、不修改你輸入的路徑。',
+      rulesTitle: '預測規則',
+      checksTitle: '下一步檢查',
+      risksTitle: '決策提示',
+      ruleHeaders: {
+        rule: '規則',
+        type: '類型',
+        layer: '治理層',
+        applies: '適用性',
+        evidence: '依據',
+        reason: '原因',
+        execution: '實際執行項目'
+      },
+      ruleTypes: {
+        'scope-layer': '範圍層 (scope-layer)',
+        'authority-order': '權限順序 (authority-order)',
+        'safety-gate': '安全門檻 (safety-gate)',
+        'data-contract': '資料契約 (data-contract)',
+        'tool-entry': '工具入口 (tool-entry)',
+        'context-budget': '脈絡預算 (context-budget)',
+        'verification': '驗證 (verification)',
+        'workflow-control': '流程控制 (workflow-control)'
+      },
+      ruleLayers: {
+        'platform-runtime': '平台執行期 (platform-runtime)',
+        'global-home': '使用者全域 (global-home)',
+        workspace: '工作區 (workspace)',
+        'repo-local': 'Repo 本地 (repo-local)',
+        subtree: '子目錄 (subtree)',
+        'task-request': '本次請求 (task-request)'
+      },
+      ruleApplicability: {
+        PENDING: '待輸入 (PENDING)',
+        REVIEW_REQUIRED: '需要審查 (REVIEW_REQUIRED)',
+        BLOCKED: '已阻擋 (BLOCKED)',
+        READY: '已就緒 (READY)',
+        EFFECTIVE: '生效 (EFFECTIVE)',
+        UNRESOLVED: '未判定 (UNRESOLVED)',
+        NOT_APPLICABLE: '不適用 (NOT_APPLICABLE)',
+        REFERENCE: '參考 (REFERENCE)'
+      },
+      reasons: {
+        empty: '輸入工作區路徑後即可生成預測。',
+        workspaceOutsideQ: '選取的路徑位於受治理的 Q: 工作區之外。',
+        repoInstructionsUnknown: '選定工作區後，仍需檢查目標 repo 的 AGENTS.md。',
+        subtreeUnknown: '較窄的資料夾覆寫規則需等檢查目標樹狀結構後才能判定。',
+        loadedTaxonomy: '依已載入的 DevGov 指令分類預測。',
+        projectOutsideQ: 'Q:\\\\ 之外的專案工作需要 operator 明確指示。',
+        outsideProjects: 'Q: 可用，但此路徑不在 Q:\\\\Projects 底下。',
+        selectedRepoUnknown: '選取的 repo 可能有本 dashboard 尚未載入的 AGENTS.md。',
+        worktreeContainer: '此路徑符合受治理的 linked-worktree container 模式。',
+        loadedPolicyPathClass: '依已載入政策與選取路徑分類預測。'
+      }
+    },
     controlDialog: {
       title: 'Service Control',
       confirm: '執行',
@@ -2058,7 +2839,9 @@ const messages = {
       notes: 'Notes',
       missingDashboard: '找不到 dashboard port entry',
       project: 'Project',
+      progress: '進度',
       service: 'Service',
+      services: 'Services',
       visibility: 'Visibility',
       agent: 'Agent',
       kind: 'Kind',
@@ -2099,6 +2882,9 @@ const messages = {
       doctor: 'Doctor',
       restart: 'Restart',
       readiness: 'Readiness',
+      nextAction: 'Next Action',
+      tags: 'Tags',
+      sources: 'Sources',
       gaps: 'Gaps',
       links: 'Quick Links',
       noGaps: 'none',
@@ -2108,6 +2894,12 @@ const messages = {
       details: '詳細',
       action: '動作',
       time: '時間',
+      count: '數量',
+      rule: '規則',
+      applies: '適用性',
+      reason: '原因',
+      command: '命令',
+      when: '時機',
       openCard: '進入',
       zhTwCompanion: '中文版'
     }
@@ -2118,6 +2910,8 @@ let serviceStatusRows = [];
 let serviceOnboardingRows = [];
 let webConsoleEventsRows = [];
 let controlActionStates = {};
+let workspacePredictionTab = localStorage.getItem('devgov-workspace-prediction-tab') || 'summary';
+let workspacePredictionRulesMode = localStorage.getItem('devgov-workspace-predictor-rules-mode') === 'full' ? 'full' : 'compact';
 let deckDrag = null;
 let deckLayoutReady = false;
 let deckZCounter = 10;
@@ -2127,6 +2921,12 @@ const serviceControlMap = new Map((state.serviceControl?.entries || []).map((ent
 const themeButton = document.getElementById('theme-toggle');
 const languageButton = document.getElementById('language-toggle');
 const onboardingButton = document.getElementById('refresh-service-onboarding');
+const workspacePredictorInput = document.getElementById('workspace-predictor-path');
+const workspacePredictorRun = document.getElementById('workspace-predictor-run');
+const workspacePredictorRulesMode = document.getElementById('workspace-predictor-rules-mode');
+const workspacePredictorClear = document.getElementById('workspace-predictor-clear');
+const workspacePredictionSummary = document.getElementById('workspace-prediction-summary');
+const workspacePredictionPanel = document.getElementById('workspace-prediction-panel');
 const controlDialog = document.getElementById('service-control-dialog');
 const controlDialogTitle = document.getElementById('control-dialog-title');
 const controlDialogSubtitle = document.getElementById('control-dialog-subtitle');
@@ -2141,6 +2941,10 @@ let controlDialogConfirmResolver = null;
 const savedTheme = localStorage.getItem('devgov-theme');
 if (savedTheme === 'light' || savedTheme === 'dark') {
   document.documentElement.dataset.theme = savedTheme;
+}
+const savedWorkspacePath = localStorage.getItem('devgov-workspace-prediction-path');
+if (workspacePredictorInput && savedWorkspacePath) {
+  workspacePredictorInput.value = savedWorkspacePath;
 }
 document.body.classList.add('deck-mode');
 syncThemeButton();
@@ -2157,6 +2961,44 @@ themeButton.addEventListener('click', () => {
   document.documentElement.dataset.theme = next;
   localStorage.setItem('devgov-theme', next);
   syncThemeButton();
+});
+workspacePredictorRun.addEventListener('click', () => {
+  const prediction = renderWorkspacePredictor();
+  reportWebConsoleEvent('workspace-predictor-run', {
+    pathClass: prediction.context.pathClass,
+    state: prediction.outcome.state,
+    ruleCount: prediction.rules.length,
+    ruleTotalCount: prediction.allRules.length
+  });
+});
+workspacePredictorClear.addEventListener('click', () => {
+  workspacePredictorInput.value = '';
+  localStorage.removeItem('devgov-workspace-prediction-path');
+  renderWorkspacePredictor();
+});
+if (workspacePredictorRulesMode) {
+  workspacePredictorRulesMode.addEventListener('click', () => {
+    workspacePredictionRulesMode = workspacePredictionRulesMode === 'full' ? 'compact' : 'full';
+    localStorage.setItem('devgov-workspace-predictor-rules-mode', workspacePredictionRulesMode);
+    renderWorkspacePredictor();
+  });
+}
+workspacePredictorInput.addEventListener('input', () => {
+  localStorage.setItem('devgov-workspace-prediction-path', workspacePredictorInput.value);
+  renderWorkspacePredictor();
+});
+workspacePredictorInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    workspacePredictorRun.click();
+  }
+});
+document.querySelectorAll('button[data-prediction-tab]').forEach((button) => {
+  button.addEventListener('click', () => {
+    workspacePredictionTab = button.dataset.predictionTab;
+    localStorage.setItem('devgov-workspace-prediction-tab', workspacePredictionTab);
+    renderWorkspacePredictor();
+  });
 });
 addEventListener('resize', () => {
   if (document.body.classList.contains('deck-mode')) layoutMetricCards();
@@ -2209,6 +3051,7 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
   input.addEventListener('input', () => {
     const value = input.value.toLowerCase();
     if (input.dataset.filter === 'ports') renderPorts(value);
+    if (input.dataset.filter === 'registered-projects') renderRegisteredProjects(value);
     if (input.dataset.filter === 'agents') renderAgents(value);
     if (input.dataset.filter === 'startup') renderStartup(value);
     if (input.dataset.filter === 'routes') renderRoutes(value);
@@ -2235,12 +3078,14 @@ function renderAll() {
   if (!document.body.classList.contains('deck-mode')) Motion.metrics();
   renderDashboardPort();
   renderPorts(filterValue('ports'));
+  renderRegisteredProjects(filterValue('registered-projects'));
   renderAgents(filterValue('agents'));
   renderStartup(filterValue('startup'));
   renderRoutes(filterValue('routes'));
   renderTerminal(filterValue('terminal'));
   renderApiKeys(filterValue('api-keys'));
   renderAgentInstructions(filterValue('agent-instructions'));
+  renderWorkspacePredictor();
   renderWebEntrypoints(filterValue('web-entrypoints'));
   renderWebConsoleEventsTable(filterValue('web-console-events'), webConsoleEventsRows);
   renderAgentStorageGuidance();
@@ -2297,6 +3142,7 @@ async function sendWebConsoleEvent(payload) {
 function metricDeckItems() {
   return [
     { label: t('metrics.ports'), value: state.summary.ports, view: 'ports' },
+    { label: t('metrics.registeredProjects'), value: state.summary.registeredProjects, view: 'registered-projects' },
     { label: t('metrics.agents'), value: state.summary.localAgents, view: 'agents' },
     { label: t('metrics.startup'), value: state.summary.startupEntries, view: 'startup' },
     { label: t('metrics.routes'), value: state.summary.publicRoutes, view: 'routes' },
@@ -2598,6 +3444,17 @@ function renderPorts(query) {
   const rows = state.ports.filter(row => match(row, query));
   renderTable('ports', [t('labels.project'), t('labels.service'), t('labels.socket'), t('labels.visibility'), t('labels.notes')], rows.map(row => [textCell(row.project), textCell(row.service), '<code>' + esc(row.host + ':' + row.port) + '</code>', pill(row.visibility), linkify(row.notes)]));
 }
+function renderRegisteredProjects(query) {
+  const rows = state.registeredProjects.filter(row => match(row, query));
+  renderTable('registered-projects', [t('labels.project'), t('labels.progress'), t('labels.services'), t('labels.tags'), t('labels.nextAction'), t('labels.sources')], rows.map(row => [
+    textCell(row.project),
+    renderProjectProgressCell(row),
+    renderProjectServicesCell(row),
+    renderProjectTags(row),
+    renderNextActionCell(row),
+    renderProjectSources(row)
+  ]));
+}
 function renderAgents(query) {
   const rows = state.localAgents.filter(row => match(row, query));
   renderTable('agents', [t('labels.agent'), t('labels.kind'), t('labels.health'), t('labels.startup'), t('labels.status')], rows.map(row => [textCell(row.displayName), textCell(row.kind), linkify(row.healthUrl), fileRef(row.startupRef), pill(row.status)]));
@@ -2621,6 +3478,483 @@ function renderApiKeys(query) {
 function renderAgentInstructions(query) {
   const rows = state.agentInstructions.entries.filter(row => match(row, query));
   renderTable('agent-instructions', [t('labels.id'), t('labels.type'), t('labels.layer'), t('labels.requirement'), t('labels.evidence'), t('labels.status')], rows.map(row => [textCell(row.id), textCell(row.type), textCell(row.layer), linkify(row.requirement), fileRefWithCompanion(row.evidence), pill(row.status)]));
+}
+function renderWorkspacePredictor() {
+  const prediction = buildWorkspacePrediction();
+  if (workspacePredictorRulesMode) {
+    workspacePredictorRulesMode.textContent = t(workspacePredictionRulesMode === 'full'
+      ? 'workspacePredictor.ruleList.showCompact'
+      : 'workspacePredictor.ruleList.showFull');
+    workspacePredictorRulesMode.setAttribute('data-rules-mode', workspacePredictionRulesMode);
+  }
+  document.querySelectorAll('button[data-prediction-tab]').forEach((button) => {
+    button.setAttribute('aria-selected', String(button.dataset.predictionTab === workspacePredictionTab));
+  });
+  workspacePredictionSummary.innerHTML = renderWorkspacePredictionSummary(prediction);
+  if (workspacePredictionTab === 'rules') {
+    workspacePredictionPanel.innerHTML = renderWorkspacePredictionRules(prediction);
+  } else if (workspacePredictionTab === 'checks') {
+    workspacePredictionPanel.innerHTML = renderWorkspacePredictionChecks(prediction);
+  } else {
+    workspacePredictionPanel.innerHTML = renderWorkspacePredictionNotes(prediction);
+  }
+  return prediction;
+}
+function buildWorkspacePrediction() {
+  const model = state.workspacePrediction || { layers: [], entries: [], rules: [], checks: [] };
+  const rawPath = sanitizeText(workspacePredictorInput?.value || '', 240);
+  const normalizedPath = normalizeWorkspacePath(rawPath);
+  const hasPath = normalizedPath.length > 0;
+  const absolute = /^[A-Za-z]:[\\\\/]/.test(rawPath) || rawPath.startsWith('\\\\\\\\');
+  const underQ = /^[Qq]:[\\\\/]/.test(normalizedPath);
+  const underDefault = pathStartsWith(normalizedPath, model.defaultWorkspaceRoot || 'Q:\\\\Projects');
+  const isDevGov = pathStartsWith(normalizedPath, (model.defaultWorkspaceRoot || 'Q:\\\\Projects') + '\\\\' + (model.devgovProjectId || 'dev-governance-kit'));
+  const isWorktree = isWorktreePath(normalizedPath);
+  const projectName = inferWorkspaceProjectName(normalizedPath);
+  const pathClass = classifyWorkspacePath({ hasPath, absolute, underQ, underDefault, isDevGov, isWorktree });
+  const outcome = workspaceOutcome({ hasPath, absolute, underQ, underDefault });
+  const context = { rawPath, normalizedPath, hasPath, absolute, underQ, underDefault, isDevGov, isWorktree, projectName, pathClass };
+  const checks = buildPredictedWorkspaceChecks(model, context);
+  const { rules, allRules } = buildPredictedWorkspaceRules(model, context, checks);
+  const notes = buildWorkspacePredictionNotes(context, outcome);
+  const layers = buildPredictedWorkspaceLayers(model, context);
+  return { model, context, outcome, rules, allRules, checks, notes, layers };
+}
+function normalizeWorkspacePath(value) {
+  return sanitizeText(value, 240).replaceAll('/', '\\\\').trim();
+}
+function trimTrailingBackslashes(value) {
+  return normalizeWorkspacePath(value).replace(/\\\\+$/, '');
+}
+function pathStartsWith(value, prefix) {
+  const candidate = trimTrailingBackslashes(value).toLowerCase();
+  const root = trimTrailingBackslashes(prefix).toLowerCase();
+  return candidate === root || candidate.startsWith(root + '\\\\');
+}
+function isWorktreePath(value) {
+  const lower = normalizeWorkspacePath(value).toLowerCase();
+  return lower.includes('.worktrees\\\\') || lower.includes('-worktrees\\\\') || lower.endsWith('.worktrees') || lower.endsWith('-worktrees');
+}
+function inferWorkspaceProjectName(value) {
+  const normalized = normalizeWorkspacePath(value);
+  if (!normalized) return '';
+  const parts = normalized.split('\\\\').filter(Boolean);
+  if (parts.length >= 3 && /^[A-Za-z]:$/.test(parts[0]) && parts[1].toLowerCase() === 'projects') {
+    const project = parts[2];
+    if (project.endsWith('.worktrees') || project.endsWith('-worktrees')) {
+      return project.replace(/(?:\\.worktrees|-worktrees)$/i, '') + ' worktree';
+    }
+    return project;
+  }
+  return parts[parts.length - 1] || normalized;
+}
+function classifyWorkspacePath(context) {
+  if (!context.hasPath) return 'pending';
+  if (!context.absolute) return 'relative-or-unknown';
+  if (!context.underQ) return 'outside-q-drive';
+  if (!context.underDefault) return 'q-drive-non-projects';
+  if (context.isDevGov) return 'devgov-repo';
+  if (context.isWorktree) return 'worktree-storage';
+  return 'q-projects-workspace';
+}
+function workspaceOutcome(context) {
+  if (!context.hasPath) return { state: 'PENDING', label: t('workspacePredictor.empty') };
+  if (!context.absolute) return { state: 'REVIEW_REQUIRED', label: t('workspacePredictor.review') };
+  if (!context.underQ) return { state: 'BLOCKED', label: t('workspacePredictor.blocked') };
+  if (!context.underDefault) return { state: 'REVIEW_REQUIRED', label: t('workspacePredictor.review') };
+  return { state: 'READY', label: t('workspacePredictor.ready') };
+}
+function buildPredictedWorkspaceLayers(model, context) {
+  return (model.layers || []).map((layer) => ({
+    ...layer,
+    applies: layerStatusForPrediction(layer.id, context),
+    reason: layerReasonForPrediction(layer.id, context)
+  })).sort((left, right) => Number(left.precedence ?? 99) - Number(right.precedence ?? 99));
+}
+function layerStatusForPrediction(layerId, context) {
+  if (!context.hasPath) return 'PENDING';
+  if (layerId === 'platform-runtime' || layerId === 'global-home' || layerId === 'task-request') return 'EFFECTIVE';
+  if (layerId === 'workspace') return context.underQ ? 'EFFECTIVE' : 'BLOCKED';
+  if (layerId === 'repo-local') return context.isDevGov ? 'EFFECTIVE' : 'UNRESOLVED';
+  if (layerId === 'subtree') return 'UNRESOLVED';
+  return 'REFERENCE';
+}
+function layerReasonForPrediction(layerId, context) {
+  if (!context.hasPath) return t('workspacePredictor.reasons.empty');
+  if (layerId === 'workspace' && !context.underQ) return t('workspacePredictor.reasons.workspaceOutsideQ');
+  if (layerId === 'repo-local' && !context.isDevGov) return t('workspacePredictor.reasons.repoInstructionsUnknown');
+  if (layerId === 'subtree') return t('workspacePredictor.reasons.subtreeUnknown');
+  return t('workspacePredictor.reasons.loadedTaxonomy');
+}
+function buildPredictedWorkspaceChecksByRule(checks = []) {
+  const byRule = new Map();
+  for (const check of checks) {
+    const forRules = Array.isArray(check.forRules) ? check.forRules : [];
+    for (const ruleId of forRules) {
+      if (!ruleId) continue;
+      const list = byRule.get(ruleId) || [];
+      list.push(check);
+      byRule.set(ruleId, list);
+    }
+  }
+  return byRule;
+}
+function normalizeWorkspaceExecutionItem(rawItem) {
+  if (!rawItem || typeof rawItem !== 'object') return null;
+  const label = sanitizeText(rawItem.label, 80);
+  const command = sanitizeText(rawItem.command, 260);
+  const when = sanitizeText(rawItem.when, 120);
+  if (!label && !command && !when) return null;
+  return {
+    label: label || '-',
+    command: command || '-',
+    when: when || '-',
+    source: sanitizeText(rawItem.source, 80) || 'rule'
+  };
+}
+function buildWorkspaceRuleExecution(rule, checksByRule) {
+  const seen = new Set();
+  const result = [];
+  const add = (rawItem) => {
+    const item = normalizeWorkspaceExecutionItem(rawItem);
+    if (!item) return;
+    const key = item.label + '|' + item.command + '|' + item.when;
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push(item);
+  };
+
+  for (const item of Array.isArray(rule.execution) ? rule.execution : []) {
+    add(item);
+  }
+  for (const check of checksByRule.get(rule.id) || []) {
+    add({
+      label: check.label,
+      command: check.command,
+      when: check.when,
+      source: 'check.' + String(check.id || '')
+    });
+  }
+  return result;
+}
+function buildPredictedWorkspaceRules(model, context, checks = []) {
+  const checksByRule = buildPredictedWorkspaceChecksByRule(checks);
+  const explicitRules = (model.rules || []).map((rule) => ({
+    id: rule.id,
+    type: rule.type,
+    layer: rule.layer,
+    requirement: rule.requirement,
+    evidence: rule.evidence,
+    execution: buildWorkspaceRuleExecution(rule, checksByRule),
+    applies: explicitRuleStatus(rule.id, context),
+    reason: explicitRuleReason(rule.id, context)
+  }));
+  const registryRules = (model.entries || []).map((entry) => ({
+    id: entry.id,
+    type: entry.type,
+    layer: entry.layer,
+    requirement: entry.requirement,
+    evidence: entry.evidence,
+    execution: buildWorkspaceRuleExecution(entry, checksByRule),
+    applies: layerStatusForPrediction(entry.layer, context),
+    reason: layerReasonForPrediction(entry.layer, context)
+  }));
+  const allRules = [...explicitRules, ...registryRules];
+  const compactLimit = 14;
+  return {
+    rules: workspacePredictionRulesMode === 'full' ? allRules : allRules.slice(0, compactLimit),
+    allRules
+  };
+}
+function explicitRuleStatus(ruleId, context) {
+  if (!context.hasPath) return 'PENDING';
+  if (ruleId === 'workspace.location.q-projects') {
+    if (!context.underQ) return 'BLOCKED';
+    return context.underDefault ? 'EFFECTIVE' : 'REVIEW_REQUIRED';
+  }
+  if (ruleId === 'workspace.git.pre-edit') return 'EFFECTIVE';
+  if (ruleId === 'workspace.repo-instruction-discovery') return context.isDevGov ? 'EFFECTIVE' : 'UNRESOLVED';
+  if (ruleId === 'workspace.subtree-instruction-discovery') return 'UNRESOLVED';
+  if (ruleId === 'workspace.worktree-container') return context.isWorktree ? 'EFFECTIVE' : 'NOT_APPLICABLE';
+  if (ruleId === 'workspace.registry-redaction-boundary') return context.isDevGov ? 'EFFECTIVE' : 'REFERENCE';
+  return 'EFFECTIVE';
+}
+function explicitRuleReason(ruleId, context) {
+  if (!context.hasPath) return t('workspacePredictor.reasons.empty');
+  if (ruleId === 'workspace.location.q-projects' && !context.underQ) return t('workspacePredictor.reasons.projectOutsideQ');
+  if (ruleId === 'workspace.location.q-projects' && !context.underDefault) return t('workspacePredictor.reasons.outsideProjects');
+  if (ruleId === 'workspace.repo-instruction-discovery' && !context.isDevGov) return t('workspacePredictor.reasons.selectedRepoUnknown');
+  if (ruleId === 'workspace.worktree-container' && context.isWorktree) return t('workspacePredictor.reasons.worktreeContainer');
+  return t('workspacePredictor.reasons.loadedPolicyPathClass');
+}
+function buildPredictedWorkspaceChecks(model, context) {
+  const projectSlug = slugProjectName(context.projectName || 'workspace');
+  const selected = context.normalizedPath || '<workspace>';
+  const checks = [
+    ...(model.checks || []),
+    {
+      id: 'check.selected-scan-project',
+      label: 'Selected project scan',
+      command: 'node scripts/scan-project.mjs ' + quoteCommandArg(selected) + ' --out reports/' + projectSlug + '-port-audit.md',
+      when: 'When the selected workspace has web or local service ports',
+      forRules: ['workspace.scan-readonly-first']
+    }
+  ];
+  if (context.isDevGov) {
+    checks.push(
+      { id: 'check.devgov-test', label: 'DevGov tests', command: 'npm test', when: 'Before reporting dashboard changes complete', forRules: ['workspace.scan-readonly-first', 'workspace.repo-instruction-discovery'] },
+      { id: 'check.devgov-agents', label: 'AGENTS index', command: 'npm run scan:agents', when: 'After changing AGENTS governance surfaces', forRules: ['workspace.repo-instruction-discovery', 'workspace.subtree-instruction-discovery'] },
+      { id: 'check.devgov-registry', label: 'Registry validation', command: 'npm run validate:registry', when: 'After registry-facing changes', forRules: ['workspace.registry-redaction-boundary'] },
+      { id: 'check.devgov-doctor', label: 'Doctor', command: 'npm run doctor', when: 'Before final DevGov handoff', forRules: ['workspace.scan-readonly-first'] }
+    );
+  }
+  if (context.isWorktree) {
+    checks.push({
+      id: 'check.selected-worktree',
+      label: 'Worktree governance',
+      command: 'npm run scan:worktrees -- Q:\\\\Projects --out reports/worktree-audit.md',
+      when: 'Because the selected path looks like linked worktree storage',
+      forRules: ['workspace.worktree-container']
+    });
+  }
+  return checks;
+}
+function buildWorkspacePredictionNotes(context, outcome) {
+  const notes = [];
+  if (!context.hasPath) {
+    notes.push({ state: 'PENDING', title: t('workspacePredictor.empty'), body: t('workspacePredictor.summaryBody') });
+    return notes;
+  }
+  notes.push({ state: outcome.state, title: outcome.label, body: 'Path class: ' + context.pathClass });
+  if (!context.absolute) {
+    notes.push({ state: 'REVIEW_REQUIRED', title: 'Absolute path required', body: 'Use a full local path so workspace, repo-local, and subtree scopes can be predicted.' });
+  }
+  if (!context.underQ) {
+    notes.push({ state: 'BLOCKED', title: 'Outside Q: workspace', body: 'Project development outside Q:\\\\ needs explicit operator direction before continuing.' });
+  } else if (!context.underDefault) {
+    notes.push({ state: 'REVIEW_REQUIRED', title: 'Outside Q:\\\\Projects', body: 'Q: is governed, but project work normally belongs under Q:\\\\Projects.' });
+  }
+  if (!context.isDevGov) {
+    notes.push({ state: 'UNRESOLVED', title: t('workspacePredictor.unresolved'), body: 'Repo-local and subtree rules remain unknown until the selected project files are inspected.' });
+  } else {
+    notes.push({ state: 'EFFECTIVE', title: 'DevGov repo-local rules apply', body: 'Registry redaction, dashboard verification, and AGENTS governance checks are expected for this workspace.' });
+  }
+  if (context.isWorktree) {
+    notes.push({ state: 'EFFECTIVE', title: 'Worktree governance applies', body: 'Treat the selected path as operational linked-worktree storage and keep cleanup read-only unless separately approved.' });
+  }
+  return notes;
+}
+function renderWorkspacePredictionSummary(prediction) {
+  const context = prediction.context;
+  const ruleCountLabel = prediction.rules.length === prediction.allRules.length
+    ? String(prediction.allRules.length)
+    : prediction.rules.length + '/' + prediction.allRules.length;
+  const facts = [
+    [t('labels.path'), context.normalizedPath || t('workspacePredictor.empty')],
+    [t('workspacePredictor.detectedProject'), context.projectName || '-'],
+    [t('workspacePredictor.pathClass'), context.pathClass],
+    [t('labels.rule'), ruleCountLabel]
+  ];
+  return '<div class="prediction-headline">'
+    + pill(prediction.outcome.state)
+    + '<strong>' + esc(t('workspacePredictor.summaryTitle')) + '</strong>'
+    + '<span class="muted">' + esc(prediction.outcome.label) + '</span>'
+    + '<span>' + esc(t('workspacePredictor.summaryBody')) + '</span>'
+    + '</div><div class="prediction-facts">'
+    + facts.map(([label, value]) => '<div class="guidance-row"><strong>' + esc(label) + '</strong><span>' + esc(value) + '</span></div>').join('')
+    + '</div>';
+}
+function renderWorkspacePredictionNotes(prediction) {
+  return '<div class="prediction-cards">'
+    + prediction.notes.map((note) => '<article class="prediction-card">' + pill(note.state) + '<h3>' + esc(note.title) + '</h3><span>' + esc(note.body) + '</span></article>').join('')
+    + '</div>'
+    + renderPredictionTable([t('labels.layer'), t('labels.applies'), t('labels.reason')], prediction.layers.map((layer) => [
+      textCell(layer.id),
+      pill(layer.applies),
+      textCell(layer.reason)
+    ]));
+}
+function workspaceRuleTypeBucket(rule) {
+  return String(rule?.type || 'unknown').toLowerCase();
+}
+function workspaceRuleLayerBucket(rule) {
+  return String(rule?.layer || 'unknown').toLowerCase();
+}
+function workspaceRuleTypeWeight(type) {
+  const order = [
+    'scope-layer',
+    'authority-order',
+    'safety-gate',
+    'data-contract',
+    'tool-entry',
+    'context-budget',
+    'verification',
+    'workflow-control'
+  ];
+  const normalized = workspaceRuleTypeBucket(type);
+  const index = order.indexOf(normalized);
+  return index === -1 ? order.length : index;
+}
+function workspaceRuleLayerWeight(layer) {
+  const order = [
+    'platform-runtime',
+    'global-home',
+    'workspace',
+    'repo-local',
+    'subtree',
+    'task-request'
+  ];
+  const normalized = workspaceRuleLayerBucket(layer);
+  const index = order.indexOf(normalized);
+  return index === -1 ? order.length : index;
+}
+function groupWorkspacePredictionRules(rules) {
+  const buckets = new Map();
+  for (const rule of rules) {
+    const layer = workspaceRuleLayerBucket(rule);
+    const type = workspaceRuleTypeBucket(rule);
+    const existingLayer = buckets.get(layer) ?? {};
+    const typeBuckets = existingLayer.types ?? new Map();
+    const typeList = typeBuckets.get(type) ?? [];
+    typeList.push(rule);
+    typeBuckets.set(type, typeList);
+    buckets.set(layer, { total: (existingLayer.total ?? 0) + 1, types: typeBuckets });
+  }
+  return [...buckets.entries()]
+    .sort((left, right) => {
+      const layerWeight = workspaceRuleLayerWeight(left[0]) - workspaceRuleLayerWeight(right[0]);
+      if (layerWeight !== 0) return layerWeight;
+      return left[0].localeCompare(right[0], 'en');
+    })
+    .map(([layer, { total, types }]) => ({
+      layer,
+      total,
+      types: [...types.entries()]
+        .sort((left, right) => {
+          const typeWeight = workspaceRuleTypeWeight(left[0]) - workspaceRuleTypeWeight(right[0]);
+          if (typeWeight !== 0) return typeWeight;
+          return left[0].localeCompare(right[0], 'en');
+        })
+        .map(([type, rows]) => ({
+          type,
+          rules: rows.sort((left, right) => String(left.id).localeCompare(String(right.id), 'en'))
+        }))
+    }));
+}
+function renderWorkspacePredictionRulesSummary(prediction) {
+  const isFull = prediction.rules.length === prediction.allRules.length;
+  const modeLabel = t(isFull ? 'workspacePredictor.ruleList.modeFull' : 'workspacePredictor.ruleList.modeCompact');
+  const listHint = t(isFull ? 'workspacePredictor.ruleList.fullHint' : 'workspacePredictor.ruleList.compactHint');
+  const summaryRules = prediction.allRules;
+  return '<div class="prediction-rule-summary">'
+    + '<div><strong>' + esc(modeLabel) + '</strong> · ' + esc(t('workspacePredictor.summaryBody')) + '</div>'
+    + '<p>' + esc(listHint) + '</p>'
+    + renderPredictionTable(
+      [t('labels.type'), t('labels.count')],
+      Object.entries(summaryRules.reduce((acc, rule) => {
+        const type = workspaceRuleTypeBucket(rule);
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {}))
+        .sort((left, right) => {
+          const weightLeft = workspaceRuleTypeWeight(left[0]);
+          const weightRight = workspaceRuleTypeWeight(right[0]);
+          if (weightLeft !== weightRight) return weightLeft - weightRight;
+          return left[0].localeCompare(right[0], 'en');
+        })
+        .map(([type, count]) => [
+          localizedWorkspaceRuleCell('ruleTypes', type),
+          textCell(String(count))
+        ])
+    )
+    + '</div>';
+}
+function renderWorkspacePredictionRuleBuckets(prediction) {
+  const groups = groupWorkspacePredictionRules(prediction.rules);
+  if (!groups.length) {
+    return '<div class="prediction-rule-empty"><code>' + esc(t('workspacePredictor.empty')) + '</code></div>';
+  }
+  return groups.map(({ layer, total, types }) => {
+    const typeSections = types.map(({ type, rules }) => {
+        return '<details class="prediction-rule-group" open>'
+        + '<summary><strong>' + esc(localizedWorkspaceRuleCell('ruleTypes', type)) + '</strong> <span>' + esc(String(rules.length)) + ' rule' + (rules.length > 1 ? 's' : '') + '</span></summary>'
+        + renderPredictionTable([
+          t('workspacePredictor.ruleHeaders.rule'),
+          t('workspacePredictor.ruleHeaders.applies'),
+          t('workspacePredictor.ruleHeaders.evidence'),
+          t('workspacePredictor.ruleHeaders.reason'),
+          t('workspacePredictor.ruleHeaders.execution')
+        ], rules.map((rule) => [
+          textCell(rule.id),
+          localizedWorkspaceRulePill(rule.applies),
+          fileRefWithCompanion(rule.evidence),
+          textCell(rule.reason),
+          renderWorkspaceRuleExecution(rule.execution)
+        ]))
+        + '</details>';
+    }).join('');
+    return '<section class="prediction-rule-layer">'
+      + '<h4>' + esc(localizedWorkspaceRuleCell('ruleLayers', layer)) + ' · ' + esc(String(total)) + '</h4>'
+      + typeSections
+      + '</section>';
+  }).join('');
+}
+function renderWorkspaceRuleExecution(execution) {
+  const items = Array.isArray(execution) ? execution : [];
+  if (!items.length) return textCell('—');
+  return '<ul class="prediction-rule-exec-list">' + items.map((item) => {
+    const source = item.source
+      ? '<div><span class="muted">' + esc(t('labels.source')) + ': ' + esc(item.source) + '</span></div>'
+      : '';
+    const when = item.when
+      ? '<div><span class=\"muted\">' + esc(t('labels.when')) + ': ' + esc(item.when) + '</span></div>'
+      : '';
+    return '<li class="prediction-rule-exec-item"><strong>' + esc(item.label || t('labels.command')) + '</strong>'
+      + '<div><code>' + esc(item.command || '-') + '</code></div>'
+      + source
+      + when
+      + '</li>';
+  }).join('') + '</ul>';
+}
+function renderWorkspacePredictionRules(prediction) {
+  const ruleCountLabel = prediction.rules.length === prediction.allRules.length
+    ? String(prediction.allRules.length)
+    : prediction.rules.length + '/' + prediction.allRules.length;
+  const rulesTitle = t('workspacePredictor.rulesTitle') + ' (' + ruleCountLabel + ')';
+  return '<div class="guidance"><strong>' + esc(rulesTitle) + '</strong><span>' + esc(t('workspacePredictor.summaryBody')) + '</span></div>'
+    + renderWorkspacePredictionRulesSummary(prediction)
+    + renderWorkspacePredictionRuleBuckets(prediction);
+}
+function localizedWorkspaceRuleCell(group, value) {
+  return textCell(localizedWorkspaceRuleValue(group, value));
+}
+function localizedWorkspaceRulePill(value) {
+  return '<span class="pill ' + esc(String(value).toLowerCase()) + '">' + esc(localizedWorkspaceRuleValue('ruleApplicability', value)) + '</span>';
+}
+function localizedWorkspaceRuleValue(group, value) {
+  const fallback = String(value || '');
+  const key = 'workspacePredictor.' + group + '.' + fallback;
+  const translated = t(key);
+  return translated === key ? fallback : translated;
+}
+function renderWorkspacePredictionChecks(prediction) {
+  return '<div class="guidance"><strong>' + esc(t('workspacePredictor.checksTitle')) + '</strong><span>' + esc(t('workspacePredictor.summaryBody')) + '</span></div>'
+    + renderPredictionTable([t('labels.rule'), t('labels.when'), t('labels.command')], prediction.checks.map((check) => [
+      textCell(check.label),
+      textCell(check.when),
+      '<code>' + esc(check.command) + '</code>'
+    ]));
+}
+function renderPredictionTable(headers, rows) {
+  return '<table><tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>'
+    + rows.map(row => '<tr>' + row.map(cell => '<td>' + cell + '</td>').join('') + '</tr>').join('')
+    + '</table>';
+}
+function quoteCommandArg(value) {
+  return '"' + String(value || '').replaceAll('"', '""') + '"';
+}
+function slugProjectName(value) {
+  return String(value || 'workspace').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'workspace';
 }
 function renderWebEntrypoints(query) {
   const rows = state.webEntrypoints.filter(row => match(row, query));
@@ -2652,7 +3986,7 @@ function renderAgentStorageGuidance() {
     [t('labels.canonicalRegistry'), fileRef('registry/agent-instructions.registry.json')],
     [t('labels.generatedJson'), fileRef('reports/agent-instructions-index.json')],
     [t('labels.generatedText'), fileRef('reports/agent-instructions-index.txt')],
-    [t('labels.unitextEndpoint'), internalLink('/api/unitext-agent-instructions')]
+    [t('labels.unitextEndpoint'), intenalLink('/api/unitext-agent-instructions')]
   ].map(([label, value]) => '<div class="guidance-row"><strong>' + esc(label) + '</strong><span>' + value + '</span></div>').join('');
 }
 function renderServiceStatusTable(query, rows) {
@@ -2709,6 +4043,38 @@ async function refreshWebConsoleEvents() {
   } finally {
     renderWebConsoleEventsTable(filterValue('web-console-events'), webConsoleEventsRows);
   }
+}
+function renderProjectProgressCell(row) {
+  const percent = Math.max(0, Math.min(100, Number(row.progressPercent || 0)));
+  const counts = Object.entries(row.readinessCounts || {})
+    .map(([label, count]) => label + '=' + count)
+    .join(' ');
+  return '<div class="project-progress-cell">'
+    + '<div class="tag-list">' + pill(row.progressTag) + '<span class="inline-meta">' + esc(percent + '%') + '</span></div>'
+    + '<div class="progress-track" aria-label="' + esc(row.progressTag + ' ' + percent + '%') + '"><div class="progress-bar" style="width:' + esc(percent) + '%"></div></div>'
+    + '<span class="inline-meta">' + esc(counts || 'no readiness tag') + '</span>'
+    + '</div>';
+}
+function renderProjectServicesCell(row) {
+  const services = (row.services || []).slice(0, 4);
+  const extra = Math.max(0, (row.services || []).length - services.length);
+  return '<div class="project-services-cell">'
+    + '<strong>' + esc(row.serviceCount) + '</strong>'
+    + '<span>' + esc(services.join(', ') || '-') + (extra ? esc(' +' + extra) : '') + '</span>'
+    + '</div>';
+}
+function renderProjectTags(row) {
+  const tags = row.tags || [];
+  if (!tags.length) return '<span class="inline-meta">' + tEsc('labels.pending') + '</span>';
+  return '<div class="tag-list">' + tags.slice(0, 8).map(pill).join('') + '</div>';
+}
+function renderNextActionCell(row) {
+  return '<div class="next-action-cell"><span>' + esc(row.nextAction || '-') + '</span></div>';
+}
+function renderProjectSources(row) {
+  const refs = [...(row.sourceRefs || []), ...(row.reviewEvidence || [])];
+  if (!refs.length) return '<span class="inline-meta">' + tEsc('labels.pending') + '</span>';
+  return '<div class="source-link-list">' + refs.slice(0, 3).map((ref) => fileRef(ref)).join('') + '</div>';
 }
 function renderQuickTestCell(row) {
   return '<div class="check-grid">'
@@ -2957,7 +4323,7 @@ function linkify(value) {
   const escaped = esc(value);
   return escaped.replace(/(https?:\\/\\/[^\\s<]+)/g, '<a href="$1" target="_blank" rel="noreferrer">$1</a>');
 }
-function internalLink(value) {
+function intenalLink(value) {
   return '<a href="' + esc(value) + '" target="_blank" rel="noreferrer"><code>' + esc(value) + '</code></a>';
 }
 function fileRef(value) {
@@ -3031,6 +4397,7 @@ function syncI18n() {
   const placeholders = messages[currentLanguage].placeholders;
   for (const [name, text] of Object.entries({
     ports: placeholders.ports,
+    'registered-projects': placeholders.registeredProjects,
     agents: placeholders.agents,
     startup: placeholders.startup,
     routes: placeholders.routes,
@@ -3044,6 +4411,16 @@ function syncI18n() {
   })) {
     const input = document.querySelector('input[data-filter="' + name + '"]');
     if (input) input.placeholder = text;
+  }
+  if (workspacePredictorInput) {
+    workspacePredictorInput.placeholder = placeholders.workspacePredictor;
+    workspacePredictorInput.setAttribute('aria-label', t('sections.workspacePredictor'));
+  }
+  if (workspacePredictorRulesMode) {
+    workspacePredictorRulesMode.textContent = t(workspacePredictionRulesMode === 'full'
+      ? 'workspacePredictor.ruleList.showCompact'
+      : 'workspacePredictor.ruleList.showFull');
+    workspacePredictorRulesMode.setAttribute('data-rules-mode', workspacePredictionRulesMode);
   }
   syncThemeButton();
 }

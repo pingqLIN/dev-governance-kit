@@ -37,6 +37,11 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, { agents: state.localAgents });
       return;
     }
+    if (url.pathname === "/api/registered-projects") {
+      const state = await loadDashboardState(root);
+      sendJson(response, { projects: state.registeredProjects });
+      return;
+    }
     if (url.pathname === "/api/agent-instructions") {
       const state = await loadDashboardState(root);
       sendJson(response, state.agentInstructions);

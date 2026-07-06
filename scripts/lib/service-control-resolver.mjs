@@ -353,6 +353,24 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed Nowledge compatibility API ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "chrome-ai-model-store" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-chrome-ai-model-store.ps1"),
+      runtimeKind: "chrome-ai-model-store-filesystem",
+      summary: "Run the reviewed Chrome AI model store doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "chrome-ai-model-store" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-chrome-ai-model-store.ps1"),
+      runtimeKind: "chrome-ai-model-store-filesystem",
+      summary: "Run the reviewed Chrome AI model store reset through DevGov local control."
+    };
+  }
   if (controlEntry.controlTargetId === "draw-draw" && controlEntry.action === "doctor") {
     return {
       controlTargetId: controlEntry.controlTargetId,

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { scanWorktrees, renderWorktreeAudit } from "./lib/worktree-core.mjs";
-import { writeReport } from "./lib/report-output.mjs";
+import { assertReportOutputPath, writeReport } from "./lib/report-output.mjs";
 
 function readNumberFlag(flag, value) {
   if (!value || value.startsWith("--")) {
@@ -62,6 +62,7 @@ function parseArgs(argv) {
 
 try {
   const args = parseArgs(process.argv.slice(2));
+  assertReportOutputPath(args.out, args.allowOutsideReports);
   const audit = await scanWorktrees(args.workspaceRoot, {
     maxAgeDays: args.maxAgeDays,
     maxLinkedWorktrees: args.maxLinkedWorktrees

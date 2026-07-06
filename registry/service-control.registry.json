@@ -887,6 +887,51 @@
         "backupExpectation": "Capture current service control artifacts, process logs, and local checkpoints before invoking restart; the wrapper itself does not perform stateful data backup.",
         "rollbackExpectation": "If ensure-running fails, inspect Nowledge compatibility logs and port-binding state on 14242 before retrying. If the restart does not restore readiness, revert to manual diagnostics and follow the documented rollback path for this target; do not retry blindly."
       }
+    },
+    {
+      "id": "chrome-ai-model-store-doctor",
+      "controlTargetId": "chrome-ai-model-store",
+      "surfaceTargets": [
+        "chrome-ai-model-store",
+        "chrome-ai-model-store-filesystem"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-chrome-ai-model-store.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Read local Chrome channel model-cache state and summarize whether the Stable primary store and secondary channel links are healthy.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 45,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the reported channel drift and run Reset only after Chrome is closed.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed local-only doctor action for Chrome built-in AI model cache sharing."
+    },
+    {
+      "id": "chrome-ai-model-store-reset",
+      "controlTargetId": "chrome-ai-model-store",
+      "surfaceTargets": [
+        "chrome-ai-model-store",
+        "chrome-ai-model-store-filesystem"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-chrome-ai-model-store.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Repair installed secondary Chrome channel model-cache links so they point to the Stable primary model store; skip non-installed channels.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "If reset does not restore readiness, close Chrome, inspect the channel-local .del backup, and restore the previous model directory before retrying.",
+      "uiLabel": "Reset",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed local-only reset action for Chrome built-in AI model cache sharing.",
+      "restartPolicy": {
+        "permissionBoundary": "Use reviewed local wrapper only; execution is limited to current-user Chrome channel model-cache paths and skips non-installed Chrome channels.",
+        "backupExpectation": "Before replacing a real secondary-channel model directory or wrong link, the wrapper moves it into the channel-local .del folder with a timestamped name. It does not permanently delete model bytes.",
+        "rollbackExpectation": "To roll back, close Chrome and move the timestamped .del backup back to OptGuideOnDeviceModel for the affected channel, or rerun Reset after confirming the Stable primary model store is healthy. If reset still fails, stop at manual diagnostics and do not retry blindly."
+      }
     }
   ]
 }

@@ -4,6 +4,23 @@ import { promisify } from "node:util";
 import { isAbsolute, join, resolve } from "node:path";
 
 const execFileAsync = promisify(execFile);
+const GIT_MISSING_MESSAGE = "Git executable not found in PATH. Install Git for Windows or add git.exe to PATH before running scan-worktrees.";
+
+export async function assertGitAvailable() {
+  try {
+    const { stdout } = await execFileAsync("git", ["--version"], {
+      encoding: "utf8",
+      windowsHide: true
+    });
+    return stdout.trim();
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      throw new Error(GIT_MISSING_MESSAGE);
+    }
+    const details = String(error.stderr || error.stdout || error.message || "").trim();
+    throw new Error(`Git preflight failed${details ? `: ${details}` : "."}`);
+  }
+}
 
 function normalizePath(pathValue) {
   return resolve(pathValue);
@@ -69,6 +86,7 @@ async function readGitEntry(candidate) {
 export async function scanWorktrees(workspaceRoot, options = {}) {
   const resolvedRoot = normalizePath(workspaceRoot);
   await fs.access(resolvedRoot);
+  await assertGitAvailable();
 
   const topLevelDirectories = await listDirectories(resolvedRoot);
   const worktreeContainers = topLevelDirectories.filter((entry) => isWorktreeContainerName(entry.name));

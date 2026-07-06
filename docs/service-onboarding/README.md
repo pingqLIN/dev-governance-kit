@@ -4,6 +4,8 @@ This folder records the current onboarding plan for services that already exist 
 
 The canonical machine-readable source is `registry/service-onboarding.registry.json`. Generated evidence remains in `reports/service-onboarding-audit.json` and `reports/service-onboarding-audit.md`. The shared Doctor/reset/Cloudflare procedure is defined in `docs/service-onboarding/doctor-reset-cloudflare.md`.
 
+Chrome built-in AI model-cache sharing is documented in `docs/service-onboarding/chrome-ai-model-store.md`.
+
 ## Review Rule
 
 Each service record must be reviewed after its procedure is created or updated. Review means checking that:
@@ -29,6 +31,7 @@ Each service record must be reviewed after its procedure is created or updated. 
 | `sbs:local-proxy-http` | `BLOCKED` | `needs-implementation` | Promote existing proxy Doctor scripts. |
 | `url-hero:vite-dev` | `BLOCKED` | `needs-implementation` | Add governed dev-server wrapper and Doctor. |
 | `photo-hdr-flow:web-ui-http` | `PARTIAL` | `reviewed` | Local `/api/health`, Doctor, and Restart are registered through the `photo_hdr_flow web` loopback authority. |
+| `chrome-ai-model-store:shared-model-cache` | `READY` | `reviewed` | Stable primary model store plus secondary channel Doctor and Reset wrappers are registered. |
 
 ## Batch Review
 

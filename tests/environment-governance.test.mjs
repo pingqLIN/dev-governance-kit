@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { buildDocsIndex, renderSearchHtml } from "../scripts/lib/docs-index-core.mjs";
-import { buildServiceTargets, buildUniTextAgentInstructionIndex, checkServiceStatuses, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
+import { buildServiceTargets, buildUniTextAgentInstructionIndex, buildWorkspaceGovernancePredictionModel, checkServiceStatuses, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
 import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
 import { buildServiceOnboardingAudit } from "../scripts/lib/service-onboarding-core.mjs";
 import { executeServiceControl, loadApprovedServiceControls, readServiceControlEvents, SERVICE_CONTROL_PORT } from "../scripts/lib/service-control-core.mjs";
@@ -331,7 +331,7 @@ test("docs index excludes reports and redacts credential-like content", async ()
   await mkdir(join(root, "scripts"));
   await writeFile(join(root, "README.md"), "# Project\n\nTOKEN=should-not-leak\nPort governance", "utf8");
   await writeFile(join(root, "reports", "local.md"), "# Local report\n\nprivate", "utf8");
-  await writeFile(join(root, "scripts", "internal.mjs"), "console.log('not indexed')", "utf8");
+  await writeFile(join(root, "scripts", "intenal.mjs"), "console.log('not indexed')", "utf8");
 
   const index = await buildDocsIndex(root);
   assert.equal(index.documents.length, 1);
@@ -382,19 +382,39 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.equal(state.dashboardPort.port, 3000);
   assert.ok(state.localAgents.some((agent) => agent.id === "local-archive-maintainer"));
   assert.equal(state.summary.agentInstructions, state.agentInstructions.entries.length);
+  assert.equal(state.summary.registeredProjects, state.registeredProjects.length);
+  assert.equal(state.workspacePrediction.schema, "devgov.workspace-governance-predictor.v1");
+  assert.equal(state.workspacePrediction.defaultWorkspaceRoot, "Q:\\Projects");
+  assert.equal(state.summary.workspacePredictionRules, state.workspacePrediction.rules.length);
+  assert.ok(state.workspacePrediction.rules.some((rule) => rule.id === "workspace.location.q-projects"));
   assert.ok(state.agentInstructions.entries.some((entry) => entry.id === "agent.authority.single-runtime-source"));
   assert.equal(state.localFileCompanions["AGENTS.md"], "AGENTS.zh-tw.md");
   assert.ok(state.serviceTargets.some((target) => target.id === "devgov-dashboard"));
+  assert.ok(state.registeredProjects.some((project) => project.project === "devgov" && project.services.includes("dashboard-http")));
   assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2.colorgeek.co/health"));
   assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2-health-staging.colorgeek.co/health"));
   assert.match(html, /DevGov Dashboard/);
   assert.match(html, /本機治理主控台/);
   assert.match(html, /總覽/);
+  assert.match(html, /本機登記專案/);
+  assert.match(html, /registered-projects/);
   assert.match(html, /服務狀態/);
   assert.match(html, /English/);
   assert.match(html, /Local Service Agents/);
   assert.match(html, /API Key Governance/);
   assert.match(html, /Agent Instructions/);
+  assert.match(html, /Workspace Rule Predictor/);
+  assert.match(html, /workspace-predictor/);
+  assert.match(html, /prediction-tabs/);
+  assert.match(html, /workspace-predictor-run/);
+  assert.match(html, /ruleHeaders/);
+  assert.match(html, /type: '類型'/);
+  assert.match(html, /layer: '治理層'/);
+  assert.match(html, /evidence: '依據'/);
+  assert.match(html, /'safety-gate': '安全門檻 \(safety-gate\)'/);
+  assert.match(html, /workspace: '工作區 \(workspace\)'/);
+  assert.match(html, /EFFECTIVE: '生效 \(EFFECTIVE\)'/);
+  assert.match(html, /loadedPolicyPathClass: '依已載入政策與選取路徑分類預測。'/);
   assert.match(html, /Service Status/);
   assert.match(html, /service-onboarding/);
   assert.match(html, /Web 入口/);
@@ -412,16 +432,33 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.doesNotMatch(html, /id="refresh-status"/);
   assert.match(html, /\/file\?path=/);
   assert.match(html, /\/api\/unitext-agent-instructions/);
+  assert.match(html, /Progress tags/);
   assert.match(html, /agent\.authority\.single-runtime-source/);
   assert.match(html, /file-ref-companion/);
   assert.match(html, /"AGENTS\.md":"AGENTS\.zh-tw\.md"/);
   assert.match(html, /127\.0\.0\.1:3000/);
 });
 
+test("workspace governance predictor model keeps local path policy out of canonical registry entries", async () => {
+  const state = await loadDashboardState(".");
+  const model = buildWorkspaceGovernancePredictionModel(state.agentInstructions);
+
+  assert.equal(model.schema, "devgov.workspace-governance-predictor.v1");
+  assert.equal(model.defaultWorkspaceRoot, "Q:\\Projects");
+  assert.ok(model.layers.some((layer) => layer.id === "repo-local"));
+  assert.ok(model.entries.some((entry) => entry.id === "agent.safety.review-gates"));
+  assert.equal(model.entries.some((entry) => entry.id === "workspace.location.q-projects"), false);
+  assert.ok(model.rules.some((rule) => rule.id === "workspace.git.pre-edit"));
+  assert.ok(model.checks.some((check) => check.id === "check.git-status"));
+});
+
 test("dashboard exposes UniText query records and service targets", async () => {
   const state = await loadDashboardState(".");
   const unitext = buildUniTextAgentInstructionIndex(state.agentInstructions);
   const targets = state.serviceTargets;
+  const registeredProjects = state.registeredProjects;
+  const devgovProject = registeredProjects.find((project) => project.project === "devgov");
+  const codexRemoteProject = registeredProjects.find((project) => project.project === "codex-remote");
   const dashboardTarget = targets.find((target) => target.id === "devgov-dashboard");
   const serviceControlTarget = targets.find((target) => target.id === "devgov-service-control");
   const devgovGovTarget = targets.find((target) => target.id === "public-route:devgov-gov");
@@ -442,6 +479,12 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const nowledgeCompatTarget = targets.find((target) => target.id === "onboarding:chatgpt-local-files-mcp-nowledge-compat-http");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
+  assert.equal(devgovProject.progressTag, "PARTIAL");
+  assert.ok(devgovProject.tags.includes("reviewed"));
+  assert.ok(devgovProject.sourceRefs.some((ref) => ref.includes("registry/ports.registry.json#devgov:dashboard-http")));
+  assert.equal(codexRemoteProject.progressTag, "READY");
+  assert.equal(registeredProjects.some((project) => project.project === "taste-web"), false);
+  assert.equal(registeredProjects.some((project) => project.project === "tb2-mcp-http"), false);
   assert.ok(unitext.nodes.some((node) => node.id === "instruction:agent.authority.single-runtime-source"));
   assert.ok(unitext.edges.some((edge) => edge.kind === "classifies"));
   assert.ok(targets.some((target) => target.kind === "dashboard" && target.url.endsWith("/health")));

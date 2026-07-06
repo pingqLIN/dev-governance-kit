@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
+const gitAvailable = spawnSync("git", ["--version"], { encoding: "utf8" }).status === 0;
+
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: "utf8", ...options });
   if (result.status !== 0) {
@@ -33,7 +35,18 @@ async function createWorkspaceWithWorktree() {
   return { root, workspace, repo, worktree };
 }
 
-test("scan-worktrees reports linked worktrees without double-counting projects", async () => {
+function envWithoutPath() {
+  const env = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!/^path$/i.test(key)) {
+      env[key] = value;
+    }
+  }
+  env.PATH = "";
+  return env;
+}
+
+test("scan-worktrees reports linked worktrees without double-counting projects", { skip: gitAvailable ? false : "Git executable is required to create linked worktree fixtures." }, async () => {
   const { root, workspace, repo, worktree } = await createWorkspaceWithWorktree();
   const out = "reports/test-worktree-audit.md";
 
@@ -50,6 +63,25 @@ test("scan-worktrees reports linked worktrees without double-counting projects",
     assert.match(report, /feature-20260520-210000/);
     assert.match(report, new RegExp(repo.replaceAll("\\", "\\\\")));
     assert.match(report, new RegExp(worktree.replaceAll("\\", "\\\\")));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(out, { force: true });
+  }
+});
+
+test("scan-worktrees reports a clear git preflight error", async () => {
+  const root = await mkdtemp(join(tmpdir(), "dev-governance-worktrees-no-git-"));
+  const out = "reports/test-worktree-no-git.md";
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/scan-worktrees.mjs", root, "--out", out],
+      { encoding: "utf8", env: envWithoutPath() }
+    );
+
+    assert.notEqual(result.status, 0);
+    assert.match(`${result.stderr}\n${result.stdout}`, /Git executable not found in PATH/);
   } finally {
     await rm(root, { recursive: true, force: true });
     await rm(out, { force: true });

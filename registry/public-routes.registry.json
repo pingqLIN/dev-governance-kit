@@ -64,6 +64,21 @@
       "notes": "Candidate protected ChatGPT local-files MCP route. Public discovery and MCP OAuth challenge are allowed to reach the origin; protected file and bridge tools must require OAuth/tool-call enforcement. Approval is blocked until a normal signed-in ChatGPT Web session completes protected OAuth write acceptance."
     },
     {
+      "id": "openai-mcp-tunnel-local-filesystem",
+      "serviceId": "tunnel-client-local-filesystem-mcp",
+      "hostname": "local-filesystem-mcp.colorgeek.co",
+      "tunnelId": "8f494f33-5983-4933-bb71-5812b56cad56",
+      "localHost": "127.0.0.1",
+      "localPort": 8080,
+      "protocol": "http",
+      "exposureClass": "prod-protected",
+      "accessRequired": true,
+      "healthUrl": "https://local-filesystem-mcp.colorgeek.co/readyz",
+      "status": "candidate",
+      "source": "operator request; Cloudflare tunnel + Access route activation",
+      "notes": "Zero Trust protected tunnel route to the Tunnel Client local filesystem MCP admin/health listener on 127.0.0.1:8080. Public hostname is fronted by the OpenAI local filesystem MCP Access app."
+    },
+    {
       "id": "tb2-web-prod",
       "serviceId": "tb2-mcp-http",
       "hostname": "tb2.colorgeek.co",

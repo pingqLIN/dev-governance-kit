@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import { spawn } from "node:child_process";
 import { buildDocsIndex, renderSearchHtml } from "./docs-index-core.mjs";
 import { validateGovernanceRegistry } from "./governance-registry-core.mjs";
 import { writeReport } from "./report-output.mjs";
@@ -74,9 +75,16 @@ export async function runDoctorChecks(root = ".", options = {}) {
     serviceControlPort ? `${serviceControlPort.host}:${serviceControlPort.port}` : "missing"
   );
 
-  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/register-dashboard-protocol.ps1", "scripts/start-gov-public-route.ps1", "scripts/register-gov-public-route-startup.ps1", "scripts/require-governed-port.mjs", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs", "scripts/scan-context-budget.mjs", "scripts/Invoke-AntivirusTriage.ps1", "scripts/Invoke-CodexAntivirusHook.ps1", "scripts/service-control/doctor-devgov-dashboard.ps1", "scripts/service-control/doctor-devgov-service-control.ps1", "scripts/service-control/restart-devgov-dashboard.ps1", "scripts/service-control/doctor-tunnel-client-local-filesystem-mcp.ps1", "scripts/service-control/restart-tunnel-client-local-filesystem-mcp.ps1", "scripts/service-control/doctor-local-archive-maintainer.ps1", "scripts/service-control/restart-local-archive-maintainer.ps1", "scripts/service-control/doctor-ps3eye-windows-virtual-camera.ps1", "scripts/service-control/restart-ps3eye-windows-virtual-camera.ps1", "scripts/service-control/quickcheck-ps3eye-windows-virtual-camera.ps1", "scripts/service-control/doctor-taste.ps1", "scripts/service-control/restart-taste.ps1", "scripts/service-control/doctor-codex-calendar-todo-staging.ps1", "scripts/service-control/restart-codex-calendar-todo-staging.ps1", "scripts/service-control/doctor-sbs.ps1", "scripts/service-control/restart-sbs.ps1", "scripts/service-control/doctor-color-management-shader.ps1", "scripts/service-control/restart-color-management-shader.ps1", "scripts/service-control/doctor-url-hero.ps1", "scripts/service-control/restart-url-hero.ps1", "scripts/service-control/doctor-draw-draw.ps1", "scripts/service-control/restart-draw-draw.ps1", "scripts/service-control/doctor-gsdf-eotf-video-adjuster.ps1", "scripts/service-control/restart-gsdf-eotf-video-adjuster.ps1", "scripts/service-control/doctor-skill-0-gui.ps1", "scripts/service-control/restart-skill-0-gui.ps1", "scripts/service-control/doctor-chatgpt-local-files-mcp.ps1", "scripts/service-control/doctor-chatgpt-local-files-mcp-nowledge-compat.ps1", "scripts/service-control/restart-chatgpt-local-files-mcp-nowledge-compat.ps1", "scripts/service-control/doctor-codex-remote.ps1", "scripts/service-control/restart-codex-remote.ps1", "scripts/service-control/doctor-lm-studio.ps1", "scripts/service-control/restart-lm-studio.ps1", "scripts/service-control/doctor-tb2.ps1", "scripts/service-control/restart-tb2.ps1", "scripts/service-control/doctor-comfyui-local.ps1", "scripts/service-control/restart-comfyui-local.ps1", "scripts/service-control/doctor-photo-hdr-flow-web.ps1", "scripts/service-control/restart-photo-hdr-flow-web.ps1", "scripts/service-control/doctor-video-render-kit-web.ps1", "scripts/service-control/restart-video-render-kit-web.ps1", "scripts/lib/service-control-core.mjs", "scripts/lib/service-control-resolver.mjs"]) {
+  for (const scriptPath of ["scripts/serve-dashboard.mjs", "scripts/open-dashboard.mjs", "scripts/start-dashboard.ps1", "scripts/register-dashboard-startup.ps1", "scripts/register-dashboard-protocol.ps1", "scripts/start-gov-public-route.ps1", "scripts/register-gov-public-route-startup.ps1", "scripts/require-governed-port.mjs", "scripts/scan-api-keys.mjs", "scripts/scan-agent-instructions.mjs", "scripts/scan-context-budget.mjs", "scripts/Invoke-AntivirusTriage.ps1", "scripts/Invoke-CodexAntivirusHook.ps1", "scripts/service-control/doctor-devgov-dashboard.ps1", "scripts/service-control/doctor-devgov-service-control.ps1", "scripts/service-control/restart-devgov-dashboard.ps1", "scripts/service-control/doctor-tunnel-client-local-filesystem-mcp.ps1", "scripts/service-control/restart-tunnel-client-local-filesystem-mcp.ps1", "scripts/service-control/doctor-local-archive-maintainer.ps1", "scripts/service-control/restart-local-archive-maintainer.ps1", "scripts/service-control/doctor-ps3eye-windows-virtual-camera.ps1", "scripts/service-control/restart-ps3eye-windows-virtual-camera.ps1", "scripts/service-control/quickcheck-ps3eye-windows-virtual-camera.ps1", "scripts/service-control/Manage-ChromeAiModelStore.ps1", "scripts/service-control/quickcheck-chrome-ai-model-store.ps1", "scripts/service-control/doctor-chrome-ai-model-store.ps1", "scripts/service-control/restart-chrome-ai-model-store.ps1", "scripts/service-control/doctor-taste.ps1", "scripts/service-control/restart-taste.ps1", "scripts/service-control/doctor-codex-calendar-todo-staging.ps1", "scripts/service-control/restart-codex-calendar-todo-staging.ps1", "scripts/service-control/doctor-sbs.ps1", "scripts/service-control/restart-sbs.ps1", "scripts/service-control/doctor-color-management-shader.ps1", "scripts/service-control/restart-color-management-shader.ps1", "scripts/service-control/doctor-url-hero.ps1", "scripts/service-control/restart-url-hero.ps1", "scripts/service-control/doctor-draw-draw.ps1", "scripts/service-control/restart-draw-draw.ps1", "scripts/service-control/doctor-gsdf-eotf-video-adjuster.ps1", "scripts/service-control/restart-gsdf-eotf-video-adjuster.ps1", "scripts/service-control/doctor-skill-0-gui.ps1", "scripts/service-control/restart-skill-0-gui.ps1", "scripts/service-control/doctor-chatgpt-local-files-mcp.ps1", "scripts/service-control/doctor-chatgpt-local-files-mcp-nowledge-compat.ps1", "scripts/service-control/restart-chatgpt-local-files-mcp-nowledge-compat.ps1", "scripts/service-control/doctor-codex-remote.ps1", "scripts/service-control/restart-codex-remote.ps1", "scripts/service-control/doctor-lm-studio.ps1", "scripts/service-control/restart-lm-studio.ps1", "scripts/service-control/doctor-tb2.ps1", "scripts/service-control/restart-tb2.ps1", "scripts/service-control/doctor-comfyui-local.ps1", "scripts/service-control/restart-comfyui-local.ps1", "scripts/service-control/doctor-photo-hdr-flow-web.ps1", "scripts/service-control/restart-photo-hdr-flow-web.ps1", "scripts/service-control/doctor-video-render-kit-web.ps1", "scripts/service-control/restart-video-render-kit-web.ps1", "scripts/lib/service-control-core.mjs", "scripts/lib/service-control-resolver.mjs"]) {
     add(`script-${scriptPath}`, await fileExists(path.join(root, scriptPath)), scriptPath);
   }
+
+  const chromeAiModelStore = await runPowerShellJson(root, "scripts/service-control/quickcheck-chrome-ai-model-store.ps1", 45_000);
+  add(
+    "chrome-ai-model-store",
+    chromeAiModelStore.ok,
+    chromeAiModelStore.summary
+  );
 
   const health = await checkDashboardHealth();
   const portFree = health.ok ? true : await canBindDashboardPort();
@@ -139,5 +147,51 @@ function canBindDashboardPort() {
     server.once("error", () => resolveBind(false));
     server.once("listening", () => server.close(() => resolveBind(true)));
     server.listen(DASHBOARD_PORT, DASHBOARD_HOST);
+  });
+}
+
+function runPowerShellJson(root, scriptPath, timeoutMs) {
+  return new Promise((resolveResult) => {
+    const child = spawn("powershell.exe", [
+      "-NoProfile",
+      "-ExecutionPolicy", "Bypass",
+      "-File", path.join(root, scriptPath)
+    ], {
+      cwd: root,
+      windowsHide: true
+    });
+
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      resolveResult({ ok: false, summary: `${scriptPath} timed out after ${timeoutMs}ms` });
+    }, timeoutMs);
+
+    child.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      resolveResult({ ok: false, summary: error.message });
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        resolveResult({
+          ok: code === 0 && parsed.ok === true,
+          summary: String(parsed.summary ?? stderr.trim() ?? stdout.trim() ?? `${scriptPath} exited with code ${code}`)
+        });
+      } catch {
+        resolveResult({
+          ok: false,
+          summary: stderr.trim() || stdout.trim() || `${scriptPath} did not return JSON`
+        });
+      }
+    });
   });
 }

@@ -4,6 +4,8 @@
 
 Canonical machine-readable source 是 `registry/service-onboarding.registry.json`。產生出的 evidence 保留在 `reports/service-onboarding-audit.json` 與 `reports/service-onboarding-audit.md`。共用 Doctor/reset/Cloudflare 程序定義在 `docs/service-onboarding/doctor-reset-cloudflare.zh-tw.md`。
 
+Chrome built-in AI model-cache sharing 程序記錄在 `docs/service-onboarding/chrome-ai-model-store.zh-tw.md`。
+
 ## 審核規則
 
 每個 service record 建立或更新後，都必須完成審核。審核內容包含：
@@ -29,6 +31,7 @@ Canonical machine-readable source 是 `registry/service-onboarding.registry.json
 | `sbs:local-proxy-http` | `BLOCKED` | `needs-implementation` | 登記既有 proxy Doctor scripts。 |
 | `url-hero:vite-dev` | `BLOCKED` | `needs-implementation` | 補 governed dev-server wrapper 與 Doctor。 |
 | `photo-hdr-flow:web-ui-http` | `PARTIAL` | `reviewed` | 已透過 `photo_hdr_flow web` loopback authority 登記本機 `/api/health`、Doctor 與 Restart。 |
+| `chrome-ai-model-store:shared-model-cache` | `READY` | `reviewed` | 已登記 Stable primary model store 與 secondary channel 的 Doctor、Reset wrappers。 |
 
 ## 批次審核
 

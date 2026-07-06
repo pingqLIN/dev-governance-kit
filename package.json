@@ -30,6 +30,8 @@
     "gov:route:remove": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/register-gov-public-route-startup.ps1 -Remove",
     "doctor": "node scripts/devgov-doctor.mjs",
     "doctor:repair": "node scripts/devgov-doctor.mjs --repair",
+    "chrome-ai:doctor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/service-control/doctor-chrome-ai-model-store.ps1 -ControlTargetId chrome-ai-model-store -Action doctor",
+    "chrome-ai:reset": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/service-control/restart-chrome-ai-model-store.ps1 -ControlTargetId chrome-ai-model-store -Action restart",
     "test": "node --test"
   },
   "engines": {

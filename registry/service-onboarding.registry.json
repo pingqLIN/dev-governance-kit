@@ -249,7 +249,7 @@
       "resetProcedure": "REVIEW_REQUIRED: stop/restart or runtime override should be explicit before automation.",
       "startupProcedure": "Run: openai-mcp-tunnel/scripts/tunnel-client/register-tunnel-client-startup.ps1 to enable startup; runtime start uses openai-mcp-tunnel/scripts/tunnel-client/tunnel-client-runtime.ps1 -Mode QuickStart.",
       "dashboardProcedure": "Keep service-status row as candidate until health and doctor checks complete end-to-end.",
-      "cloudflareProcedure": "No public route. Keep local-only unless a reviewed public route is added.",
+      "cloudflareProcedure": "Use the reviewed Cloudflare tunnel route local-filesystem-mcp.colorgeek.co, with Access policy bound to addragonash@gmail.com, and validate /readyz through the public URL.",
       "reviewStatus": "reviewed",
       "reviewEvidence": "registry/startup.registry.json#tunnel-client-local-filesystem-login",
       "nextAction": "Collect one completed health + doctor + startup evidence report and promote after validation.",
@@ -380,6 +380,24 @@
       "reviewEvidence": "registry/service-control.registry.json#gsdf-eotf-video-adjuster-doctor",
       "nextAction": "Decide later whether extension smoke testing should become a separate DevGov-managed action distinct from local Vite runtime health.",
       "notes": "Local development UI for the GSDF/EOTF video adjuster. DevGov does not modify the target project during startup checks."
+    },
+    {
+      "id": "chrome-ai-model-store-filesystem",
+      "project": "chrome-ai-model-store",
+      "service": "shared-model-cache",
+      "readiness": "READY",
+      "ownerKind": "external-local-app-and-filesystem-policy",
+      "sourceRef": "registry/service-control.registry.json#chrome-ai-model-store-doctor",
+      "healthProcedure": "Use the reviewed DevGov quickcheck wrapper to confirm the Stable Chrome AI model store has model weights and installed secondary Chrome channels link back to the primary store.",
+      "doctorProcedure": "Use the reviewed DevGov Chrome AI model store Doctor wrapper. It is read-only and reports primary model readiness, linked channel state, skipped non-installed channels, and drift requiring reset.",
+      "resetProcedure": "Use the reviewed DevGov Chrome AI model store Reset wrapper. It only repairs installed secondary channel model-cache links, skips non-installed channels, backs up replaced real directories into the channel-local .del folder, and refuses link repair while Chrome is running.",
+      "startupProcedure": "No login startup is required. Run Reset after installing a new Chrome channel or after Chrome replaces a model-cache link during a browser or component update.",
+      "dashboardProcedure": "Surface Chrome AI Model Store as a filesystem governance target with quickcheck, Doctor, and Reset controls through the local-only DevGov control listener.",
+      "cloudflareProcedure": "No Cloudflare route applies. The model store is a local filesystem cache and must not be exposed through public routes.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "registry/service-control.registry.json#chrome-ai-model-store-doctor",
+      "nextAction": "If Chrome changes the component layout, update the Doctor expectations before changing the Reset behavior.",
+      "notes": "Stable Chrome remains the primary model update owner; secondary installed channels share the same on-device model bytes through filesystem links."
     }
   ]
 }
