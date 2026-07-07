@@ -2,7 +2,9 @@
 
 > 目的：將原始 `AGENTS.md` 重構為「系統層級主治理規範」，並把平台、workspace、本機路徑、工具實作、暫時性流程移至較窄的 overlay 或環境檔。
 >
-> 建議搭配 `AGENTS.optimized.md` 使用。`AGENTS.optimized.md` 是可直接替換或作為新版主檔的完整修正版。
+> 本檔是 DevGov `templates/global/` 底下的遷移審查文件，不是 agent-runtime instruction file。
+>
+> 建議搭配 `templates/global/AGENTS.md` 使用。該檔對應原始附件 `AGENTS.optimized.md`，是可在審閱後安裝到 live global-home 位置並改名為 `AGENTS.md` 的完整修正版。不要用它覆寫 DevGov repo-local `AGENTS.md`。
 
 產出日期：2026-07-06
 
@@ -193,17 +195,18 @@ This file must not relax global `AGENTS.md` non-relaxable invariants.
 ## 5. 遷移步驟
 
 1. **先建立 overlay stub**
-   - 建立 `AGENTS.CODEX.md`。
-   - 建立或更新 `ENVIRONMENT.md`。
-   - 視需要建立 workspace-level `AGENTS.md`。
-   - 視需要建立 `AGENTS.CHATGPT.md`。
+   - 在 live global-home 指令層旁建立 `AGENTS.CODEX.md`。
+   - 在 machine-local、untracked、或非公開的環境層建立或更新 `ENVIRONMENT.md`。
+   - 在真正的 workspace root 建立 workspace-level `AGENTS.md`；不要放在 DevGov repo root。
+   - 視需要在 live global-home 指令層旁建立 `AGENTS.CHATGPT.md`。
 
 2. **搬移平台與本機內容**
    - 將 `Codex execution behavior` 搬到 `AGENTS.CODEX.md`。
    - 將 `Q:\` / `C:\Users\miles` 規則搬到 `ENVIRONMENT.md` 或 workspace-level `AGENTS.md`。
 
 3. **替換 global 主檔**
-   - 使用 `AGENTS.optimized.md` 作為新版 global `AGENTS.md`。
+   - 使用 `templates/global/AGENTS.md` 作為新版 global-home `AGENTS.md` 的候選來源。
+   - 安裝目標是 live global-home 指令位置，不是 DevGov repo-local `AGENTS.md`。
    - 確認 global 不再含有固定本機路徑、平台工具名稱、secret location、臨時流程。
 
 4. **檢查有效 instruction path**
@@ -220,25 +223,32 @@ This file must not relax global `AGENTS.md` non-relaxable invariants.
 
 6. **版本控管**
    - 以小 commit 進行：先加 overlay，再替換 global，再清理舊內容。
-   - 若 repo 有 CI 或 lint for docs，跑最小高訊號檢查。
+   - 若 DevGov repo 內任何治理檔被修改，執行 `npm test`、`npm run scan:agents`、`npm run validate:registry`、`npm run doctor`。
+   - 若只有 live global-home 外部檔被修改，仍應做文字檢查、secret/value 檢查，以及 rollback path 記錄。
+
+7. **dry-run 分層**
+   - 嚴格 read-only 檢查可先執行 `npm test` 與 `npm run validate:registry`。
+   - `npm run scan:agents` 與 `npm run doctor` 可能寫入 `reports/`，若需要完全隔離，請在 disposable copy 中執行完整批次。
+   - 完整相容性 dry-run 可在 disposable copy 中執行 `npm test`、`npm run scan:agents`、`npm run validate:registry`、`npm run doctor`。
 
 ## 6. 驗收標準
 
-完成遷移後，應符合：
+完成遷移後，global-home 目標檔應符合：
 
-- `AGENTS.md` 沒有 `Q:\`、`C:\Users\miles` 等本機路徑。
-- `AGENTS.md` 沒有 Codex-only 或 ChatGPT-only 回報規則。
-- `AGENTS.md` 沒有 MCP server 具體啟動命令或 local connector 實作細節。
-- `AGENTS.md` 有明確 non-relaxable global invariants。
-- `AGENTS.md` 有 L0-L4 risk levels。
-- `AGENTS.md` 有 secrets/data classification。
-- `AGENTS.md` 有 prompt-injection resistance。
-- `AGENTS.md` 有 tool / MCP governance 抽象規範。
-- `AGENTS.md` 有 command execution baseline。
-- `AGENTS.md` 有 reporting and audit trail。
+- global-home `AGENTS.md` 沒有 `Q:\`、`C:\Users\miles` 等本機路徑。
+- global-home `AGENTS.md` 沒有 Codex-only 或 ChatGPT-only 回報規則。
+- global-home `AGENTS.md` 沒有 MCP server 具體啟動命令或 local connector 實作細節。
+- global-home `AGENTS.md` 有明確 non-relaxable global invariants。
+- global-home `AGENTS.md` 有 L0-L4 risk levels。
+- global-home `AGENTS.md` 有 secrets/data classification。
+- global-home `AGENTS.md` 有 prompt-injection resistance。
+- global-home `AGENTS.md` 有 tool / MCP governance 抽象規範。
+- global-home `AGENTS.md` 有 command execution baseline。
+- global-home `AGENTS.md` 有 reporting and audit trail。
 - `AGENTS.CODEX.md` 保留 Codex 回報節奏。
-- `ENVIRONMENT.md` 保留本機 workspace root 與 access gate。
+- `ENVIRONMENT.md` 保留本機 workspace root 與 access gate，且位於 machine-local、untracked、或非公開層。
 - repo-local / workspace overlays 只能收緊 global invariants，不能放寬。
+- DevGov repo-local `AGENTS.md` 保持 DevGov 專案治理權威，不被 global-home 候選檔覆寫。
 
 ## 7. 建議 commit 拆分
 
@@ -255,3 +265,4 @@ commit 4: add workspace or DevGov-specific MCP policy overlay, if needed
 - 將 workspace / DevGov / MCP 具體規則轉成 machine-readable policy，例如 `.devgov/agent-policy.json`。
 - 讓 DevGov Dashboard 檢查 global 主檔是否含有 forbidden patterns，例如 local paths、secret values、platform-only rules。
 - 將 L0-L4 risk levels 對應到工具 gating：L0/L1 自動允許，L2 需變更摘要與 rollback，L3 需 workflow gate，L4 需明確人類批准。
+- 在 DevGov repo 中保留 repo-local `AGENTS.md` 作為唯一 runtime source，將 global-home 候選檔與 overlay stub 放在 `templates/global/` 或其他非 runtime 路徑。

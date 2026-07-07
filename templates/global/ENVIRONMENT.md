@@ -1,6 +1,7 @@
 # ENVIRONMENT.md
 
 > Local environment facts. This file is not a cross-repository governance baseline and must not contain secret values.
+> Keep the installed copy machine-local, untracked, or in a non-public location when it contains local paths, account names, hostnames, ports, or tool availability notes.
 
 ## Approved Workspace Roots
 
