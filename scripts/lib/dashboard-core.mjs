@@ -2019,6 +2019,8 @@ export function renderDashboardHtml(state) {
       flex-wrap: wrap;
       gap: 6px;
       max-width: 100%;
+      max-height: 44px;
+      overflow: hidden;
     }
     .source-chip, .source-more {
       max-width: 100%;
@@ -3033,7 +3035,7 @@ const messages = {
       policy: 'Policy',
       notes: 'Notes',
       missingDashboard: '找不到 dashboard port entry',
-      project: 'Project',
+      project: '專案',
       progress: '進度',
       service: 'Service',
       services: '服務',
@@ -3073,7 +3075,7 @@ const messages = {
       unitextEndpoint: 'UniText query endpoint',
       required: 'required',
       notRequired: 'not required',
-      pending: 'pending',
+      pending: '待補',
       doctor: 'Doctor',
       restart: 'Restart',
       readiness: 'Readiness',
@@ -4388,8 +4390,8 @@ function renderProjectSources(row) {
   const refs = [...(row.sourceRefs || []), ...(row.reviewEvidence || [])];
   if (!refs.length) return '<span class="inline-meta">' + tEsc('labels.pending') + '</span>';
   const groups = projectSourceGroups(refs);
-  const visible = groups.slice(0, 3);
-  const hidden = groups.slice(3);
+  const visible = groups.slice(0, 2);
+  const hidden = groups.slice(2);
   const title = refs.join('\\n');
   return '<div class="source-link-list" title="' + esc(title) + '">'
     + visible.map(renderProjectSourceChip).join('')
@@ -4422,7 +4424,16 @@ function localizedProjectTag(value) {
       'source-repo-and-runtime-project': 'Repo + runtime',
       'source-repo-and-portable-runtime': 'Repo + portable',
       'source-repo-and-personal-local-tool': 'Personal tool',
-      'external-local-app': 'Local app'
+      'source-repo-and-windows-service': 'Repo + service',
+      'source-repo-and-hardware-device': 'Repo + device',
+      'external-local-app': 'Local app',
+      'external-local-app-and-filesystem-policy': 'Local app + policy',
+      'portable-tool': 'Portable tool',
+      'public-api': 'Public API',
+      'public-health': 'Public health',
+      'runtime-plan-and-user-startup': 'Plan + startup',
+      'source-and-runtime-command': 'Source + command',
+      'aggregated-windows-entrypoint': 'Windows entry'
     },
     zhTw: {
       PARTIAL: '部分完成',
@@ -4442,7 +4453,16 @@ function localizedProjectTag(value) {
       'source-repo-and-runtime-project': 'Repo + Runtime',
       'source-repo-and-portable-runtime': 'Repo + 可攜 runtime',
       'source-repo-and-personal-local-tool': '個人工具',
-      'external-local-app': '本機外部 app'
+      'source-repo-and-windows-service': 'Repo + 服務',
+      'source-repo-and-hardware-device': 'Repo + 裝置',
+      'external-local-app': '本機外部 app',
+      'external-local-app-and-filesystem-policy': '本機 app + 檔案政策',
+      'portable-tool': '可攜工具',
+      'public-api': '公開 API',
+      'public-health': '公開健康檢查',
+      'runtime-plan-and-user-startup': '計畫 + 使用者啟動',
+      'source-and-runtime-command': '來源 + runtime 指令',
+      'aggregated-windows-entrypoint': 'Windows 入口'
     }
   };
   return maps[currentLanguage]?.[tag] || shortenProjectTag(tag);
@@ -4465,23 +4485,36 @@ function localizedNextAction(value) {
   const text = String(value || '');
   if (currentLanguage !== 'zhTw') return text;
   const replacements = [
-    [/^Complete normal signed-in ChatGPT Web connector acceptance before promoting a dashboard-safe Restart action for this protected public boundary\.$/, '完成 ChatGPT Web 連接器登入驗收，再升級受保護公開邊界的安全 Restart。'],
-    [/^Decide whether the runtime project should migrate away from 4321 on this workstation or whether the Windows port exclusion should be removed\.$/, '決定 runtime 專案是否避開 4321，或移除這台工作站的 Windows port exclusion。'],
-    [/^Decide later whether ShaderGlass launch\/open-folder actions should become separate DevGov-managed controls distinct from preview health\.$/, '稍後決定 ShaderGlass 啟動與開啟資料夾是否成為獨立 DevGov 控制。'],
-    [/^Keep as reference implementation for the remaining service onboarding records\.$/, '保留為剩餘服務 onboarding records 的參考實作。'],
-    [/^Keep the personal workflow wrapper local-only and update it separately if the cached plugin launcher falls behind the draw-draw workspace name\.$/, '個人 workflow wrapper 維持本機限定；plugin launcher 落後時再單獨更新。'],
-    [/^Decide later whether extension smoke testing should become a separate DevGov-managed action distinct from local Vite runtime health\.$/, '稍後決定 extension smoke testing 是否成為獨立 DevGov action。'],
-    [/^Archive stale references in historical notes/, '封存歷史 notes 裡以 video-render-kit 作為 placeholder 的舊引用；權威專案仍是 photo-hdr-flow。'],
-    [/^If Chrome changes the component layout, update the Doctor expectations before changing the Reset behavior\.$/, '若 Chrome component layout 改變，先更新 Doctor 預期，再調整 Reset 行為。'],
-    [/^Collect one completed health \+ doctor \+ startup evidence report and promote after validation\.$/, '收集一份完整 health + doctor + startup 證據報告，驗證後再升級狀態。']
+    ['Complete normal signed-in ChatGPT Web connector acceptance before promoting a dashboard-safe Restart action for this protected public boundary.', '完成 ChatGPT Web 連接器登入驗收，再升級受保護公開邊界的安全 Restart。'],
+    ['Decide whether the runtime project should migrate away from 4321 on this workstation or whether the Windows port exclusion should be removed.', '決定 runtime 專案是否避開 4321，或移除這台工作站的 Windows port exclusion。'],
+    ['Decide later whether ShaderGlass launch/open-folder actions should become separate DevGov-managed controls distinct from preview health.', '稍後決定 ShaderGlass 啟動與開啟資料夾是否成為獨立 DevGov 控制。'],
+    ['Keep as reference implementation for the remaining service onboarding records.', '保留為剩餘服務 onboarding records 的參考實作。'],
+    ['Keep the personal workflow wrapper local-only and update it separately if the cached plugin launcher falls behind the draw-draw workspace name.', '個人 workflow wrapper 維持本機限定；plugin launcher 落後時再單獨更新。'],
+    ['Decide later whether extension smoke testing should become a separate DevGov-managed action distinct from local Vite runtime health.', '稍後決定 extension smoke testing 是否成為獨立 DevGov action。'],
+    ['If Chrome changes the component layout, update the Doctor expectations before changing the Reset behavior.', '若 Chrome component layout 改變，先更新 Doctor 預期，再調整 Reset 行為。'],
+    ['Collect one completed health + doctor + startup evidence report and promote after validation.', '收集一份完整 health + doctor + startup 證據報告，驗證後再升級狀態。'],
+    ['Decide later whether the unauthenticated quick-test row should be normalized around the protected 401 response or replaced with a separate operator-safe health contract.', '稍後決定未驗證 quick-test 是否改以受保護 401 回應為準，或改成另一個 operator-safe health contract。'],
+    ['Decide later whether canonical parser bridge availability should become a separate DevGov-managed readiness dimension.', '稍後決定 canonical parser bridge 可用性是否成為獨立 DevGov readiness 維度。'],
+    ['Decide later whether Taste also needs reviewed login startup automation beyond the current on-demand control path.', '稍後決定 Taste 是否需要已審查的登入啟動自動化，並超出目前 on-demand 控制路徑。'],
+    ['Decide later whether the nested duplicate url-hero/ folder should stay as evidence-only or be retired after a separate source-of-truth cleanup.', '稍後決定重複的巢狀 url-hero/ 資料夾要保留為 evidence-only，或在 source-of-truth 清理後退役。'],
+    ['Keep port references aligned with canonical 5001 governance entries; remove remaining 8765 references outside historical logs.', '讓 port references 對齊權威 5001 governance entries，移除歷史 logs 以外殘留的 8765 references。'],
+    ['Decide later whether startup persistence evidence should be promoted into a separate DevGov status row, distinct from on-demand recovery.', '稍後決定 startup persistence evidence 是否升級為獨立 DevGov status row，並與 on-demand recovery 分開。'],
+    ['Decide later whether the active TB2 tunnel startup should be promoted into a dedicated reviewed startup authority instead of remaining an operator-managed background connector.', '稍後決定啟用中的 TB2 tunnel startup 是否升級為已審查的專用 startup authority，而不是 operator-managed background connector。']
   ];
-  for (const [pattern, replacement] of replacements) {
-    if (pattern.test(text)) return replacement;
+  for (const [source, replacement] of replacements) {
+    if (text === source) return replacement;
   }
+  if (text.startsWith('Archive stale references in historical notes')) return '封存歷史 notes 裡以 video-render-kit 作為 placeholder 的舊引用；權威專案仍是 photo-hdr-flow。';
   const loginStartup = /^Decide later whether (.+) should (?:also )?have reviewed login-startup (?:authority|expectations), distinct from the current (.+) control path\.$/.exec(text);
   if (loginStartup) return '稍後決定 ' + loginStartup[1] + ' 是否需要已審查的登入啟動規則，並與目前 ' + loginStartup[2] + ' 控制路徑分開。';
+  const loginStartupAuthority = /^Decide later whether (.+) should gain a reviewed login-startup authority, distinct from the current (.+) control path\.$/.exec(text);
+  if (loginStartupAuthority) return '稍後決定 ' + loginStartupAuthority[1] + ' 是否需要已審查的登入啟動 authority，並與目前 ' + loginStartupAuthority[2] + ' 控制路徑分開。';
   const separateAction = /^Decide later whether (.+) should become a separate DevGov-managed (.+) distinct from (.+)\.$/.exec(text);
   if (separateAction) return '稍後決定 ' + separateAction[1] + ' 是否成為獨立 DevGov ' + separateAction[2] + '，並與 ' + separateAction[3] + ' 分開。';
+  const gainContract = /^Decide later whether (.+) should gain a separate (.+) beyond the current (.+)\.$/.exec(text);
+  if (gainContract) return '稍後決定 ' + gainContract[1] + ' 是否需要獨立 ' + gainContract[2] + '，並超出目前 ' + gainContract[3] + '。';
+  const readinessRow = /^Decide later whether (.+) readiness should become a separate DevGov-managed local service row\.$/.exec(text);
+  if (readinessRow) return '稍後決定 ' + readinessRow[1] + ' readiness 是否成為獨立 DevGov 本機服務列。';
   return text;
 }
 function projectSourceGroups(refs) {

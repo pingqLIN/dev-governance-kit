@@ -443,8 +443,13 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /Repo \+ Cloudflared/);
   assert.match(html, /renderProjectSourceChip/);
   assert.match(html, /source-chip/);
+  assert.match(html, /groups\.slice\(0, 2\)/);
+  assert.match(html, /max-height: 44px/);
   assert.match(html, /下一步/);
   assert.match(html, /來源/);
+  assert.match(html, /待補/);
+  assert.match(html, /loginStartupAuthority/);
+  assert.match(html, /gain a reviewed login-startup authority/);
   assert.match(html, /agent\.authority\.single-runtime-source/);
   assert.match(html, /file-ref-companion/);
   assert.match(html, /"AGENTS\.md":"AGENTS\.zh-tw\.md"/);
