@@ -1361,6 +1361,7 @@ export function renderDashboardHtml(state) {
       --grid-line: oklch(23% 0.018 248 / .045);
       --header-bg: oklch(99% 0.007 86 / .94);
       --focus: oklch(58% 0.13 183);
+      --sticky-header-offset: 176px;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -1515,6 +1516,75 @@ export function renderDashboardHtml(state) {
       transform: translate(-50%, -50%);
       width: 6px;
     }
+    .execution-status {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      display: grid;
+      gap: 8px 14px;
+      grid-template-columns: minmax(0, 1fr) minmax(160px, 28%);
+      margin: 14px auto 0;
+      max-width: 1360px;
+      padding: 10px 12px;
+    }
+    .execution-status-main {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
+    }
+    .execution-status-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .execution-status-name {
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    .execution-status-detail {
+      align-items: center;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 12px;
+      gap: 8px;
+      grid-column: 1 / -1;
+      min-width: 0;
+    }
+    .execution-status-detail span:first-child {
+      overflow-wrap: anywhere;
+    }
+    .execution-status-time {
+      color: var(--ink);
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 12px;
+    }
+    .execution-progress {
+      align-self: center;
+      background: var(--paper);
+      border: 1px solid var(--ink);
+      height: 12px;
+      overflow: hidden;
+      width: 100%;
+    }
+    .execution-progress span {
+      background: var(--accent);
+      display: block;
+      height: 100%;
+      width: 0;
+    }
+    .execution-status[data-state="idle"] .execution-progress span,
+    .execution-status[data-state="queued"] .execution-progress span {
+      background: var(--neutral-bg);
+    }
+    .execution-status[data-state="completed"] .execution-progress span {
+      background: var(--green);
+    }
+    .execution-status[data-state="failed"] .execution-progress span {
+      background: var(--bad-bg);
+    }
     .header-buttons {
       display: flex;
       flex-wrap: wrap;
@@ -1560,7 +1630,7 @@ export function renderDashboardHtml(state) {
       border: 2px solid var(--ink);
       background: var(--panel);
       position: sticky;
-      top: 116px;
+      top: var(--sticky-header-offset);
     }
     button {
       align-items: center;
@@ -2146,6 +2216,9 @@ export function renderDashboardHtml(state) {
       .theme-toggle, .language-toggle, .action-button, .status-action, nav button {
         transition: background-color 160ms ease-out, box-shadow 160ms ease-out, color 160ms ease-out, transform 160ms ease-out;
       }
+      .execution-progress span {
+        transition: width 180ms ease-out, background-color 180ms ease-out;
+      }
       .theme-toggle:active, .language-toggle:active, .action-button:active, .status-action:active, nav button:active {
         transform: translateY(1px);
       }
@@ -2185,6 +2258,7 @@ export function renderDashboardHtml(state) {
       .mast, main { grid-template-columns: 1fr; }
       .header-actions { justify-items: start; min-width: 0; }
       .header-buttons { justify-content: flex-start; }
+      .execution-status { grid-template-columns: 1fr; }
       nav { position: static; }
       .strip { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
       body.deck-mode main {
@@ -2274,6 +2348,18 @@ export function renderDashboardHtml(state) {
         <button class="theme-toggle" type="button" id="theme-toggle" aria-pressed="false">深色模式</button>
       </div>
       <div class="status"><span class="status-lamp" aria-hidden="true"><span class="status-lamp-core"></span></span><span>${escapeHtml(state.app.url)}</span></div>
+    </div>
+  </div>
+  <div class="execution-status" id="execution-status" data-state="idle" aria-live="polite" aria-atomic="false">
+    <div class="execution-status-main">
+      <span class="execution-status-label" data-i18n="executionStatus.title">Execution Status</span>
+      <span class="pill checking" id="execution-status-state">idle</span>
+      <span class="execution-status-name" id="execution-status-name">No active task</span>
+    </div>
+    <div class="execution-progress" aria-hidden="true"><span id="execution-status-progress"></span></div>
+    <div class="execution-status-detail">
+      <span id="execution-status-detail">Waiting for dashboard action.</span>
+      <span class="execution-status-time" id="execution-status-time"></span>
     </div>
   </div>
 </header>
@@ -2590,6 +2676,45 @@ const messages = {
       failed: 'Failed',
       canceled: 'Canceled'
     },
+    executionStatus: {
+      title: 'Execution Status',
+      idle: 'idle',
+      queued: 'queued',
+      running: 'running',
+      completed: 'completed',
+      failed: 'failed',
+      canceled: 'canceled',
+      empty: 'No active task',
+      idleDetail: 'Waiting for dashboard action.',
+      tasks: {
+        serviceStatus: 'Service status refresh',
+        serviceOnboarding: 'Service onboarding audit',
+        webConsoleEvents: 'Web events refresh',
+        workspacePredictor: 'Workspace prediction',
+        workspaceClear: 'Clear workspace prediction',
+        serviceControl: 'Service control'
+      },
+      details: {
+        serviceStatus: 'Checking registered service health.',
+        serviceStatusDone: 'Service status refreshed.',
+        serviceStatusFailed: 'Service status refresh failed.',
+        serviceOnboarding: 'Refreshing onboarding audit rows.',
+        serviceOnboardingDone: 'Service onboarding audit refreshed.',
+        serviceOnboardingFailed: 'Service onboarding audit failed.',
+        webConsoleEvents: 'Loading dashboard web event evidence.',
+        webConsoleEventsDone: 'Web event evidence refreshed.',
+        webConsoleEventsFailed: 'Web event evidence refresh failed.',
+        workspacePredictor: 'Evaluating the selected workspace path.',
+        workspacePredictorDone: 'Workspace prediction rendered.',
+        workspacePredictorFailed: 'Workspace prediction failed.',
+        workspaceClear: 'Cleared the local predictor input.',
+        serviceControlConfirm: 'Awaiting operator confirmation.',
+        serviceControlRun: 'Sending reviewed local control request.',
+        serviceControlDone: 'Control request completed.',
+        serviceControlFailed: 'Control request failed.',
+        serviceControlCanceled: 'Canceled by operator.'
+      }
+    },
     labels: {
       dashboard: 'Dashboard',
       socket: 'Socket',
@@ -2832,6 +2957,45 @@ const messages = {
       failed: '失敗',
       canceled: '已取消'
     },
+    executionStatus: {
+      title: '執行狀態',
+      idle: '待命',
+      queued: '等待',
+      running: '執行中',
+      completed: '已完成',
+      failed: '失敗',
+      canceled: '已取消',
+      empty: '目前沒有執行項目',
+      idleDetail: '等待 dashboard 操作。',
+      tasks: {
+        serviceStatus: '服務狀態刷新',
+        serviceOnboarding: '補充程序 audit',
+        webConsoleEvents: '網頁事件刷新',
+        workspacePredictor: '工作區預測',
+        workspaceClear: '清除工作區預測',
+        serviceControl: '服務控制'
+      },
+      details: {
+        serviceStatus: '檢查已登記服務 health。',
+        serviceStatusDone: '服務狀態已刷新。',
+        serviceStatusFailed: '服務狀態刷新失敗。',
+        serviceOnboarding: '刷新 onboarding audit rows。',
+        serviceOnboardingDone: '補充程序 audit 已刷新。',
+        serviceOnboardingFailed: '補充程序 audit 失敗。',
+        webConsoleEvents: '載入 dashboard 網頁事件證據。',
+        webConsoleEventsDone: '網頁事件證據已刷新。',
+        webConsoleEventsFailed: '網頁事件證據刷新失敗。',
+        workspacePredictor: '評估選取的工作區路徑。',
+        workspacePredictorDone: '工作區預測已產生。',
+        workspacePredictorFailed: '工作區預測失敗。',
+        workspaceClear: '已清除本機預測輸入。',
+        serviceControlConfirm: '等待 operator 確認。',
+        serviceControlRun: '送出已審查的本機控制請求。',
+        serviceControlDone: '控制請求已完成。',
+        serviceControlFailed: '控制請求失敗。',
+        serviceControlCanceled: '使用者取消執行。'
+      }
+    },
     labels: {
       dashboard: 'Dashboard',
       socket: 'Socket',
@@ -2916,6 +3080,9 @@ let deckDrag = null;
 let deckLayoutReady = false;
 let deckZCounter = 10;
 let pendingWebConsoleEventReports = Promise.resolve();
+let executionSequence = 0;
+let latestExecutionTaskId = null;
+const executionTasks = new Map();
 const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 const serviceControlMap = new Map((state.serviceControl?.entries || []).map((entry) => [String(entry.controlTargetId) + ':' + String(entry.action), entry]));
 const themeButton = document.getElementById('theme-toggle');
@@ -2937,6 +3104,12 @@ const controlDialogClose = document.getElementById('control-dialog-close');
 const controlDialogConfirm = document.getElementById('control-dialog-confirm');
 const controlDialogCancel = document.getElementById('control-dialog-cancel');
 const controlDialogOk = document.getElementById('control-dialog-ok');
+const executionStatusPanel = document.getElementById('execution-status');
+const executionStatusState = document.getElementById('execution-status-state');
+const executionStatusName = document.getElementById('execution-status-name');
+const executionStatusDetail = document.getElementById('execution-status-detail');
+const executionStatusTime = document.getElementById('execution-status-time');
+const executionStatusProgress = document.getElementById('execution-status-progress');
 let controlDialogConfirmResolver = null;
 const savedTheme = localStorage.getItem('devgov-theme');
 if (savedTheme === 'light' || savedTheme === 'dark') {
@@ -2963,18 +3136,34 @@ themeButton.addEventListener('click', () => {
   syncThemeButton();
 });
 workspacePredictorRun.addEventListener('click', () => {
-  const prediction = renderWorkspacePredictor();
-  reportWebConsoleEvent('workspace-predictor-run', {
-    pathClass: prediction.context.pathClass,
-    state: prediction.outcome.state,
-    ruleCount: prediction.rules.length,
-    ruleTotalCount: prediction.allRules.length
+  const taskId = beginExecutionTask({
+    label: t('executionStatus.tasks.workspacePredictor'),
+    detail: t('executionStatus.details.workspacePredictor'),
+    percent: 24
   });
+  try {
+    const prediction = renderWorkspacePredictor();
+    finishExecutionTask(taskId, 'completed', t('executionStatus.details.workspacePredictorDone') + ' rules=' + prediction.rules.length + '/' + prediction.allRules.length);
+    reportWebConsoleEvent('workspace-predictor-run', {
+      pathClass: prediction.context.pathClass,
+      state: prediction.outcome.state,
+      ruleCount: prediction.rules.length,
+      ruleTotalCount: prediction.allRules.length
+    });
+  } catch (error) {
+    finishExecutionTask(taskId, 'failed', t('executionStatus.details.workspacePredictorFailed') + ' ' + error.message);
+  }
 });
 workspacePredictorClear.addEventListener('click', () => {
+  const taskId = beginExecutionTask({
+    label: t('executionStatus.tasks.workspaceClear'),
+    detail: t('executionStatus.details.workspaceClear'),
+    percent: 40
+  });
   workspacePredictorInput.value = '';
   localStorage.removeItem('devgov-workspace-prediction-path');
   renderWorkspacePredictor();
+  finishExecutionTask(taskId, 'completed', t('executionStatus.details.workspaceClear'));
 });
 if (workspacePredictorRulesMode) {
   workspacePredictorRulesMode.addEventListener('click', () => {
@@ -3138,6 +3327,74 @@ async function sendWebConsoleEvent(payload) {
     headers: { 'content-type': 'application/json; charset=utf-8' },
     body: JSON.stringify(payload)
   });
+}
+function beginExecutionTask({ label, detail, state = 'running', percent = 8 }) {
+  const now = new Date().toISOString();
+  const id = 'task-' + Date.now() + '-' + (++executionSequence);
+  executionTasks.set(id, {
+    id,
+    label,
+    detail,
+    state,
+    percent,
+    startedAt: now,
+    updatedAt: now,
+    sequence: executionSequence
+  });
+  latestExecutionTaskId = id;
+  renderExecutionStatus();
+  return id;
+}
+function updateExecutionTask(taskId, patch = {}) {
+  const task = executionTasks.get(taskId);
+  if (!task) return;
+  executionTasks.set(taskId, {
+    ...task,
+    ...patch,
+    updatedAt: new Date().toISOString()
+  });
+  latestExecutionTaskId = taskId;
+  renderExecutionStatus();
+}
+function finishExecutionTask(taskId, resultState, detail) {
+  updateExecutionTask(taskId, {
+    state: resultState,
+    detail,
+    percent: 100
+  });
+}
+function visibleExecutionTask() {
+  const tasks = [...executionTasks.values()];
+  const active = tasks
+    .filter((task) => task.state === 'queued' || task.state === 'running')
+    .sort(compareExecutionTasks);
+  if (active.length) return active[0];
+  return executionTasks.get(latestExecutionTaskId) || null;
+}
+function compareExecutionTasks(left, right) {
+  return Date.parse(right.updatedAt) - Date.parse(left.updatedAt)
+    || right.sequence - left.sequence;
+}
+function renderExecutionStatus() {
+  if (!executionStatusPanel) return;
+  const task = visibleExecutionTask();
+  const status = task?.state || 'idle';
+  const percent = Math.max(0, Math.min(100, Number(task?.percent || 0)));
+  executionStatusPanel.dataset.state = status;
+  executionStatusState.className = 'pill ' + executionStatusPillClass(status);
+  executionStatusState.textContent = t('executionStatus.' + status);
+  executionStatusName.textContent = task?.label || t('executionStatus.empty');
+  executionStatusDetail.textContent = task?.detail || t('executionStatus.idleDetail');
+  executionStatusTime.textContent = task?.updatedAt ? new Date(task.updatedAt).toLocaleTimeString() : '';
+  executionStatusProgress.style.width = percent + '%';
+}
+function executionStatusPillClass(status) {
+  if (status === 'completed') return 'ready';
+  if (status === 'failed') return 'error';
+  if (status === 'canceled') return 'disabled';
+  if (status === 'queued') return 'review_required';
+  if (status === 'running') return 'checking';
+  return 'checking';
 }
 function metricDeckItems() {
   return [
@@ -4009,37 +4266,61 @@ function renderServiceOnboardingTable(query, rows) {
     renderOnboardingLinks(row)
   ]));
 }
-async function refreshServiceStatus() {
+async function refreshServiceStatus(options = {}) {
+  const taskId = options.silent ? null : beginExecutionTask({
+    label: t('executionStatus.tasks.serviceStatus'),
+    detail: t('executionStatus.details.serviceStatus'),
+    percent: 18
+  });
   try {
+    if (taskId) updateExecutionTask(taskId, { percent: 38 });
     const response = await fetch('/api/service-status');
     const payload = await response.json();
     serviceStatusRows = payload.services || [];
+    if (taskId) finishExecutionTask(taskId, 'completed', t('executionStatus.details.serviceStatusDone') + ' rows=' + serviceStatusRows.length);
   } catch (error) {
     serviceStatusRows = state.serviceTargets.map(target => ({ ...target, live: { state: 'ERROR', error: error.message } }));
+    if (taskId) finishExecutionTask(taskId, 'failed', t('executionStatus.details.serviceStatusFailed') + ' ' + error.message);
   } finally {
     renderServiceStatusTable(document.querySelector('input[data-filter="service-status"]').value.toLowerCase(), serviceStatusRows);
   }
 }
 async function refreshServiceOnboarding() {
+  const taskId = beginExecutionTask({
+    label: t('executionStatus.tasks.serviceOnboarding'),
+    detail: t('executionStatus.details.serviceOnboarding'),
+    percent: 18
+  });
   onboardingButton.disabled = true;
   try {
+    updateExecutionTask(taskId, { percent: 42 });
     const response = await fetch('/api/service-onboarding');
     const payload = await response.json();
     serviceOnboardingRows = payload.services || [];
+    finishExecutionTask(taskId, 'completed', t('executionStatus.details.serviceOnboardingDone') + ' rows=' + serviceOnboardingRows.length);
   } catch (error) {
     serviceOnboardingRows = [];
+    finishExecutionTask(taskId, 'failed', t('executionStatus.details.serviceOnboardingFailed') + ' ' + error.message);
   } finally {
     onboardingButton.disabled = false;
     renderServiceOnboardingTable(filterValue('service-onboarding'), serviceOnboardingRows);
   }
 }
 async function refreshWebConsoleEvents() {
+  const taskId = beginExecutionTask({
+    label: t('executionStatus.tasks.webConsoleEvents'),
+    detail: t('executionStatus.details.webConsoleEvents'),
+    percent: 18
+  });
   try {
+    updateExecutionTask(taskId, { percent: 44 });
     const response = await fetch('/api/web-console-events');
     const payload = await response.json();
     webConsoleEventsRows = payload.events || [];
-  } catch {
+    finishExecutionTask(taskId, 'completed', t('executionStatus.details.webConsoleEventsDone') + ' rows=' + webConsoleEventsRows.length);
+  } catch (error) {
     webConsoleEventsRows = [];
+    finishExecutionTask(taskId, 'failed', t('executionStatus.details.webConsoleEventsFailed') + ' ' + error.message);
   } finally {
     renderWebConsoleEventsTable(filterValue('web-console-events'), webConsoleEventsRows);
   }
@@ -4171,15 +4452,28 @@ async function runServiceControl(controlTargetId, action) {
   const actionKey = String(controlTargetId) + ':' + String(action);
   const control = serviceControlMap.get(actionKey);
   const target = findServiceControlTarget(controlTargetId);
+  const label = control?.uiLabel || t('labels.' + action);
+  const targetLabel = target?.label || controlTargetId;
+  const executionTaskId = beginExecutionTask({
+    label: t('executionStatus.tasks.serviceControl') + ': ' + label,
+    detail: targetLabel,
+    state: control?.requiresConfirmation ? 'queued' : 'running',
+    percent: control?.requiresConfirmation ? 8 : 22
+  });
   openControlDialog({
     controlTargetId,
     action,
-    title: t('labels.' + action),
-    targetLabel: target?.label || controlTargetId,
+    title: label,
+    targetLabel,
     wrapperRef: control?.wrapperRef || ''
   });
   if (control?.requiresConfirmation) {
     setControlDialogMode('confirm');
+    updateExecutionTask(executionTaskId, {
+      state: 'queued',
+      percent: 12,
+      detail: t('executionStatus.details.serviceControlConfirm') + ' target=' + targetLabel
+    });
     appendControlLog(currentLanguage === 'zhTw'
       ? '這個動作會嘗試調整本機 runtime，需先確認。'
       : 'This action may adjust the local runtime and requires confirmation.');
@@ -4188,6 +4482,7 @@ async function runServiceControl(controlTargetId, action) {
       setControlDialogMode('canceled');
       appendControlLog(currentLanguage === 'zhTw' ? '使用者取消執行。' : 'Canceled by operator.');
       controlActionStates[actionKey] = { pending: false, message: t('controlDialog.canceled') };
+      finishExecutionTask(executionTaskId, 'canceled', t('executionStatus.details.serviceControlCanceled'));
       renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
       return;
     }
@@ -4196,6 +4491,11 @@ async function runServiceControl(controlTargetId, action) {
   appendControlLog((currentLanguage === 'zhTw' ? '送出控制請求: ' : 'Sending control request: ') + actionKey);
   if (control?.wrapperRef) appendControlLog('wrapper=' + control.wrapperRef);
   controlActionStates[actionKey] = { pending: true, message: currentLanguage === 'zhTw' ? '執行中...' : 'Running...' };
+  updateExecutionTask(executionTaskId, {
+    state: 'running',
+    percent: 34,
+    detail: t('executionStatus.details.serviceControlRun') + ' target=' + targetLabel
+  });
   renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
   try {
     const response = await fetch(state.serviceControl.baseUrl + '/api/service-control/' + action, {
@@ -4207,19 +4507,25 @@ async function runServiceControl(controlTargetId, action) {
     if (!response.ok || !payload.ok) {
       throw new Error(payload.error || payload.summary || 'Control action failed');
     }
+    updateExecutionTask(executionTaskId, {
+      percent: 76,
+      detail: payload.summary || t('executionStatus.details.serviceControlDone')
+    });
     appendControlLog('eventId=' + (payload.eventId || 'n/a'));
     appendControlLog('summary=' + (payload.summary || 'Completed'));
     controlActionStates[actionKey] = {
       pending: false,
       message: payload.summary || (currentLanguage === 'zhTw' ? '已完成' : 'Completed')
     };
-    await refreshServiceStatus();
+    await refreshServiceStatus({ silent: true });
     appendControlLog(currentLanguage === 'zhTw' ? '服務狀態已刷新。' : 'Service Status refreshed.');
     setControlDialogMode('completed');
+    finishExecutionTask(executionTaskId, 'completed', (payload.summary || t('executionStatus.details.serviceControlDone')) + ' refresh=service-status');
   } catch (error) {
     appendControlLog('error=' + error.message);
     setControlDialogMode('failed');
     controlActionStates[actionKey] = { pending: false, message: error.message };
+    finishExecutionTask(executionTaskId, 'failed', t('executionStatus.details.serviceControlFailed') + ' ' + error.message);
     renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
   }
 }
@@ -4422,6 +4728,7 @@ function syncI18n() {
       : 'workspacePredictor.ruleList.showFull');
     workspacePredictorRulesMode.setAttribute('data-rules-mode', workspacePredictionRulesMode);
   }
+  renderExecutionStatus();
   syncThemeButton();
 }
 function syncThemeButton() {

@@ -407,6 +407,10 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /workspace-predictor/);
   assert.match(html, /prediction-tabs/);
   assert.match(html, /workspace-predictor-run/);
+  assert.match(html, /execution-status/);
+  assert.match(html, /Execution Status/);
+  assert.match(html, /beginExecutionTask/);
+  assert.match(html, /finishExecutionTask/);
   assert.match(html, /ruleHeaders/);
   assert.match(html, /type: '類型'/);
   assert.match(html, /layer: '治理層'/);
@@ -424,6 +428,7 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /action-key/);
   assert.match(html, /service-control-dialog/);
   assert.match(html, /control-dialog-log/);
+  assert.match(html, /refreshServiceStatus\(\{ silent: true \}\)/);
   assert.match(html, /syncViewUrl/);
   assert.match(html, /hashchange/);
   assert.match(html, /popstate/);
