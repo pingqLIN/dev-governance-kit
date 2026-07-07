@@ -4,6 +4,24 @@
   "sourceOfTruth": "registry/service-onboarding.registry.json",
   "entries": [
     {
+      "id": "codex-calendar-todo-local-runtime-http",
+      "project": "codex-calendar-todo",
+      "service": "local-runtime-http",
+      "readiness": "PARTIAL",
+      "ownerKind": "source-repo-and-loopback-runtime",
+      "sourceRef": "registry/ports.registry.json#codex-calendar-todo:local-runtime-http",
+      "healthProcedure": "Use local http://127.0.0.1:6001/api/health when the workstation excludes the documented 4321/4173 default ports.",
+      "doctorProcedure": "Use the reviewed Codex Calendar Todo staging doctor control as the read-only authority, then confirm the loopback /api/health endpoint on the fallback port.",
+      "resetProcedure": "Use the reviewed Codex Calendar Todo staging restart control only as an operator-approved recovery reference; do not create a separate public route or startup authority for the fallback port.",
+      "startupProcedure": "Keep this as an on-demand local fallback. The durable staging startup authority remains the separate runtime project entry.",
+      "dashboardProcedure": "Surface through the local agent registry as Codex Calendar Todo Agent Ops and reuse the reviewed staging doctor/restart controls for dashboard-safe action references.",
+      "cloudflareProcedure": "No public route is approved for this fallback port. Keep it loopback-only and do not repoint the staging hostname without separate Access and tunnel review.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "registry/service-control.registry.json#codex-calendar-todo-staging-doctor",
+      "nextAction": "Decide whether the runtime project should migrate away from 4321 on this workstation or whether the Windows port exclusion should be removed.",
+      "notes": "This record documents the verified local fallback used by the current source checkout. OAuth tokens, spool files, local state, command lines, and logs remain outside canonical registry data."
+    },
+    {
       "id": "devgov-dashboard-http",
       "project": "devgov",
       "service": "dashboard-http",

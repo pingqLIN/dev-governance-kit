@@ -836,6 +836,7 @@ function deriveStartupControlTargetAliases(entry) {
 }
 
 function deriveLocalAgentControlTargetId(agent) {
+  if (agent.id === "codex-calendar-todo-agent-ops") return "codex-calendar-todo-staging";
   return agent.id;
 }
 
@@ -1965,8 +1966,10 @@ export function renderDashboardHtml(state) {
       table-layout: fixed;
     }
     table[data-table="registered-projects"] th:nth-child(1) { width: 18%; }
-    table[data-table="registered-projects"] th:nth-child(2) { width: 18%; }
-    table[data-table="registered-projects"] th:nth-child(5) { width: 24%; }
+    table[data-table="registered-projects"] th:nth-child(2) { width: 17%; }
+    table[data-table="registered-projects"] th:nth-child(4) { width: 17%; }
+    table[data-table="registered-projects"] th:nth-child(5) { width: 27%; }
+    table[data-table="registered-projects"] th:nth-child(6) { width: 10%; }
     .project-progress-cell, .project-services-cell, .next-action-cell, .source-link-list {
       display: grid;
       gap: 6px;
@@ -1990,8 +1993,36 @@ export function renderDashboardHtml(state) {
       flex-wrap: wrap;
       gap: 6px;
     }
+    .project-tag-list {
+      align-content: start;
+      gap: 5px;
+    }
+    .project-tag {
+      line-height: 1.2;
+      max-width: 116px;
+      overflow-wrap: anywhere;
+      padding: 2px 6px;
+      white-space: normal;
+    }
     .project-services-cell span, .next-action-cell span {
       overflow-wrap: anywhere;
+    }
+    .next-action-cell span {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      overflow: hidden;
+    }
+    .source-link-list {
+      align-items: flex-start;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-width: 100%;
+    }
+    .source-chip, .source-more {
+      max-width: 100%;
+      white-space: nowrap;
     }
     .service-cell, .endpoint-cell, .last-check-cell {
       display: grid;
@@ -2864,7 +2895,7 @@ const messages = {
     },
     registeredProjects: {
       label: '進度標籤:',
-      body: '專案進度由現有 DevGov registry 欄位彙整：readiness、review status、visibility、service coverage 與 next action。'
+      body: '專案進度由已登錄資料彙整：準備狀態、審查狀態、可見範圍、服務覆蓋與下一步。'
     },
       workspacePredictor: {
         label: '預測模型:',
@@ -3005,7 +3036,7 @@ const messages = {
       project: 'Project',
       progress: '進度',
       service: 'Service',
-      services: 'Services',
+      services: '服務',
       visibility: 'Visibility',
       agent: 'Agent',
       kind: 'Kind',
@@ -3046,9 +3077,9 @@ const messages = {
       doctor: 'Doctor',
       restart: 'Restart',
       readiness: 'Readiness',
-      nextAction: 'Next Action',
-      tags: 'Tags',
-      sources: 'Sources',
+      nextAction: '下一步',
+      tags: '標籤',
+      sources: '來源',
       gaps: 'Gaps',
       links: 'Quick Links',
       noGaps: 'none',
@@ -4331,7 +4362,7 @@ function renderProjectProgressCell(row) {
     .map(([label, count]) => label + '=' + count)
     .join(' ');
   return '<div class="project-progress-cell">'
-    + '<div class="tag-list">' + pill(row.progressTag) + '<span class="inline-meta">' + esc(percent + '%') + '</span></div>'
+    + '<div class="tag-list">' + projectTagPill(row.progressTag) + '<span class="inline-meta">' + esc(percent + '%') + '</span></div>'
     + '<div class="progress-track" aria-label="' + esc(row.progressTag + ' ' + percent + '%') + '"><div class="progress-bar" style="width:' + esc(percent) + '%"></div></div>'
     + '<span class="inline-meta">' + esc(counts || 'no readiness tag') + '</span>'
     + '</div>';
@@ -4347,15 +4378,156 @@ function renderProjectServicesCell(row) {
 function renderProjectTags(row) {
   const tags = row.tags || [];
   if (!tags.length) return '<span class="inline-meta">' + tEsc('labels.pending') + '</span>';
-  return '<div class="tag-list">' + tags.slice(0, 8).map(pill).join('') + '</div>';
+  return '<div class="tag-list project-tag-list">' + tags.slice(0, 8).map(projectTagPill).join('') + '</div>';
 }
 function renderNextActionCell(row) {
-  return '<div class="next-action-cell"><span>' + esc(row.nextAction || '-') + '</span></div>';
+  const raw = row.nextAction || '-';
+  return '<div class="next-action-cell" title="' + esc(raw) + '"><span>' + esc(localizedNextAction(raw)) + '</span></div>';
 }
 function renderProjectSources(row) {
   const refs = [...(row.sourceRefs || []), ...(row.reviewEvidence || [])];
   if (!refs.length) return '<span class="inline-meta">' + tEsc('labels.pending') + '</span>';
-  return '<div class="source-link-list">' + refs.slice(0, 3).map((ref) => fileRef(ref)).join('') + '</div>';
+  const groups = projectSourceGroups(refs);
+  const visible = groups.slice(0, 3);
+  const hidden = groups.slice(3);
+  const title = refs.join('\\n');
+  return '<div class="source-link-list" title="' + esc(title) + '">'
+    + visible.map(renderProjectSourceChip).join('')
+    + (hidden.length ? '<span class="pill source-more" title="' + esc(hidden.flatMap((group) => group.refs).join('\\n')) + '">+' + esc(hidden.length) + '</span>' : '')
+    + '</div>';
+}
+function projectTagPill(value) {
+  const raw = String(value || '');
+  const label = localizedProjectTag(raw);
+  return '<span class="pill project-tag ' + esc(raw.toLowerCase()) + '" title="' + esc(raw) + '">' + breakableText(label) + '</span>';
+}
+function localizedProjectTag(value) {
+  const tag = String(value || '');
+  const maps = {
+    en: {
+      PARTIAL: 'Partial',
+      READY: 'Ready',
+      BLOCKED: 'Blocked',
+      UNTRACKED: 'Untracked',
+      reviewed: 'Reviewed',
+      candidate: 'Candidate',
+      local: 'Local',
+      public: 'Public',
+      'prod-protected': 'Protected prod',
+      'staging-private': 'Private staging',
+      'source-repo': 'Source repo',
+      'devgov-repo': 'DevGov repo',
+      'source-repo-and-loopback-runtime': 'Repo + loopback',
+      'source-repo-and-user-level-cloudflared': 'Repo + Cloudflared',
+      'source-repo-and-runtime-project': 'Repo + runtime',
+      'source-repo-and-portable-runtime': 'Repo + portable',
+      'source-repo-and-personal-local-tool': 'Personal tool',
+      'external-local-app': 'Local app'
+    },
+    zhTw: {
+      PARTIAL: '部分完成',
+      READY: '已就緒',
+      BLOCKED: '已阻擋',
+      UNTRACKED: '未追蹤',
+      reviewed: '已審查',
+      candidate: '候選',
+      local: '本機',
+      public: '公開',
+      'prod-protected': '生產保護',
+      'staging-private': '私有 staging',
+      'source-repo': '來源 repo',
+      'devgov-repo': 'DevGov repo',
+      'source-repo-and-loopback-runtime': 'Repo + Loopback',
+      'source-repo-and-user-level-cloudflared': 'Repo + Cloudflared',
+      'source-repo-and-runtime-project': 'Repo + Runtime',
+      'source-repo-and-portable-runtime': 'Repo + 可攜 runtime',
+      'source-repo-and-personal-local-tool': '個人工具',
+      'external-local-app': '本機外部 app'
+    }
+  };
+  return maps[currentLanguage]?.[tag] || shortenProjectTag(tag);
+}
+function shortenProjectTag(value) {
+  return String(value || '')
+    .replace(/^source-repo-and-/, 'repo+')
+    .replace(/^source-repo$/, 'source repo')
+    .replace(/user-level-cloudflared/g, 'cloudflared')
+    .replace(/loopback-runtime/g, 'loopback')
+    .replace(/portable-runtime/g, 'portable')
+    .replace(/runtime-project/g, 'runtime')
+    .replace(/personal-local-tool/g, 'personal tool')
+    .replace(/-/g, ' ');
+}
+function breakableText(value) {
+  return esc(value).replace(/([+:/-])/g, '$1<wbr>');
+}
+function localizedNextAction(value) {
+  const text = String(value || '');
+  if (currentLanguage !== 'zhTw') return text;
+  const replacements = [
+    [/^Complete normal signed-in ChatGPT Web connector acceptance before promoting a dashboard-safe Restart action for this protected public boundary\.$/, '完成 ChatGPT Web 連接器登入驗收，再升級受保護公開邊界的安全 Restart。'],
+    [/^Decide whether the runtime project should migrate away from 4321 on this workstation or whether the Windows port exclusion should be removed\.$/, '決定 runtime 專案是否避開 4321，或移除這台工作站的 Windows port exclusion。'],
+    [/^Decide later whether ShaderGlass launch\/open-folder actions should become separate DevGov-managed controls distinct from preview health\.$/, '稍後決定 ShaderGlass 啟動與開啟資料夾是否成為獨立 DevGov 控制。'],
+    [/^Keep as reference implementation for the remaining service onboarding records\.$/, '保留為剩餘服務 onboarding records 的參考實作。'],
+    [/^Keep the personal workflow wrapper local-only and update it separately if the cached plugin launcher falls behind the draw-draw workspace name\.$/, '個人 workflow wrapper 維持本機限定；plugin launcher 落後時再單獨更新。'],
+    [/^Decide later whether extension smoke testing should become a separate DevGov-managed action distinct from local Vite runtime health\.$/, '稍後決定 extension smoke testing 是否成為獨立 DevGov action。'],
+    [/^Archive stale references in historical notes/, '封存歷史 notes 裡以 video-render-kit 作為 placeholder 的舊引用；權威專案仍是 photo-hdr-flow。'],
+    [/^If Chrome changes the component layout, update the Doctor expectations before changing the Reset behavior\.$/, '若 Chrome component layout 改變，先更新 Doctor 預期，再調整 Reset 行為。'],
+    [/^Collect one completed health \+ doctor \+ startup evidence report and promote after validation\.$/, '收集一份完整 health + doctor + startup 證據報告，驗證後再升級狀態。']
+  ];
+  for (const [pattern, replacement] of replacements) {
+    if (pattern.test(text)) return replacement;
+  }
+  const loginStartup = /^Decide later whether (.+) should (?:also )?have reviewed login-startup (?:authority|expectations), distinct from the current (.+) control path\.$/.exec(text);
+  if (loginStartup) return '稍後決定 ' + loginStartup[1] + ' 是否需要已審查的登入啟動規則，並與目前 ' + loginStartup[2] + ' 控制路徑分開。';
+  const separateAction = /^Decide later whether (.+) should become a separate DevGov-managed (.+) distinct from (.+)\.$/.exec(text);
+  if (separateAction) return '稍後決定 ' + separateAction[1] + ' 是否成為獨立 DevGov ' + separateAction[2] + '，並與 ' + separateAction[3] + ' 分開。';
+  return text;
+}
+function projectSourceGroups(refs) {
+  const groups = new Map();
+  for (const ref of refs) {
+    const pathPart = localFilePathPart(ref);
+    const key = projectSourceKey(pathPart || ref);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label: projectSourceLabel(pathPart || ref),
+        refs: [],
+        firstRef: ref
+      });
+    }
+    groups.get(key).refs.push(ref);
+  }
+  return [...groups.values()];
+}
+function projectSourceKey(pathPart) {
+  if (pathPart.includes('ports.registry.json')) return 'ports';
+  if (pathPart.includes('public-routes.registry.json')) return 'public-routes';
+  if (pathPart.includes('service-onboarding')) return 'onboarding';
+  if (pathPart.includes('service-control.registry.json')) return 'service-control';
+  if (pathPart.includes('startup.registry.json')) return 'startup';
+  if (pathPart.includes('local-agents.registry.json')) return 'local-agents';
+  if (pathPart.startsWith('reports/')) return 'reports';
+  return pathPart;
+}
+function projectSourceLabel(pathPart) {
+  const zhTw = currentLanguage === 'zhTw';
+  if (pathPart.includes('ports.registry.json')) return zhTw ? 'Ports' : 'Ports';
+  if (pathPart.includes('public-routes.registry.json')) return zhTw ? '公開路由' : 'Routes';
+  if (pathPart.includes('service-onboarding')) return zhTw ? '補充程序' : 'Onboarding';
+  if (pathPart.includes('service-control.registry.json')) return zhTw ? '服務控制' : 'Controls';
+  if (pathPart.includes('startup.registry.json')) return zhTw ? '啟動' : 'Startup';
+  if (pathPart.includes('local-agents.registry.json')) return zhTw ? 'Agents' : 'Agents';
+  if (pathPart.startsWith('reports/')) return zhTw ? '報告' : 'Reports';
+  return zhTw ? '來源' : 'Source';
+}
+function renderProjectSourceChip(group) {
+  const target = localFileTarget(group.firstRef);
+  const title = group.refs.join('\\n');
+  const label = group.refs.length > 1 ? group.label + ' ' + group.refs.length : group.label;
+  if (!target) return '<span class="pill source-chip" title="' + esc(title) + '">' + esc(label) + '</span>';
+  return '<a class="pill pill-link source-chip" href="' + esc(target.href) + '" target="_blank" rel="noreferrer" title="' + esc(title) + '">' + esc(label) + '</a>';
 }
 function renderQuickTestCell(row) {
   return '<div class="check-grid">'

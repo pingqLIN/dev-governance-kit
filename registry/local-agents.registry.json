@@ -4,6 +4,20 @@
   "sourceOfTruth": "registry/local-agents.registry.json",
   "agents": [
     {
+      "id": "codex-calendar-todo-agent-ops",
+      "project": "codex-calendar-todo",
+      "kind": "on-demand-agent",
+      "serviceId": "codex-calendar-todo-staging",
+      "displayName": "Codex Calendar Todo Agent Ops",
+      "healthUrl": "http://127.0.0.1:6001/api/health",
+      "portRef": "codex-calendar-todo:local-runtime-http",
+      "startupRef": "codex-calendar-todo",
+      "status": "candidate",
+      "source": "codex-calendar-todo local runtime verification; Agent Ops project registry",
+      "notes": "Loopback-only calendar, task, and Agent Ops workspace. Keep local state, OAuth tokens, runtime logs, spool files, and generated records out of canonical registry data.",
+      "managedByCodex": true
+    },
+    {
       "id": "local-archive-maintainer",
       "project": "local-archive-maintainer",
       "kind": "windows-service-agent",

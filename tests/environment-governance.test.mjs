@@ -438,6 +438,13 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /\/file\?path=/);
   assert.match(html, /\/api\/unitext-agent-instructions/);
   assert.match(html, /Progress tags/);
+  assert.match(html, /專案進度由已登錄資料彙整/);
+  assert.match(html, /projectTagPill/);
+  assert.match(html, /Repo \+ Cloudflared/);
+  assert.match(html, /renderProjectSourceChip/);
+  assert.match(html, /source-chip/);
+  assert.match(html, /下一步/);
+  assert.match(html, /來源/);
   assert.match(html, /agent\.authority\.single-runtime-source/);
   assert.match(html, /file-ref-companion/);
   assert.match(html, /"AGENTS\.md":"AGENTS\.zh-tw\.md"/);

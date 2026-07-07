@@ -42,6 +42,16 @@
     },
     {
       "project": "codex-calendar-todo",
+      "service": "local-runtime-http",
+      "port": 6001,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "codex-calendar-todo local runtime verification; Windows TCP excluded-port audit",
+      "notes": "Loopback-only local runtime used when the documented 4321/4173 defaults fall inside Windows TCP excluded ranges on this workstation. Health contract is /api/health."
+    },
+    {
+      "project": "codex-calendar-todo",
       "service": "staging-http",
       "port": 4321,
       "host": "127.0.0.1",
