@@ -1469,6 +1469,9 @@ export function renderDashboardHtml(state) {
       box-sizing: border-box;
       letter-spacing: 0;
     }
+    [hidden] {
+      display: none !important;
+    }
     body {
       margin: 0;
       background:
@@ -1862,34 +1865,122 @@ export function renderDashboardHtml(state) {
     }
     .prediction-layout {
       display: grid;
-      gap: 12px;
+      gap: 14px;
     }
-    .prediction-summary {
+    .prediction-stage {
+      --prediction-stage-columns: minmax(230px, .52fr) minmax(0, 1.48fr);
+      align-items: start;
       background: var(--panel);
       border: 2px solid var(--ink);
       display: grid;
+      gap: 12px;
+      grid-template-columns: var(--prediction-stage-columns);
+      padding: 12px;
+    }
+    .prediction-stage--intake {
+      --prediction-intake-column: 281px;
+      --prediction-intake-margin-bottom: 10px;
+      --prediction-stage-columns: var(--prediction-intake-column) minmax(0, 1fr);
+      align-items: end;
+      margin-bottom: var(--prediction-intake-margin-bottom);
+    }
+    .prediction-stage--intake > .prediction-step {
+      justify-self: start;
+      width: min(100%, var(--prediction-intake-column));
+    }
+    .prediction-stage--outcome {
+      --prediction-outcome-column: 306px;
+      --prediction-outcome-step-offset: 14px;
+      --prediction-outcome-step-trim: 18px;
+      --prediction-outcome-step-min-height: 90px;
+      --prediction-stage-columns: var(--prediction-outcome-column) minmax(0, 1fr);
+    }
+    .prediction-stage--outcome > .prediction-step {
+      justify-self: stretch;
+      margin-left: var(--prediction-outcome-step-offset);
+      min-height: var(--prediction-outcome-step-min-height);
+      width: calc(100% - var(--prediction-outcome-step-trim));
+    }
+    .prediction-stage:not(.prediction-stage--intake, .prediction-stage--outcome) > .prediction-step {
+      justify-self: stretch;
+      margin-left: 0;
+      min-height: 0;
+      width: auto;
+    }
+    .prediction-stage-body {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+    .prediction-step {
+      align-items: start;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 44px minmax(0, 1fr);
+      min-width: 0;
+    }
+    .prediction-step-index {
+      align-items: center;
+      background: var(--ink);
+      color: var(--paper);
+      display: inline-flex;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      height: 36px;
+      justify-content: center;
+      line-height: 1;
+      width: 36px;
+    }
+    .prediction-step-copy {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+    .prediction-step-copy strong {
+      line-height: 1.2;
+    }
+    .prediction-step-copy span {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .prediction-summary {
+      display: grid;
       gap: 10px;
       grid-template-columns: 1fr;
-      padding: 12px;
+      min-width: 0;
     }
     .prediction-headline {
       display: grid;
-      gap: 6px;
+      gap: 8px;
     }
     .prediction-headline strong {
-      font-size: clamp(21px, 3vw, 33px);
-      line-height: 1;
+      font-size: 22px;
+      line-height: 1.08;
+    }
+    .prediction-state-row {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     .prediction-facts {
       display: grid;
       gap: 6px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: 1fr;
     }
     .prediction-facts .guidance-row {
       grid-template-columns: 140px minmax(0, 1fr);
     }
     .prediction-facts span {
       overflow-wrap: anywhere;
+    }
+    .prediction-tabs-row {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: space-between;
     }
     .prediction-tabs {
       display: flex;
@@ -1907,9 +1998,34 @@ export function renderDashboardHtml(state) {
       background: var(--ink);
       color: var(--paper);
     }
+    .prediction-tab-action {
+      margin-left: auto;
+    }
     .prediction-panel {
       display: grid;
       gap: 12px;
+      min-width: 0;
+    }
+    .prediction-tab-section {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+    .prediction-tab-section h3 {
+      font-size: 15px;
+      line-height: 1.2;
+      margin: 0;
+    }
+    .prediction-tab-intro {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      display: grid;
+      gap: 5px;
+      padding: 12px;
+    }
+    .prediction-tab-intro span {
+      color: var(--muted);
+      line-height: 1.35;
     }
     .prediction-cards {
       display: grid;
@@ -2534,6 +2650,25 @@ export function renderDashboardHtml(state) {
       .status { justify-content: start; }
       .toolbar { align-items: stretch; flex-direction: column; }
       .guidance-row { grid-template-columns: 1fr; }
+      .prediction-stage {
+        --prediction-stage-columns: 1fr;
+      }
+      .prediction-stage--intake {
+        margin-bottom: 0;
+      }
+      .prediction-stage--intake > .prediction-step,
+      .prediction-stage--outcome > .prediction-step {
+        margin-left: 0;
+        min-height: 0;
+        width: 100%;
+      }
+      .prediction-tabs-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .prediction-tab-action {
+        margin-left: 0;
+      }
       .prediction-facts { grid-template-columns: 1fr; }
       .prediction-facts .guidance-row { grid-template-columns: 1fr; }
       .predictor-actions { justify-content: flex-start; min-width: 0; }
@@ -2596,7 +2731,7 @@ export function renderDashboardHtml(state) {
   <div class="mast">
     <div>
       <h1>DevGov</h1>
-      <div class="muted" data-i18n="subtitle">本機治理主控台：集中檢查 ports、startup automation、public routes 與 workspace readiness。</div>
+      <div class="muted" data-i18n="subtitle">本機治理主控台：集中檢查連接埠（ports）、登入啟動、公開路由與工作區就緒狀態。</div>
     </div>
     <div class="header-actions">
       <div class="header-buttons">
@@ -2608,13 +2743,13 @@ export function renderDashboardHtml(state) {
   </div>
   <div class="execution-status" id="execution-status" data-state="idle" aria-live="polite" aria-atomic="false">
     <div class="execution-status-main">
-      <span class="execution-status-label" data-i18n="executionStatus.title">Execution Status</span>
-      <span class="pill checking" id="execution-status-state">idle</span>
-      <span class="execution-status-name" id="execution-status-name">No active task</span>
+      <span class="execution-status-label" data-i18n="executionStatus.title">執行狀態</span>
+      <span class="pill checking" id="execution-status-state">閒置</span>
+      <span class="execution-status-name" id="execution-status-name">沒有進行中的任務</span>
     </div>
     <div class="execution-progress" aria-hidden="true"><span id="execution-status-progress"></span></div>
     <div class="execution-status-detail">
-      <span id="execution-status-detail">Waiting for dashboard action.</span>
+      <span id="execution-status-detail">等待儀表板操作。</span>
       <span class="execution-status-time" id="execution-status-time"></span>
     </div>
   </div>
@@ -2622,20 +2757,20 @@ export function renderDashboardHtml(state) {
 <main>
   <nav aria-label="儀表板檢視">
     <button data-view="overview" aria-selected="true"><span class="glyph">01</span> <span data-i18n="nav.overview">總覽</span></button>
-    <button data-view="ports"><span class="glyph">02</span> <span data-i18n="nav.ports">Ports</span></button>
+    <button data-view="ports"><span class="glyph">02</span> <span data-i18n="nav.ports">連接埠</span></button>
     <button data-view="registered-projects"><span class="glyph">03</span> <span data-i18n="nav.registeredProjects">本機登記專案</span></button>
-    <button data-view="agents"><span class="glyph">04</span> <span data-i18n="nav.agents">本機 Agents</span></button>
+    <button data-view="agents"><span class="glyph">04</span> <span data-i18n="nav.agents">本機代理</span></button>
     <button data-view="startup"><span class="glyph">05</span> <span data-i18n="nav.startup">啟動治理</span></button>
     <button data-view="routes"><span class="glyph">06</span> <span data-i18n="nav.routes">公開路由</span></button>
-    <button data-view="terminal"><span class="glyph">07</span> <span data-i18n="nav.terminal">Terminal Profiles</span></button>
-    <button data-view="api-keys"><span class="glyph">08</span> <span data-i18n="nav.apiKeys">API Key 治理</span></button>
+    <button data-view="terminal"><span class="glyph">07</span> <span data-i18n="nav.terminal">終端機設定</span></button>
+    <button data-view="api-keys"><span class="glyph">08</span> <span data-i18n="nav.apiKeys">API 金鑰治理</span></button>
     <button data-view="storage-assets"><span class="glyph">09</span> <span data-i18n="nav.storageAssets">儲存治理</span></button>
-    <button data-view="agent-instructions"><span class="glyph">10</span> <span data-i18n="nav.agentInstructions">Agent Instructions</span></button>
+    <button data-view="agent-instructions"><span class="glyph">10</span> <span data-i18n="nav.agentInstructions">Agent 指令</span></button>
     <button data-view="workspace-predictor"><span class="glyph">11</span> <span data-i18n="nav.workspacePredictor">工作區預測</span></button>
     <button data-view="web-entrypoints"><span class="glyph">12</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
     <button data-view="service-status"><span class="glyph">13</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
     <button data-view="service-onboarding"><span class="glyph">14</span> <span data-i18n="nav.serviceOnboarding">補充程序</span></button>
-    <button data-view="web-console-events"><span class="glyph">15</span> <span data-i18n="nav.webConsoleEvents">Web Console Events</span></button>
+    <button data-view="web-console-events"><span class="glyph">15</span> <span data-i18n="nav.webConsoleEvents">網頁事件</span></button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -2643,18 +2778,18 @@ export function renderDashboardHtml(state) {
       <table id="dashboard-port"></table>
     </section>
     <section id="ports" class="table-view">
-      <div class="toolbar"><h2 data-i18n="sections.ports">Port Registry</h2><input data-filter="ports" placeholder="篩選 ports"></div>
+      <div class="toolbar"><h2 data-i18n="sections.ports">連接埠登記</h2><input data-filter="ports" placeholder="篩選連接埠"></div>
       <table data-table="ports"></table>
     </section>
     <section id="registered-projects" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.registeredProjects">本機登記專案</h2><input data-filter="registered-projects" placeholder="篩選本機登記專案"></div>
       <div class="guidance">
-        <div><strong data-i18n="registeredProjects.label">Progress tags:</strong> <span data-i18n="registeredProjects.body">Project progress is aggregated from existing DevGov registry fields: readiness, review status, visibility, service coverage, and next action.</span></div>
+        <div><strong data-i18n="registeredProjects.label">進度標記：</strong> <span data-i18n="registeredProjects.body">專案進度由已登錄資料彙整：就緒狀態、審查狀態、可見範圍、服務覆蓋與下一步。</span></div>
       </div>
       <table data-table="registered-projects"></table>
     </section>
     <section id="agents" class="table-view">
-      <div class="toolbar"><h2 data-i18n="sections.agents">本機服務 Agents</h2><input data-filter="agents" placeholder="篩選本機 agents"></div>
+      <div class="toolbar"><h2 data-i18n="sections.agents">本機服務代理</h2><input data-filter="agents" placeholder="篩選本機代理"></div>
       <table data-table="agents"></table>
     </section>
     <section id="startup" class="table-view">
@@ -2666,82 +2801,112 @@ export function renderDashboardHtml(state) {
       <table data-table="routes"></table>
     </section>
     <section id="terminal" class="table-view">
-      <div class="toolbar"><h2 data-i18n="sections.terminal">Terminal Profiles</h2><input data-filter="terminal" placeholder="篩選 terminal"></div>
+      <div class="toolbar"><h2 data-i18n="sections.terminal">終端機設定檔</h2><input data-filter="terminal" placeholder="篩選終端機設定"></div>
       <table data-table="terminal"></table>
     </section>
     <section id="api-keys" class="table-view">
-      <div class="toolbar"><h2 data-i18n="sections.apiKeys">API Key 治理</h2><input data-filter="api-keys" placeholder="篩選 API keys"></div>
+      <div class="toolbar"><h2 data-i18n="sections.apiKeys">API 金鑰治理</h2><input data-filter="api-keys" placeholder="篩選 API 金鑰"></div>
       <table data-table="api-keys"></table>
     </section>
     <section id="storage-assets" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.storageAssets">儲存治理</h2><input data-filter="storage-assets" placeholder="篩選儲存資產"></div>
       <div class="guidance">
-        <div><strong data-i18n="storageAssets.label">Storage policy:</strong> <span data-i18n="storageAssets.body">Long-lived local storage assets are listed here with their policy, live footprint, channel sharing state, and reviewed Doctor or Reset controls.</span></div>
+        <div><strong data-i18n="storageAssets.label">儲存政策：</strong> <span data-i18n="storageAssets.body">長期本機儲存資產會在這裡列出政策、即時占用、通道共享狀態，以及已審核的 Doctor[診斷] 或 Reset[重設] 控制。</span></div>
       </div>
       <div data-table="storage-assets" class="storage-asset-list"></div>
     </section>
     <section id="agent-instructions" class="table-view">
-      <div class="toolbar"><h2 data-i18n="sections.agentInstructions">Agent Instructions</h2><input data-filter="agent-instructions" placeholder="篩選 agent instructions"></div>
+      <div class="toolbar"><h2 data-i18n="sections.agentInstructions">Agent 指令</h2><input data-filter="agent-instructions" placeholder="篩選 Agent 指令"></div>
       <div class="guidance" id="agent-storage-guidance"></div>
       <table data-table="agent-instructions"></table>
     </section>
     <section id="workspace-predictor" class="table-view">
       <div class="toolbar">
-        <h2 data-i18n="sections.workspacePredictor">Workspace Rule Predictor</h2>
-        <div class="inline-actions predictor-actions">
-          <input id="workspace-predictor-path" placeholder="Q:\\\\Projects\\\\example-app" aria-label="Workspace path">
-          <button class="action-button" type="button" id="workspace-predictor-run" data-i18n="workspacePredictor.run">Predict</button>
-          <button class="action-button" type="button" id="workspace-predictor-rules-mode" data-rules-mode="compact" data-i18n="workspacePredictor.ruleList.showFull">Show full rules</button>
-          <button class="action-button" type="button" id="workspace-predictor-clear" data-i18n="workspacePredictor.clear">Clear</button>
-        </div>
-      </div>
-      <div class="guidance">
-        <div><strong data-i18n="workspacePredictor.label">Prediction model:</strong> <span data-i18n="workspacePredictor.body">Enter a local workspace path to preview which governance layers, safety gates, and verification checks an agent should expect before touching the project.</span></div>
+        <h2 data-i18n="sections.workspacePredictor">工作區規則預測</h2>
       </div>
       <div class="prediction-layout">
-        <div class="prediction-summary" id="workspace-prediction-summary"></div>
-        <div class="prediction-tabs" role="tablist" aria-label="Workspace prediction tabs">
-          <button type="button" data-prediction-tab="summary" aria-selected="true" data-i18n="workspacePredictor.tabs.summary">Summary</button>
-          <button type="button" data-prediction-tab="rules" aria-selected="false" data-i18n="workspacePredictor.tabs.rules">Rules</button>
-          <button type="button" data-prediction-tab="checks" aria-selected="false" data-i18n="workspacePredictor.tabs.checks">Checks</button>
+        <div class="prediction-stage prediction-stage--intake">
+          <div class="prediction-step">
+            <span class="prediction-step-index">01</span>
+            <div class="prediction-step-copy">
+              <strong data-i18n="workspacePredictor.steps.intakeTitle">選取工作區</strong>
+              <span data-i18n="workspacePredictor.body">輸入本機工作區路徑，預先檢視代理在碰觸專案前應套用的治理層、安全門檻與驗證檢查。</span>
+            </div>
+          </div>
+          <div class="prediction-stage-body inline-actions predictor-actions">
+            <input id="workspace-predictor-path" placeholder="Q:\\\\Projects\\\\example-app" aria-label="Workspace path">
+            <button class="action-button" type="button" id="workspace-predictor-run" data-i18n="workspacePredictor.run">預測</button>
+            <button class="action-button" type="button" id="workspace-predictor-clear" data-i18n="workspacePredictor.clear">清除</button>
+          </div>
         </div>
-        <div class="prediction-panel" id="workspace-prediction-panel"></div>
+        <div class="prediction-stage prediction-stage--outcome">
+          <div class="prediction-step">
+            <span class="prediction-step-index">02</span>
+            <div class="prediction-step-copy">
+              <strong data-i18n="workspacePredictor.steps.outcomeTitle">閱讀結果</strong>
+              <span data-i18n="workspacePredictor.steps.outcomeBody">先確認路徑分類、政策狀態與規則數量，再進入細節。</span>
+            </div>
+          </div>
+          <div class="prediction-stage-body">
+            <div class="prediction-summary" id="workspace-prediction-summary"></div>
+          </div>
+        </div>
+        <div class="prediction-stage">
+          <div class="prediction-step">
+            <span class="prediction-step-index">03</span>
+            <div class="prediction-step-copy">
+              <strong data-i18n="workspacePredictor.steps.reviewTitle">檢視治理層與檢查</strong>
+              <span data-i18n="workspacePredictor.steps.reviewBody">依序查看判定備註、生效規則與驗證命令。</span>
+            </div>
+          </div>
+          <div class="prediction-stage-body">
+            <div class="prediction-tabs-row">
+              <div class="prediction-tabs" role="tablist" aria-label="Workspace prediction tabs">
+                <button type="button" data-prediction-tab="summary" aria-controls="workspace-prediction-panel" aria-selected="true" data-i18n="workspacePredictor.tabs.summary">摘要</button>
+                <button type="button" data-prediction-tab="rules" aria-controls="workspace-prediction-panel" aria-selected="false" data-i18n="workspacePredictor.tabs.rules">規則</button>
+                <button type="button" data-prediction-tab="checks" aria-controls="workspace-prediction-panel" aria-selected="false" data-i18n="workspacePredictor.tabs.checks">檢查</button>
+              </div>
+              <button class="action-button prediction-tab-action" type="button" id="workspace-predictor-rules-mode" data-rules-mode="compact" data-i18n="workspacePredictor.ruleList.showFull">顯示完整規則</button>
+            </div>
+            <div class="prediction-panel" id="workspace-prediction-panel" role="tabpanel"></div>
+          </div>
+        </div>
       </div>
     </section>
     <section id="web-entrypoints" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.webEntrypoints">Web 入口</h2><input data-filter="web-entrypoints" placeholder="篩選 web 入口"></div>
       <div class="guidance">
-        <div><strong data-i18n="webEntrypoints.label">TB2 entry:</strong> <span data-i18n="webEntrypoints.body">TB2 prod/staging health-only public web entries are listed here with the unified DevGov dashboard links. Route health is checked in Service Status.</span></div>
+        <div><strong data-i18n="webEntrypoints.label">TB2 入口：</strong> <span data-i18n="webEntrypoints.body">這裡列出 TB2 正式與測試環境的公開健康檢查入口，並集中放在 DevGov 儀表板視圖中。實際路由健康狀態請到「服務狀態」檢查。</span></div>
       </div>
       <table data-table="web-entrypoints"></table>
     </section>
     <section id="service-status" class="table-view">
       <div class="toolbar">
-        <h2 data-i18n="sections.serviceStatus">Network Service Status</h2>
+        <h2 data-i18n="sections.serviceStatus">網路服務狀態</h2>
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
           <input data-filter="service-status" placeholder="篩選服務">
         </div>
       </div>
       <div class="guidance">
-        <div><strong data-i18n="restartPolicy.label">Restart policy:</strong> <span data-i18n="restartPolicy.body">Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。已審查的 Doctor/restart 控制會直接顯示在狀態 flag 上；未通過 restart policy 的 service 仍維持 review-gated。</span></div>
+        <div><strong data-i18n="restartPolicy.label">重啟政策：</strong> <span data-i18n="restartPolicy.body">「Quick Test[快速檢查]」只執行安全健康檢查，並回報 Doctor[診斷] 與 Restart[重啟] 的就緒狀態。已審查的控制會直接顯示在狀態標記上；重啟政策未完整的服務仍維持審查門檻。</span></div>
       </div>
       <table data-table="service-status"></table>
     </section>
     <section id="service-onboarding" class="table-view">
       <div class="toolbar">
-        <h2 data-i18n="sections.serviceOnboarding">Existing Project Onboarding</h2>
+        <h2 data-i18n="sections.serviceOnboarding">既有專案補件</h2>
         <div class="inline-actions">
-          <button class="action-button" type="button" id="refresh-service-onboarding" data-i18n="serviceOnboarding.runAudit">Run audit</button>
+          <button class="action-button" type="button" id="refresh-service-onboarding" data-i18n="serviceOnboarding.runAudit">執行稽核</button>
           <input data-filter="service-onboarding" placeholder="篩選補充程序">
         </div>
       </div>
       <div class="guidance">
-        <div><strong data-i18n="serviceOnboarding.label">Procedure:</strong> <span data-i18n="serviceOnboarding.body">This audit cross-checks the port registry, startup registry, public routes, local agents, and Service Status readiness so we can see which registered projects still need Doctor, Quick Test, or startup supplementation.</span></div>
+        <div><strong data-i18n="serviceOnboarding.label">程序：</strong> <span data-i18n="serviceOnboarding.body">這份稽核會交叉比對連接埠登記、啟動登記、公開路由、本機代理與服務狀態就緒資訊，快速找出哪些已登記專案還缺 Doctor[診斷]、Quick Test[快速檢查] 或啟動補件。</span></div>
       </div>
       <table data-table="service-onboarding"></table>
     </section>
     <section id="web-console-events" class="table-view">
-      <div class="toolbar"><h2 data-i18n="sections.webConsoleEvents">Web Console Events</h2><input data-filter="web-console-events" placeholder="篩選事件"></div>
+      <div class="toolbar"><h2 data-i18n="sections.webConsoleEvents">網頁事件</h2><input data-filter="web-console-events" placeholder="篩選事件"></div>
       <table data-table="web-console-events"></table>
     </section>
   </div>
@@ -2862,11 +3027,20 @@ const messages = {
         body: 'Enter a local workspace path to preview which governance layers, safety gates, and verification checks an agent should expect before touching the project.',
         run: 'Predict',
         clear: 'Clear',
+        steps: {
+          intakeTitle: 'Select workspace',
+          outcomeTitle: 'Read outcome',
+          outcomeBody: 'Confirm the path class, policy state, and rule count before reviewing details.',
+          reviewTitle: 'Review layers and checks',
+          reviewBody: 'Move from decision notes to effective rules, then to verification commands.'
+        },
         ruleList: {
           showFull: 'Show full rules',
           showCompact: 'Show compact rules',
           modeCompact: 'Compact list',
           modeFull: 'Full list',
+          intro: 'Rules are grouped first by governance layer, then by item type so authority, safety, data, tools, and verification stay separated.',
+          typeSummary: 'Rule type summary',
           fullHint: 'Switch to compact mode to preview only a subset.',
           compactHint: 'Switch to full rules mode to see the complete list.'
         },
@@ -2886,7 +3060,9 @@ const messages = {
       summaryBody: 'The prediction is read-only and based on registered DevGov instruction taxonomy plus local workspace rules. It does not scan or mutate the selected path.',
       rulesTitle: 'Predicted rules',
       checksTitle: 'Next checks',
+      checksBody: 'Run the smallest relevant verification after the expected instruction layers and safety gates are understood.',
       risksTitle: 'Decision notes',
+      layersTitle: 'Layer sequence',
       ruleHeaders: {
         rule: 'Rule',
         type: 'Type',
@@ -3074,19 +3250,19 @@ const messages = {
   },
   zhTw: {
     language: { code: 'zhTw', htmlLang: 'zh-Hant', switchLabel: 'English', ariaPressed: 'true' },
-    subtitle: '本機治理主控台：集中檢查 ports、startup automation、public routes 與 workspace readiness。',
+    subtitle: '本機治理主控台：集中檢查連接埠（ports）、登入啟動、公開路由與工作區就緒狀態。',
     theme: { dark: '深色模式', light: '淺色模式' },
     nav: {
       overview: '總覽',
-      ports: 'Ports',
+      ports: '連接埠',
       registeredProjects: '本機登記專案',
-      agents: '本機 Agents',
+      agents: '本機代理',
       startup: '啟動治理',
       routes: '公開路由',
-      terminal: 'Terminal Profiles',
-      apiKeys: 'API Key 治理',
+      terminal: '終端機設定',
+      apiKeys: 'API 金鑰治理',
       storageAssets: '儲存治理',
-      agentInstructions: 'Agent Instructions',
+      agentInstructions: 'Agent 指令',
       workspacePredictor: '工作區預測',
       webEntrypoints: 'Web 入口',
       serviceStatus: '服務狀態',
@@ -3094,31 +3270,31 @@ const messages = {
       webConsoleEvents: '網頁事件'
     },
     sections: {
-      ports: 'Port Registry',
+      ports: '連接埠登記',
       registeredProjects: '本機登記專案',
-      agents: '本機服務 Agents',
+      agents: '本機服務代理',
       startup: '啟動治理',
       routes: '公開路由',
-      terminal: 'Terminal Profiles',
-      apiKeys: 'API Key 治理',
+      terminal: '終端機設定檔',
+      apiKeys: 'API 金鑰治理',
       storageAssets: '儲存治理',
-      agentInstructions: 'Agent Instructions',
+      agentInstructions: 'Agent 指令',
       workspacePredictor: '工作區規則預測',
       webEntrypoints: 'Web 入口',
-      serviceStatus: 'Network Service Status',
+      serviceStatus: '網路服務狀態',
       serviceOnboarding: '既有專案補充程序',
       webConsoleEvents: '網頁事件'
     },
     placeholders: {
-      ports: '篩選 ports',
+      ports: '篩選連接埠',
       registeredProjects: '篩選本機登記專案',
-      agents: '篩選本機 agents',
+      agents: '篩選本機代理',
       startup: '篩選啟動項目',
       routes: '篩選公開路由',
-      terminal: '篩選 terminal',
-      apiKeys: '篩選 API keys',
+      terminal: '篩選終端機設定',
+      apiKeys: '篩選 API 金鑰',
       storageAssets: '篩選儲存資產',
-      agentInstructions: '篩選 agent instructions',
+      agentInstructions: '篩選 Agent 指令',
       workspacePredictor: 'Q:\\\\Projects\\\\example-app',
       webEntrypoints: '篩選 web 入口',
       serviceStatus: '篩選服務',
@@ -3126,30 +3302,30 @@ const messages = {
       webConsoleEvents: '篩選網頁事件'
     },
     metrics: {
-      ports: 'Ports',
+      ports: '連接埠',
       registeredProjects: '專案',
-      agents: 'Agents',
+      agents: '代理',
       startup: '啟動項目',
-      routes: 'Routes',
-      profiles: 'Profiles',
-      apiKeys: 'API Keys',
-      storageAssets: 'Storage',
-      instructions: 'Instructions',
+      routes: '路由',
+      profiles: '設定檔',
+      apiKeys: 'API 金鑰',
+      storageAssets: '儲存資產',
+      instructions: '指令',
       webEntrypoints: 'Web 入口',
       webConsoleEvents: '網頁事件'
     },
     webEntrypoints: {
-      label: 'TB2 entry:',
-      body: 'TB2 prod/staging health-only public web entries 會在這裡直接列出，並和 DevGov dashboard 入口放在同一個視圖。實際 route health 請看 Service Status。'
+      label: 'TB2 入口:',
+      body: '這裡列出 TB2 正式與測試環境的公開健康檢查入口，並集中放在 DevGov 儀表板視圖中。實際路由健康狀態請到「服務狀態」檢查。'
     },
     restartPolicy: {
-      label: 'Restart policy:',
-      body: 'Quick Test 欄位只執行安全 health check，並回報 Doctor/restart readiness。已審查的 Doctor/restart 控制會直接顯示在狀態 flag 上；未通過 restart policy 的 service 仍維持 review-gated。'
+      label: '重啟政策:',
+      body: '「Quick Test[快速檢查]」只執行安全健康檢查，並回報 Doctor[診斷] 與 Restart[重啟] 的就緒狀態。已審查的控制會直接顯示在狀態標記上；重啟政策未完整的服務仍維持審查門檻。'
     },
     serviceOnboarding: {
-      label: 'Procedure:',
-      body: '這份 audit 會交叉比對 port registry、startup registry、public routes、local agents 與 Service Status readiness，快速找出哪些已登記專案還缺 Doctor、Quick Test 或 startup 補件。',
-      runAudit: '重跑 audit'
+      label: '程序:',
+      body: '這份稽核會交叉比對連接埠登記、啟動登記、公開路由、本機代理與服務狀態就緒資訊，快速找出哪些已登記專案還缺 Doctor[診斷]、Quick Test[快速檢查] 或啟動補件。',
+      runAudit: '重跑稽核'
     },
     registeredProjects: {
       label: '進度標籤:',
@@ -3157,18 +3333,27 @@ const messages = {
     },
     storageAssets: {
       label: '儲存政策:',
-      body: '長期本機儲存資產會在這裡列出政策、即時占用、channel 共享狀態，以及已審核的 Doctor 或 Reset 控制。'
+      body: '長期本機儲存資產會在這裡列出政策、即時占用、通道共享狀態，以及已審核的 Doctor[診斷] 或 Reset[重設] 控制。'
     },
       workspacePredictor: {
         label: '預測模型:',
-        body: '輸入本機工作區路徑後，先預覽 agent 在動手前會受到哪些治理層、safety gate 與驗證檢查約束。',
+        body: '輸入本機工作區路徑後，先預覽代理在動手前會受到哪些治理層、安全門檻與驗證檢查約束。',
         run: '預測',
         clear: '清除',
+        steps: {
+          intakeTitle: '選取工作區',
+          outcomeTitle: '讀取判定',
+          outcomeBody: '先確認路徑分類、政策狀態與規則數量，再進入細節。',
+          reviewTitle: '檢查層級與驗證',
+          reviewBody: '依序查看決策提示、生效規則，最後確認驗證命令。'
+        },
         ruleList: {
           showFull: '顯示完整規則',
           showCompact: '顯示精簡規則',
           modeCompact: '精簡列表',
           modeFull: '完整列表',
+          intro: '規則先依治理層分組，再依項目類型分組，讓權限、安全、資料、工具與驗證保持分離。',
+          typeSummary: '規則類型摘要',
           fullHint: '切到精簡列表只顯示部份預覽。',
           compactHint: '切到完整列表可查看全部規則。'
         },
@@ -3176,7 +3361,7 @@ const messages = {
       ready: '符合治理工作區',
       review: '需要審查',
       blocked: '被工作區政策擋下',
-      unresolved: '需讀取 repo 文件後才可判定',
+      unresolved: '需讀取儲存庫文件後才可判定',
       detectedProject: '辨識專案',
       pathClass: '路徑分類',
       tabs: {
@@ -3184,11 +3369,13 @@ const messages = {
         rules: '規則',
         checks: '檢查'
       },
-      summaryTitle: 'Agent 工作前的預期治理',
+      summaryTitle: '代理工作前的預期治理',
       summaryBody: '這個預測只讀取已載入的 DevGov 指令分類與本機工作區規則；不掃描、不修改你輸入的路徑。',
       rulesTitle: '預測規則',
       checksTitle: '下一步檢查',
+      checksBody: '理解預期指令層與安全門檻後，再執行最小且相關的驗證。',
       risksTitle: '決策提示',
+      layersTitle: '治理層順序',
       ruleHeaders: {
         rule: '規則',
         type: '類型',
@@ -3212,7 +3399,7 @@ const messages = {
         'platform-runtime': '平台執行期 (platform-runtime)',
         'global-home': '使用者全域 (global-home)',
         workspace: '工作區 (workspace)',
-        'repo-local': 'Repo 本地 (repo-local)',
+        'repo-local': '儲存庫本地 (repo-local)',
         subtree: '子目錄 (subtree)',
         'task-request': '本次請求 (task-request)'
       },
@@ -3229,18 +3416,18 @@ const messages = {
       reasons: {
         empty: '輸入工作區路徑後即可生成預測。',
         workspaceOutsideQ: '選取的路徑位於受治理的 Q: 工作區之外。',
-        repoInstructionsUnknown: '選定工作區後，仍需檢查目標 repo 的 AGENTS.md。',
+        repoInstructionsUnknown: '選定工作區後，仍需檢查目標儲存庫（repo）的 AGENTS.md。',
         subtreeUnknown: '較窄的資料夾覆寫規則需等檢查目標樹狀結構後才能判定。',
         loadedTaxonomy: '依已載入的 DevGov 指令分類預測。',
-        projectOutsideQ: 'Q:\\\\ 之外的專案工作需要 operator 明確指示。',
+        projectOutsideQ: 'Q:\\\\ 之外的專案工作需要操作者明確指示。',
         outsideProjects: 'Q: 可用，但此路徑不在 Q:\\\\Projects 底下。',
-        selectedRepoUnknown: '選取的 repo 可能有本 dashboard 尚未載入的 AGENTS.md。',
-        worktreeContainer: '此路徑符合受治理的 linked-worktree container 模式。',
+        selectedRepoUnknown: '選取的儲存庫（repo）可能有本儀表板尚未載入的 AGENTS.md。',
+        worktreeContainer: '此路徑符合受治理的 linked worktree[連結工作樹] 容器模式。',
         loadedPolicyPathClass: '依已載入政策與選取路徑分類預測。'
       }
     },
     controlDialog: {
-      title: 'Service Control',
+      title: '服務控制',
       confirm: '執行',
       cancel: '取消',
       close: '關閉',
@@ -3259,30 +3446,30 @@ const messages = {
       failed: '失敗',
       canceled: '已取消',
       empty: '目前沒有執行項目',
-      idleDetail: '等待 dashboard 操作。',
+      idleDetail: '等待儀表板操作。',
       tasks: {
         serviceStatus: '服務狀態刷新',
-        serviceOnboarding: '補充程序 audit',
+        serviceOnboarding: '補充程序稽核',
         webConsoleEvents: '網頁事件刷新',
         workspacePredictor: '工作區預測',
         workspaceClear: '清除工作區預測',
         serviceControl: '服務控制'
       },
       details: {
-        serviceStatus: '檢查已登記服務 health。',
+        serviceStatus: '檢查已登記服務的健康狀態。',
         serviceStatusDone: '服務狀態已刷新。',
         serviceStatusFailed: '服務狀態刷新失敗。',
-        serviceOnboarding: '刷新 onboarding audit rows。',
-        serviceOnboardingDone: '補充程序 audit 已刷新。',
-        serviceOnboardingFailed: '補充程序 audit 失敗。',
-        webConsoleEvents: '載入 dashboard 網頁事件證據。',
+        serviceOnboarding: '刷新補充程序稽核列。',
+        serviceOnboardingDone: '補充程序稽核已刷新。',
+        serviceOnboardingFailed: '補充程序稽核失敗。',
+        webConsoleEvents: '載入儀表板網頁事件證據。',
         webConsoleEventsDone: '網頁事件證據已刷新。',
         webConsoleEventsFailed: '網頁事件證據刷新失敗。',
         workspacePredictor: '評估選取的工作區路徑。',
         workspacePredictorDone: '工作區預測已產生。',
         workspacePredictorFailed: '工作區預測失敗。',
         workspaceClear: '已清除本機預測輸入。',
-        serviceControlConfirm: '等待 operator 確認。',
+        serviceControlConfirm: '等待操作者確認。',
         serviceControlRun: '送出已審查的本機控制請求。',
         serviceControlDone: '控制請求已完成。',
         serviceControlFailed: '控制請求失敗。',
@@ -3290,74 +3477,74 @@ const messages = {
       }
     },
     labels: {
-      dashboard: 'Dashboard',
-      socket: 'Socket',
-      policy: 'Policy',
-      notes: 'Notes',
-      missingDashboard: '找不到 dashboard port entry',
+      dashboard: '儀表板',
+      socket: '通訊端',
+      policy: '政策',
+      notes: '備註',
+      missingDashboard: '找不到儀表板連接埠登記',
       project: '專案',
       progress: '進度',
-      service: 'Service',
+      service: '服務',
       services: '服務',
-      visibility: 'Visibility',
-      agent: 'Agent',
-      kind: 'Kind',
-      health: 'Health',
-      startup: 'Startup',
-      status: 'Status',
+      visibility: '可見範圍',
+      agent: '代理',
+      kind: '類型',
+      health: '健康檢查',
+      startup: '啟動',
+      status: '狀態',
       id: 'ID',
-      trigger: 'Trigger',
-      script: 'Script',
-      purpose: 'Purpose',
-      hostname: 'Hostname',
-      healthUrl: 'Health URL',
-      localTarget: 'Local Target',
-      exposure: 'Exposure',
-      access: 'Access',
-      name: 'Name',
-      assetPolicy: 'Asset Policy',
-      variable: 'Variable',
-      storage: 'Storage',
+      trigger: '觸發條件',
+      script: '腳本',
+      purpose: '用途',
+      hostname: '主機名稱',
+      healthUrl: '健康檢查網址',
+      localTarget: '本機目標',
+      exposure: '暴露範圍',
+      access: '存取',
+      name: '名稱',
+      assetPolicy: '資產政策',
+      variable: '變數',
+      storage: '儲存位置',
       storageAsset: '儲存資產',
       currentStore: '目前儲存',
-      channels: 'Channels',
+      channels: '通道',
       controls: '控制',
-      primaryOwner: 'Primary Owner',
+      primaryOwner: '主要擁有者',
       sharedWith: '共用對象',
-      modelStore: 'Model Store',
+      modelStore: '模型儲存區',
       physicalPolicy: '實體政策',
       liveSummary: '即時摘要',
-      primaryPath: 'Primary Path',
-      versions: 'Versions',
+      primaryPath: '主要路徑',
+      versions: '版本',
       physicalSize: '實體大小',
-      pendingLiveCheck: '等待 live check',
-      settings: 'Settings',
-      type: 'Type',
-      layer: 'Layer',
-      requirement: 'Requirement',
-      evidence: 'Evidence',
-      entryUrl: 'Entry URL',
-      stage: 'Stage',
-      endpoint: 'Endpoint',
-      quickTest: 'Quick Test',
-      lastCheck: 'Last Check',
-      runtimeSource: 'Runtime source',
-      canonicalRegistry: 'Canonical registry',
-      generatedJson: 'Generated local JSON',
-      generatedText: 'Generated text index',
-      unitextEndpoint: 'UniText query endpoint',
-      required: 'required',
-      notRequired: 'not required',
+      pendingLiveCheck: '等待即時檢查',
+      settings: '設定',
+      type: '類型',
+      layer: '治理層',
+      requirement: '需求',
+      evidence: '依據',
+      entryUrl: '入口網址',
+      stage: '階段',
+      endpoint: '端點',
+      quickTest: '快速檢查',
+      lastCheck: '上次檢查',
+      runtimeSource: '執行期來源',
+      canonicalRegistry: '權威登記檔',
+      generatedJson: '產生的本機 JSON',
+      generatedText: '產生的文字索引',
+      unitextEndpoint: 'UniText 查詢端點',
+      required: '需要',
+      notRequired: '不需要',
       pending: '待補',
-      doctor: 'Doctor',
-      restart: 'Restart',
-      readiness: 'Readiness',
+      doctor: '診斷 (Doctor)',
+      restart: '重啟 (Restart)',
+      readiness: '就緒狀態',
       nextAction: '下一步',
       tags: '標籤',
       sources: '來源',
-      gaps: 'Gaps',
-      links: 'Quick Links',
-      noGaps: 'none',
+      gaps: '缺口',
+      links: '快速連結',
+      noGaps: '無',
       eventType: '事件類型',
       source: '來源',
       path: '路徑',
@@ -3371,7 +3558,53 @@ const messages = {
       command: '命令',
       when: '時機',
       openCard: '進入',
-      zhTwCompanion: '中文版'
+      zhTwCompanion: '繁體中文版本'
+    },
+    terms: {
+      READY: '已就緒 (READY)',
+      PARTIAL: '部分完成 (PARTIAL)',
+      BLOCKED: '已阻擋 (BLOCKED)',
+      UNTRACKED: '未追蹤 (UNTRACKED)',
+      ONLINE: '上線 (ONLINE)',
+      OFFLINE: '離線 (OFFLINE)',
+      ERROR: '錯誤 (ERROR)',
+      CHECKING: '檢查中 (CHECKING)',
+      FOUND: '已找到 (FOUND)',
+      MISSING: '缺少 (MISSING)',
+      DISABLED: '已停用 (DISABLED)',
+      REVIEW_REQUIRED: '需要審查 (REVIEW_REQUIRED)',
+      NOT_APPLICABLE: '不適用 (NOT_APPLICABLE)',
+      approved: '已核准 (approved)',
+      reviewed: '已審查 (reviewed)',
+      candidate: '候選 (candidate)',
+      deprecated: '已退役 (deprecated)',
+      local: '本機 (local)',
+      public: '公開 (public)',
+      primary: '主要 (primary)',
+      linked: '已連結 (linked)',
+      skipped: '已略過 (skipped)',
+      drift: '偏移 (drift)',
+      required: '需要',
+      'not required': '不需要',
+      'browser-model-cache': '瀏覽器模型快取 (browser-model-cache)',
+      'windows-service-agent': 'Windows 服務代理',
+      'runtime-command': '執行期命令',
+      'local-web-ui': '本機 Web 介面',
+      'hardware-observation': '硬體觀測',
+      'filesystem-policy': '檔案系統政策',
+      'portable-runtime': '可攜執行期',
+      'vite-dev-runtime': 'Vite 開發執行期',
+      'source-repo': '來源儲存庫 (source-repo)',
+      'devgov-repo': 'DevGov 儲存庫',
+      SymbolicLink: '符號連結 (SymbolicLink)',
+      Junction: '目錄接合 (Junction)',
+      Directory: '資料夾 (Directory)',
+      'not installed': '未安裝',
+      'user-login': '使用者登入',
+      manual: '手動',
+      startup: '啟動',
+      publicRoute: '公開路由',
+      serviceControl: '服務控制'
     }
   }
 };
@@ -3516,7 +3749,20 @@ function activateView(viewId, options = {}) {
   if (options.updateUrl) {
     syncViewUrl(button.dataset.view);
   }
-  Motion.switchView(document.getElementById(button.dataset.view), button);
+  const activeView = document.getElementById(button.dataset.view);
+  Motion.switchView(activeView, button);
+  if (options.enterDashboard) {
+    const alignActiveView = () => {
+      if (!activeView) return;
+      const headerBottom = document.querySelector('header')?.getBoundingClientRect().bottom || 0;
+      const nextTop = window.scrollY + activeView.getBoundingClientRect().top - headerBottom - 14;
+      window.scrollTo(0, Math.max(0, nextTop));
+    };
+    requestAnimationFrame(alignActiveView);
+    setTimeout(alignActiveView, 80);
+    setTimeout(alignActiveView, 240);
+    addEventListener('load', alignActiveView, { once: true });
+  }
 }
 function syncViewUrl(viewId) {
   const hash = '#' + encodeURIComponent(viewId);
@@ -4023,23 +4269,23 @@ function renderRegisteredProjects(query) {
 }
 function renderAgents(query) {
   const rows = state.localAgents.filter(row => match(row, query));
-  renderTable('agents', [t('labels.agent'), t('labels.kind'), t('labels.health'), t('labels.startup'), t('labels.status')], rows.map(row => [textCell(row.displayName), textCell(row.kind), linkify(row.healthUrl), fileRef(row.startupRef), pill(row.status)]));
+  renderTable('agents', [t('labels.agent'), t('labels.kind'), t('labels.health'), t('labels.startup'), t('labels.status')], rows.map(row => [textCell(row.displayName), termCell(row.kind), linkify(row.healthUrl), fileRef(row.startupRef), pill(row.status)]));
 }
 function renderStartup(query) {
   const rows = state.startupEntries.filter(row => match(row, query));
-  renderTable('startup', [t('labels.id'), t('labels.trigger'), t('labels.status'), t('labels.script'), t('labels.purpose')], rows.map(row => [textCell(row.id), textCell(row.trigger), pill(row.status), fileRef(row.scriptRef), linkify(row.purpose)]));
+  renderTable('startup', [t('labels.id'), t('labels.trigger'), t('labels.status'), t('labels.script'), t('labels.purpose')], rows.map(row => [textCell(row.id), termCell(row.trigger), pill(row.status), fileRef(row.scriptRef), linkify(row.purpose)]));
 }
 function renderRoutes(query) {
   const rows = state.publicRoutes.filter(row => match(row, query));
-  renderTable('routes', [t('labels.hostname'), t('labels.healthUrl'), t('labels.localTarget'), t('labels.exposure'), t('labels.access'), t('labels.status')], rows.map(row => [linkify('https://' + row.hostname), linkify(row.healthUrl), '<code>' + esc(row.localHost + ':' + row.localPort) + '</code>', textCell(row.exposureClass), row.accessRequired ? tEsc('labels.required') : tEsc('labels.notRequired'), pill(row.status)]));
+  renderTable('routes', [t('labels.hostname'), t('labels.healthUrl'), t('labels.localTarget'), t('labels.exposure'), t('labels.access'), t('labels.status')], rows.map(row => [linkify('https://' + row.hostname), linkify(row.healthUrl), '<code>' + esc(row.localHost + ':' + row.localPort) + '</code>', termCell(row.exposureClass), row.accessRequired ? tEsc('labels.required') : tEsc('labels.notRequired'), pill(row.status)]));
 }
 function renderTerminal(query) {
   const rows = state.terminalProfiles.filter(row => match(row, query));
-  renderTable('terminal', [t('labels.id'), t('labels.name'), t('labels.assetPolicy'), t('labels.status'), t('labels.notes')], rows.map(row => [textCell(row.id), textCell(row.name), textCell(row.assetPolicy), pill(row.status), linkify(row.notes)]));
+  renderTable('terminal', [t('labels.id'), t('labels.name'), t('labels.assetPolicy'), t('labels.status'), t('labels.notes')], rows.map(row => [textCell(row.id), textCell(row.name), termCell(row.assetPolicy), pill(row.status), linkify(row.notes)]));
 }
 function renderApiKeys(query) {
   const rows = state.apiKeys.filter(row => match(row, query));
-  renderTable('api-keys', [t('labels.variable'), t('labels.service'), t('labels.storage'), t('labels.settings'), t('labels.status')], rows.map(row => [textCell(row.variableName), textCell(row.service), textCell(row.storageLocation), linkify(row.settingsUrl), pill(row.status)]));
+  renderTable('api-keys', [t('labels.variable'), t('labels.service'), t('labels.storage'), t('labels.settings'), t('labels.status')], rows.map(row => [textCell(row.variableName), textCell(row.service), termCell(row.storageLocation), linkify(row.settingsUrl), pill(row.status)]));
 }
 function renderStorageAssets(query) {
   const rows = state.storageRecords.filter(row => match(row, query));
@@ -4052,10 +4298,11 @@ function renderStorageAssets(query) {
   Motion.rows('storage-assets');
 }
 function renderStorageAssetPanel(row) {
+  const policy = localizedStoragePolicy(row);
   return '<article class="storage-asset">'
     + '<header class="storage-asset-head">'
     + renderStorageAssetCell(row)
-    + '<div class="storage-asset-summary">' + esc(row.physicalPolicy) + '</div>'
+    + '<div class="storage-asset-summary">' + esc(policy) + '</div>'
     + '<div class="storage-badge-row">' + pill(row.readiness) + pill(row.reviewStatus) + '</div>'
     + '</header>'
     + '<div class="storage-asset-body">'
@@ -4076,8 +4323,8 @@ function renderStoragePanel(title, body, className = '') {
 }
 function renderStorageAssetCell(row) {
   return '<div class="storage-asset-identity">'
-    + '<span class="storage-asset-kicker">' + esc(row.storageKind) + '</span>'
-    + '<strong class="storage-asset-title">' + esc(row.label) + '</strong>'
+    + '<span class="storage-asset-kicker">' + esc(localizedTerm(row.storageKind)) + '</span>'
+    + '<strong class="storage-asset-title">' + esc(localizedStorageLabel(row)) + '</strong>'
     + '<code>' + esc(row.project) + '</code>'
     + '</div>';
 }
@@ -4085,27 +4332,27 @@ function renderStoragePolicyCell(row) {
   return '<dl class="storage-info-grid storage-policy-cell">'
     + '<dt>' + tEsc('labels.primaryOwner') + '</dt><dd>' + esc(row.primaryOwner) + '</dd>'
     + '<dt>' + tEsc('labels.modelStore') + '</dt><dd><code>' + esc(row.modelStore) + '</code></dd>'
-    + '<dt>' + tEsc('labels.policy') + '</dt><dd>' + esc(row.physicalPolicy) + '</dd>'
-    + '<dt>' + tEsc('labels.sharedWith') + '</dt><dd>' + esc((row.sharedWith || []).join(', ')) + '</dd>'
+    + '<dt>' + tEsc('labels.policy') + '</dt><dd>' + esc(localizedStoragePolicy(row)) + '</dd>'
+    + '<dt>' + tEsc('labels.sharedWith') + '</dt><dd>' + esc(localizedSharedWith(row)) + '</dd>'
     + '</dl>';
 }
 function renderStorageCurrentStoreCell(row) {
   const details = storageLiveDetails(row);
   const primary = storagePrimaryChannel(details);
   if (!details?.primaryPath && !primary) {
-    return '<div class="storage-detail-cell"><span>' + tEsc('labels.pendingLiveCheck') + '</span><span class="inline-meta">' + esc(row.physicalPolicy) + '</span></div>';
+    return '<div class="storage-detail-cell"><span>' + tEsc('labels.pendingLiveCheck') + '</span><span class="inline-meta">' + esc(localizedStoragePolicy(row)) + '</span></div>';
   }
   const versions = primary?.versions?.length ? primary.versions.join(', ') : '';
   const size = Number.isFinite(primary?.bytes) ? formatStorageBytes(primary.bytes) : '';
   const warnings = Array.isArray(details.warnings) ? details.warnings : [];
   return '<div class="storage-detail-cell">'
     + '<dl class="storage-info-grid">'
-    + (details.summary ? '<dt>' + tEsc('labels.liveSummary') + '</dt><dd>' + esc(details.summary) + '</dd>' : '')
+    + (details.summary ? '<dt>' + tEsc('labels.liveSummary') + '</dt><dd>' + esc(localizedStorageSummary(details.summary)) + '</dd>' : '')
     + (details.primaryPath ? '<dt>' + tEsc('labels.primaryPath') + '</dt><dd class="storage-path"><code>' + esc(details.primaryPath) + '</code></dd>' : '')
     + (versions ? '<dt>' + tEsc('labels.versions') + '</dt><dd>' + esc(versions) + '</dd>' : '')
     + (size ? '<dt>' + tEsc('labels.physicalSize') + '</dt><dd>' + esc(size) + '</dd>' : '')
     + '</dl>'
-    + (warnings.length ? '<div class="storage-note-list">' + warnings.map(warning => '<span class="inline-meta">' + esc(warning) + '</span>').join('') + '</div>' : '')
+    + (warnings.length ? '<div class="storage-note-list">' + warnings.map(warning => '<span class="inline-meta">' + esc(localizedStorageWarning(warning)) + '</span>').join('') + '</div>' : '')
     + '</div>';
 }
 function renderStorageChannelCell(row) {
@@ -4127,10 +4374,10 @@ function renderStorageChannelBadge(channel) {
         ? 'linked'
         : 'drift';
   const detailParts = [];
-  if (channel.linkType) detailParts.push(channel.linkType);
+  if (channel.linkType) detailParts.push(localizedTerm(channel.linkType));
   if (Array.isArray(channel.versions) && channel.versions.length) detailParts.push(channel.versions.join(', '));
   if (Number.isFinite(channel.bytes)) detailParts.push(formatStorageBytes(channel.bytes));
-  if (channel.rootExists === false) detailParts.push('not installed');
+  if (channel.rootExists === false) detailParts.push(localizedTerm('not installed'));
   return '<div class="storage-channel storage-channel-' + esc(state) + '">'
     + '<div class="storage-channel-head"><strong>' + esc(channel.name) + '</strong>' + pill(state) + '</div>'
     + (detailParts.length ? '<span class="storage-channel-detail">' + esc(detailParts.join(' / ')) + '</span>' : '')
@@ -4152,6 +4399,44 @@ function renderStorageControlCell(row) {
 function storageControlTarget(row) {
   return serviceStatusRows.find(target => target.controlTargetId === row.controlTargetId)
     || state.serviceTargets.find(target => target.controlTargetId === row.controlTargetId);
+}
+function localizedStorageLabel(row) {
+  if (currentLanguage === 'zhTw' && row.id === 'chrome-ai-model-store') return 'Chrome AI 模型儲存區';
+  return row.label;
+}
+function localizedStoragePolicy(row) {
+  if (currentLanguage === 'zhTw' && row.id === 'chrome-ai-model-store') {
+    return '由 Stable Chrome 擔任主要模型儲存區；已安裝的其他 Chrome 通道透過檔案系統連結共用同一份模型資料。';
+  }
+  return row.physicalPolicy;
+}
+function localizedSharedWith(row) {
+  if (currentLanguage === 'zhTw' && row.id === 'chrome-ai-model-store') {
+    return 'Chrome Beta、Chrome Dev；Chrome Canary 於安裝時納入';
+  }
+  return (row.sharedWith || []).join(', ');
+}
+function localizedStorageSummary(value) {
+  const text = String(value || '');
+  if (currentLanguage !== 'zhTw') return text;
+  const chromeModelStore = /^Chrome AI model store is healthy: Stable has (\d+) version folder\(s\); linked channels: ([^;]+); skipped channels: ([^.]+)\.$/.exec(text);
+  if (chromeModelStore) {
+    return 'Chrome AI 模型儲存區健康：Stable 有 ' + chromeModelStore[1] + ' 個版本資料夾；已連結通道：'
+      + chromeModelStore[2].replaceAll(',', '、') + '；略過通道：' + chromeModelStore[3].replaceAll(',', '、') + '。';
+  }
+  return text
+    .replace('Chrome AI model store is healthy', 'Chrome AI 模型儲存區健康')
+    .replace('linked channels', '已連結通道')
+    .replace('skipped channels', '略過通道')
+    .replace('version folder(s)', '個版本資料夾');
+}
+function localizedStorageWarning(value) {
+  const text = String(value || '');
+  if (currentLanguage !== 'zhTw') return text;
+  if (text === 'Canary user-data root is not present; skipped as not installed.') {
+    return '找不到 Canary 使用者資料根目錄；判定為未安裝並略過。';
+  }
+  return text;
 }
 function storageLiveDetails(row) {
   const target = storageControlTarget(row);
@@ -4184,6 +4469,7 @@ function renderWorkspacePredictor() {
       ? 'workspacePredictor.ruleList.showCompact'
       : 'workspacePredictor.ruleList.showFull');
     workspacePredictorRulesMode.setAttribute('data-rules-mode', workspacePredictionRulesMode);
+    workspacePredictorRulesMode.hidden = workspacePredictionTab !== 'rules';
   }
   document.querySelectorAll('button[data-prediction-tab]').forEach((button) => {
     button.setAttribute('aria-selected', String(button.dataset.predictionTab === workspacePredictionTab));
@@ -4454,23 +4740,28 @@ function renderWorkspacePredictionSummary(prediction) {
     [t('labels.rule'), ruleCountLabel]
   ];
   return '<div class="prediction-headline">'
-    + pill(prediction.outcome.state)
-    + '<strong>' + esc(t('workspacePredictor.summaryTitle')) + '</strong>'
-    + '<span class="muted">' + esc(prediction.outcome.label) + '</span>'
+    + '<div class="prediction-state-row">' + pill(prediction.outcome.state) + '<span class="muted">' + esc(t('workspacePredictor.summaryTitle')) + '</span></div>'
+    + '<strong>' + esc(prediction.outcome.label) + '</strong>'
     + '<span>' + esc(t('workspacePredictor.summaryBody')) + '</span>'
     + '</div><div class="prediction-facts">'
     + facts.map(([label, value]) => '<div class="guidance-row"><strong>' + esc(label) + '</strong><span>' + esc(value) + '</span></div>').join('')
     + '</div>';
 }
 function renderWorkspacePredictionNotes(prediction) {
-  return '<div class="prediction-cards">'
+  return '<div class="prediction-tab-section">'
+    + '<h3>' + esc(t('workspacePredictor.risksTitle')) + '</h3>'
+    + '<div class="prediction-cards">'
     + prediction.notes.map((note) => '<article class="prediction-card">' + pill(note.state) + '<h3>' + esc(note.title) + '</h3><span>' + esc(note.body) + '</span></article>').join('')
     + '</div>'
+    + '</div>'
+    + '<div class="prediction-tab-section">'
+    + '<h3>' + esc(t('workspacePredictor.layersTitle')) + '</h3>'
     + renderPredictionTable([t('labels.layer'), t('labels.applies'), t('labels.reason')], prediction.layers.map((layer) => [
       textCell(layer.id),
       pill(layer.applies),
       textCell(layer.reason)
-    ]));
+    ]))
+    + '</div>';
 }
 function workspaceRuleTypeBucket(rule) {
   return String(rule?.type || 'unknown').toLowerCase();
@@ -4545,7 +4836,7 @@ function renderWorkspacePredictionRulesSummary(prediction) {
   const listHint = t(isFull ? 'workspacePredictor.ruleList.fullHint' : 'workspacePredictor.ruleList.compactHint');
   const summaryRules = prediction.allRules;
   return '<div class="prediction-rule-summary">'
-    + '<div><strong>' + esc(modeLabel) + '</strong> · ' + esc(t('workspacePredictor.summaryBody')) + '</div>'
+    + '<div><strong>' + esc(modeLabel) + '</strong> · ' + esc(t('workspacePredictor.ruleList.typeSummary')) + '</div>'
     + '<p>' + esc(listHint) + '</p>'
     + renderPredictionTable(
       [t('labels.type'), t('labels.count')],
@@ -4619,7 +4910,7 @@ function renderWorkspacePredictionRules(prediction) {
     ? String(prediction.allRules.length)
     : prediction.rules.length + '/' + prediction.allRules.length;
   const rulesTitle = t('workspacePredictor.rulesTitle') + ' (' + ruleCountLabel + ')';
-  return '<div class="guidance"><strong>' + esc(rulesTitle) + '</strong><span>' + esc(t('workspacePredictor.summaryBody')) + '</span></div>'
+  return '<div class="prediction-tab-intro"><strong>' + esc(rulesTitle) + '</strong><span>' + esc(t('workspacePredictor.ruleList.intro')) + '</span></div>'
     + renderWorkspacePredictionRulesSummary(prediction)
     + renderWorkspacePredictionRuleBuckets(prediction);
 }
@@ -4636,12 +4927,40 @@ function localizedWorkspaceRuleValue(group, value) {
   return translated === key ? fallback : translated;
 }
 function renderWorkspacePredictionChecks(prediction) {
-  return '<div class="guidance"><strong>' + esc(t('workspacePredictor.checksTitle')) + '</strong><span>' + esc(t('workspacePredictor.summaryBody')) + '</span></div>'
+  return '<div class="prediction-tab-intro"><strong>' + esc(t('workspacePredictor.checksTitle')) + '</strong><span>' + esc(t('workspacePredictor.checksBody')) + '</span></div>'
     + renderPredictionTable([t('labels.rule'), t('labels.when'), t('labels.command')], prediction.checks.map((check) => [
-      textCell(check.label),
-      textCell(check.when),
+      textCell(localizedWorkspaceCheckText(check.label)),
+      textCell(localizedWorkspaceCheckText(check.when)),
       '<code>' + esc(check.command) + '</code>'
     ]));
+}
+function localizedWorkspaceCheckText(value) {
+  const text = String(value || '');
+  if (currentLanguage !== 'zhTw') return text;
+  const replacements = {
+    'Path scope validation': '路徑範圍驗證',
+    'Repository pre-flight': '儲存庫預檢',
+    'Worktree container check': '工作樹容器檢查',
+    'Registry boundary check': '登記檔邊界檢查',
+    'Selected project scan': '選取專案掃描',
+    'DevGov tests': 'DevGov 測試',
+    'AGENTS index': 'AGENTS 索引',
+    'Registry validation': '登記檔驗證',
+    Doctor: 'Doctor[診斷]',
+    'Worktree governance': '工作樹治理',
+    'Before predicting or editing.': '預測或編輯之前。',
+    'Before changing files.': '變更檔案之前。',
+    'Before any cleanup action.': '執行任何清理動作之前。',
+    'Before persisting canonical records.': '寫入權威紀錄之前。',
+    'Before editing a selected repository': '編輯選取的儲存庫之前',
+    'When the selected workspace has web or local service ports': '選取工作區含有 Web 或本機服務連接埠時',
+    'Before reporting dashboard changes complete': '回報儀表板變更完成之前',
+    'After changing AGENTS governance surfaces': '變更 AGENTS 治理介面之後',
+    'After registry-facing changes': '變更登記檔相關內容之後',
+    'Before final DevGov handoff': '最終交付 DevGov 工作之前',
+    'Because the selected path looks like linked worktree storage': '因為選取路徑看起來像 linked worktree[連結工作樹] 儲存位置'
+  };
+  return replacements[text] ?? text;
 }
 function renderPredictionTable(headers, rows) {
   return '<table><tr>' + headers.map(header => '<th>' + esc(header) + '</th>').join('') + '</tr>'
@@ -4718,7 +5037,7 @@ async function refreshServiceStatus(options = {}) {
     const response = await fetch('/api/service-status');
     const payload = await response.json();
     serviceStatusRows = payload.services || [];
-    if (taskId) finishExecutionTask(taskId, 'completed', t('executionStatus.details.serviceStatusDone') + ' rows=' + serviceStatusRows.length);
+    if (taskId) finishExecutionTask(taskId, 'completed', t('executionStatus.details.serviceStatusDone') + ' ' + resultCountLabel(serviceStatusRows.length));
   } catch (error) {
     serviceStatusRows = state.serviceTargets.map(target => ({ ...target, live: { state: 'ERROR', error: error.message } }));
     if (taskId) finishExecutionTask(taskId, 'failed', t('executionStatus.details.serviceStatusFailed') + ' ' + error.message);
@@ -4739,7 +5058,7 @@ async function refreshServiceOnboarding() {
     const response = await fetch('/api/service-onboarding');
     const payload = await response.json();
     serviceOnboardingRows = payload.services || [];
-    finishExecutionTask(taskId, 'completed', t('executionStatus.details.serviceOnboardingDone') + ' rows=' + serviceOnboardingRows.length);
+    finishExecutionTask(taskId, 'completed', t('executionStatus.details.serviceOnboardingDone') + ' ' + resultCountLabel(serviceOnboardingRows.length));
   } catch (error) {
     serviceOnboardingRows = [];
     finishExecutionTask(taskId, 'failed', t('executionStatus.details.serviceOnboardingFailed') + ' ' + error.message);
@@ -4759,7 +5078,7 @@ async function refreshWebConsoleEvents() {
     const response = await fetch('/api/web-console-events');
     const payload = await response.json();
     webConsoleEventsRows = payload.events || [];
-    finishExecutionTask(taskId, 'completed', t('executionStatus.details.webConsoleEventsDone') + ' rows=' + webConsoleEventsRows.length);
+    finishExecutionTask(taskId, 'completed', t('executionStatus.details.webConsoleEventsDone') + ' ' + resultCountLabel(webConsoleEventsRows.length));
   } catch (error) {
     webConsoleEventsRows = [];
     finishExecutionTask(taskId, 'failed', t('executionStatus.details.webConsoleEventsFailed') + ' ' + error.message);
@@ -4854,30 +5173,44 @@ function localizedProjectTag(value) {
       local: '本機',
       public: '公開',
       'prod-protected': '生產保護',
-      'staging-private': '私有 staging',
-      'source-repo': '來源 repo',
-      'devgov-repo': 'DevGov repo',
-      'source-repo-and-loopback-runtime': 'Repo + Loopback',
-      'source-repo-and-user-level-cloudflared': 'Repo + Cloudflared',
-      'source-repo-and-runtime-project': 'Repo + Runtime',
-      'source-repo-and-portable-runtime': 'Repo + 可攜 runtime',
+      'staging-private': '私有測試環境',
+      'source-repo': '來源儲存庫',
+      'devgov-repo': 'DevGov 儲存庫',
+      'source-repo-and-loopback-runtime': '儲存庫 + loopback 執行期',
+      'source-repo-and-user-level-cloudflared': '儲存庫 + 使用者層 Cloudflared',
+      'source-repo-and-runtime-project': '儲存庫 + 執行期專案',
+      'source-repo-and-portable-runtime': '儲存庫 + 可攜執行期',
       'source-repo-and-personal-local-tool': '個人工具',
-      'source-repo-and-windows-service': 'Repo + 服務',
-      'source-repo-and-hardware-device': 'Repo + 裝置',
-      'external-local-app': '本機外部 app',
-      'external-local-app-and-filesystem-policy': '本機 app + 檔案政策',
+      'source-repo-and-windows-service': '儲存庫 + Windows 服務',
+      'source-repo-and-hardware-device': '儲存庫 + 硬體裝置',
+      'external-local-app': '本機外部應用程式',
+      'external-local-app-and-filesystem-policy': '本機應用程式 + 檔案政策',
       'portable-tool': '可攜工具',
       'public-api': '公開 API',
       'public-health': '公開健康檢查',
       'runtime-plan-and-user-startup': '計畫 + 使用者啟動',
-      'source-and-runtime-command': '來源 + runtime 指令',
+      'source-and-runtime-command': '來源 + 執行期指令',
       'aggregated-windows-entrypoint': 'Windows 入口'
     }
   };
   return maps[currentLanguage]?.[tag] || shortenProjectTag(tag);
 }
 function shortenProjectTag(value) {
-  return String(value || '')
+  const text = String(value || '');
+  if (currentLanguage === 'zhTw') {
+    return text
+      .replace(/^source-repo-and-/, '來源儲存庫 + ')
+      .replace(/^source-repo$/, '來源儲存庫')
+      .replace(/user-level-cloudflared/g, '使用者層 Cloudflared')
+      .replace(/loopback-runtime/g, 'loopback 執行期')
+      .replace(/portable-runtime/g, '可攜執行期')
+      .replace(/runtime-project/g, '執行期專案')
+      .replace(/personal-local-tool/g, '個人工具')
+      .replace(/windows-service/g, 'Windows 服務')
+      .replace(/hardware-device/g, '硬體裝置')
+      .replace(/-/g, ' ');
+  }
+  return text
     .replace(/^source-repo-and-/, 'repo+')
     .replace(/^source-repo$/, 'source repo')
     .replace(/user-level-cloudflared/g, 'cloudflared')
@@ -4955,12 +5288,12 @@ function projectSourceKey(pathPart) {
 }
 function projectSourceLabel(pathPart) {
   const zhTw = currentLanguage === 'zhTw';
-  if (pathPart.includes('ports.registry.json')) return zhTw ? 'Ports' : 'Ports';
+  if (pathPart.includes('ports.registry.json')) return zhTw ? '連接埠登記' : 'Ports';
   if (pathPart.includes('public-routes.registry.json')) return zhTw ? '公開路由' : 'Routes';
   if (pathPart.includes('service-onboarding')) return zhTw ? '補充程序' : 'Onboarding';
   if (pathPart.includes('service-control.registry.json')) return zhTw ? '服務控制' : 'Controls';
-  if (pathPart.includes('startup.registry.json')) return zhTw ? '啟動' : 'Startup';
-  if (pathPart.includes('local-agents.registry.json')) return zhTw ? 'Agents' : 'Agents';
+  if (pathPart.includes('startup.registry.json')) return zhTw ? '啟動治理' : 'Startup';
+  if (pathPart.includes('local-agents.registry.json')) return zhTw ? '本機代理' : 'Agents';
   if (pathPart.startsWith('reports/')) return zhTw ? '報告' : 'Reports';
   return zhTw ? '來源' : 'Source';
 }
@@ -4986,7 +5319,7 @@ function renderActionRow(row, action, actionStatus) {
   const actionKey = String(row.controlTargetId) + ':' + String(action);
   const control = serviceControlMap.get(actionKey);
   const actionState = controlActionStates[actionKey];
-  const label = control?.uiLabel || t('labels.' + action);
+  const label = localizedControlLabel(control?.uiLabel || t('labels.' + action));
   const state = actionStatus?.state || 'MISSING';
   const isRestart = action === "restart";
   const restartPolicyReady = isRestart ? actionStatus?.policyReadiness?.complete === true : true;
@@ -4997,30 +5330,30 @@ function renderActionRow(row, action, actionStatus) {
   const details = [];
   if (isRestart && actionStatus?.policyReadiness) {
     if (!actionStatus.policyReadiness.complete) {
-      details.push('<span class="inline-meta">' + esc(actionStatus.policyReadiness.policyMessage || 'Restart policy is incomplete') + '</span>');
+      details.push('<span class="inline-meta">' + esc(localizedControlDetail(actionStatus.policyReadiness.policyMessage || 'Restart policy is incomplete')) + '</span>');
     }
   } else if (isRestart && control?.approved) {
-    details.push('<span class="inline-meta">Restart policy evidence missing in registry</span>');
+    details.push('<span class="inline-meta">' + esc(localizedControlDetail('Restart policy evidence missing in registry')) + '</span>');
   }
   if (actionState?.message) {
-    details.push('<span class="inline-meta">' + esc(actionState.message) + '</span>');
+    details.push('<span class="inline-meta">' + esc(localizedControlDetail(actionState.message)) + '</span>');
   }
   return '<div class="check-row"><span class="check-label">' + esc(label) + '</span><span class="check-status">' + status + '</span><span class="check-detail">' + details.join('') + '</span></div>';
 }
 function actionControlPill(row, action, state, control, actionState) {
-  const label = control?.uiLabel || t('labels.' + action);
+  const label = localizedControlLabel(control?.uiLabel || t('labels.' + action));
   const targetLabel = row.label || row.id || row.controlTargetId;
   const actionText = currentLanguage === 'zhTw'
     ? '執行 ' + label + ': ' + targetLabel
     : 'Run ' + label + ': ' + targetLabel;
   const title = control?.wrapperRef ? actionText + ' (' + control.wrapperRef + ')' : actionText;
-  return '<button class="pill status-action ' + esc(String(state).toLowerCase()) + '" type="button" data-service-action="' + esc(action) + '" data-control-target="' + esc(row.controlTargetId) + '"' + (actionState?.pending ? ' disabled' : '') + ' title="' + esc(title) + '" aria-label="' + esc(actionText) + '"><span>' + esc(state) + '</span><span class="action-key" aria-hidden="true">&#128477;&#65039;</span></button>';
+  return '<button class="pill status-action ' + esc(classToken(state)) + '" type="button" data-service-action="' + esc(action) + '" data-control-target="' + esc(row.controlTargetId) + '"' + (actionState?.pending ? ' disabled' : '') + ' title="' + esc(title) + '" aria-label="' + esc(actionText) + '"><span>' + esc(localizedTerm(state)) + '</span><span class="action-key" aria-hidden="true">&#128477;&#65039;</span></button>';
 }
 function renderServiceCell(row) {
   return '<div class="service-cell">'
     + '<div class="service-badges">' + pill(row.live?.state || 'CHECKING') + pill(row.registryStatus) + '</div>'
     + '<span class="service-name">' + esc(row.label) + '</span>'
-    + '<span class="inline-meta">' + esc(row.kind) + '</span>'
+    + '<span class="inline-meta">' + esc(localizedTerm(row.kind)) + '</span>'
     + '</div>';
 }
 function renderEndpointCell(row) {
@@ -5031,7 +5364,7 @@ function renderLastCheckCell(row) {
     return '<div class="last-check-cell"><span>' + tEsc('labels.pending') + '</span></div>';
   }
   return '<div class="last-check-cell"><span>' + esc(row.live.checkedAt) + '</span>'
-    + (row.live.statusCode ? '<span class="inline-meta">status=' + esc(row.live.statusCode) + '</span>' : '')
+    + (row.live.statusCode ? '<span class="inline-meta">' + esc(currentLanguage === 'zhTw' ? 'HTTP 狀態=' : 'status=') + esc(row.live.statusCode) + '</span>' : '')
     + (row.live.error ? '<span class="inline-meta">' + esc(row.live.error) + '</span>' : '')
     + '</div>';
 }
@@ -5066,7 +5399,7 @@ async function runServiceControl(controlTargetId, action) {
   const actionKey = String(controlTargetId) + ':' + String(action);
   const control = serviceControlMap.get(actionKey);
   const target = findServiceControlTarget(controlTargetId);
-  const label = control?.uiLabel || t('labels.' + action);
+  const label = localizedControlLabel(control?.uiLabel || t('labels.' + action));
   const targetLabel = target?.label || controlTargetId;
   const executionTaskId = beginExecutionTask({
     label: t('executionStatus.tasks.serviceControl') + ': ' + label,
@@ -5086,7 +5419,7 @@ async function runServiceControl(controlTargetId, action) {
     updateExecutionTask(executionTaskId, {
       state: 'queued',
       percent: 12,
-      detail: t('executionStatus.details.serviceControlConfirm') + ' target=' + targetLabel
+      detail: t('executionStatus.details.serviceControlConfirm') + ' ' + targetDetailLabel(targetLabel)
     });
     appendControlLog(currentLanguage === 'zhTw'
       ? '這個動作會嘗試調整本機 runtime，需先確認。'
@@ -5109,7 +5442,7 @@ async function runServiceControl(controlTargetId, action) {
   updateExecutionTask(executionTaskId, {
     state: 'running',
     percent: 34,
-    detail: t('executionStatus.details.serviceControlRun') + ' target=' + targetLabel
+    detail: t('executionStatus.details.serviceControlRun') + ' ' + targetDetailLabel(targetLabel)
   });
   renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
   renderStorageAssets(filterValue('storage-assets'));
@@ -5125,20 +5458,20 @@ async function runServiceControl(controlTargetId, action) {
     }
     updateExecutionTask(executionTaskId, {
       percent: 76,
-      detail: payload.summary || t('executionStatus.details.serviceControlDone')
+      detail: localizedControlDetail(payload.summary || t('executionStatus.details.serviceControlDone'))
     });
-    appendControlLog('eventId=' + (payload.eventId || 'n/a'));
-    appendControlLog('summary=' + (payload.summary || 'Completed'));
+    appendControlLog((currentLanguage === 'zhTw' ? '事件 ID=' : 'eventId=') + (payload.eventId || 'n/a'));
+    appendControlLog((currentLanguage === 'zhTw' ? '摘要=' : 'summary=') + localizedControlDetail(payload.summary || 'Completed'));
     controlActionStates[actionKey] = {
       pending: false,
-      message: payload.summary || (currentLanguage === 'zhTw' ? '已完成' : 'Completed')
+      message: localizedControlDetail(payload.summary || (currentLanguage === 'zhTw' ? '已完成' : 'Completed'))
     };
     await refreshServiceStatus({ silent: true });
     appendControlLog(currentLanguage === 'zhTw' ? '服務狀態已刷新。' : 'Service Status refreshed.');
     setControlDialogMode('completed');
-    finishExecutionTask(executionTaskId, 'completed', (payload.summary || t('executionStatus.details.serviceControlDone')) + ' refresh=service-status');
+    finishExecutionTask(executionTaskId, 'completed', localizedControlDetail(payload.summary || t('executionStatus.details.serviceControlDone')) + ' ' + refreshDetailLabel('service-status'));
   } catch (error) {
-    appendControlLog('error=' + error.message);
+    appendControlLog((currentLanguage === 'zhTw' ? '錯誤=' : 'error=') + error.message);
     setControlDialogMode('failed');
     controlActionStates[actionKey] = { pending: false, message: error.message };
     finishExecutionTask(executionTaskId, 'failed', t('executionStatus.details.serviceControlFailed') + ' ' + error.message);
@@ -5156,7 +5489,7 @@ function openControlDialog({ controlTargetId, action, title, targetLabel, wrappe
   controlDialogTarget.textContent = targetLabel || controlTargetId;
   controlDialogLog.textContent = '';
   appendControlLog((currentLanguage === 'zhTw' ? '目標: ' : 'Target: ') + (targetLabel || controlTargetId));
-  appendControlLog((currentLanguage === 'zhTw' ? '動作: ' : 'Action: ') + action);
+  appendControlLog((currentLanguage === 'zhTw' ? '動作: ' : 'Action: ') + localizedActionName(action));
   setControlDialogMode('preparing');
   controlDialog.hidden = false;
   document.body.classList.add('modal-open');
@@ -5222,15 +5555,18 @@ addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !controlDialog.hidden && controlDialogOk.hidden === false) closeControlDialog();
 });
 function pill(value) {
-  return '<span class="pill ' + esc(String(value).toLowerCase()) + '">' + esc(value) + '</span>';
+  const raw = String(value ?? '');
+  return '<span class="pill ' + esc(classToken(raw)) + '">' + esc(localizedTerm(raw)) + '</span>';
 }
 function linkedPill(value, ref, label) {
+  const raw = String(value ?? '');
   const target = localFileTarget(ref) || registryReferenceTarget(label, ref);
   if (!target) return pill(value);
-  return '<a class="pill pill-link ' + esc(String(value).toLowerCase()) + '" href="' + esc(target.href) + '" target="_blank" rel="noreferrer" title="' + esc(target.text) + '" aria-label="' + esc(label + ' reference: ' + target.text) + '">' + esc(value) + '</a>';
+  return '<a class="pill pill-link ' + esc(classToken(raw)) + '" href="' + esc(target.href) + '" target="_blank" rel="noreferrer" title="' + esc(target.text) + '" aria-label="' + esc(label + ' reference: ' + target.text) + '">' + esc(localizedTerm(raw)) + '</a>';
 }
 function registryReferenceTarget(label, ref) {
-  if (label !== 'Restart' || !ref) return null;
+  const restartLabels = new Set(['Restart', t('labels.restart')]);
+  if (!restartLabels.has(label) || !ref) return null;
   return {
     href: '/file?path=registry%2Fstartup.registry.json',
     text: String(ref)
@@ -5241,6 +5577,57 @@ function match(row, query) {
 }
 function textCell(value) {
   return esc(value);
+}
+function termCell(value) {
+  return esc(localizedTerm(value));
+}
+function localizedTerm(value) {
+  const raw = String(value ?? '');
+  if (currentLanguage !== 'zhTw') return raw;
+  return messages.zhTw.terms?.[raw] ?? raw;
+}
+function resultCountLabel(count) {
+  return currentLanguage === 'zhTw' ? '列數=' + count : 'rows=' + count;
+}
+function targetDetailLabel(value) {
+  return currentLanguage === 'zhTw' ? '目標=' + value : 'target=' + value;
+}
+function refreshDetailLabel(value) {
+  return currentLanguage === 'zhTw' ? '刷新=' + value : 'refresh=' + value;
+}
+function localizedActionName(action) {
+  if (currentLanguage !== 'zhTw') return action;
+  if (action === 'restart') return t('labels.restart');
+  if (action === 'doctor') return t('labels.doctor');
+  return action;
+}
+function localizedControlLabel(label) {
+  const text = String(label || '');
+  if (currentLanguage !== 'zhTw') return text;
+  if (text === 'Doctor') return t('labels.doctor');
+  if (text === 'Restart') return t('labels.restart');
+  if (text === 'Reset') return '重設 (Reset)';
+  return text;
+}
+function localizedControlDetail(value) {
+  const text = String(value || '');
+  if (currentLanguage !== 'zhTw') return text;
+  if (text === 'Completed') return '已完成';
+  if (text === 'Policy reviewed.') return '政策已審查。';
+  if (text === 'Restart policy is incomplete') return '重啟政策尚未完整。';
+  if (text === 'Restart policy evidence missing in registry') return '登記檔缺少重啟政策依據。';
+  return text
+    .replace('Chrome AI model store is healthy', 'Chrome AI 模型儲存區健康')
+    .replace('Chrome AI model store reset completed', 'Chrome AI 模型儲存區重設完成')
+    .replace('Stable has', 'Stable 有')
+    .replace('version folder(s)', '個版本資料夾')
+    .replace('linked channels', '已連結通道')
+    .replace('skipped channels', '略過通道')
+    .replace('no filesystem changes were needed', '不需要變更檔案系統')
+    .replace('Control action failed', '控制動作失敗');
+}
+function classToken(value) {
+  return String(value ?? '').toLowerCase().replace(/[^a-z0-9_-]+/g, '_');
 }
 function linkify(value) {
   const escaped = esc(value);
