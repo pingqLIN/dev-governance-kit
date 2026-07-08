@@ -882,9 +882,12 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   const gsdfEotf = audit.services.find((row) => row.id === "gsdf-eotf-video-adjuster:vite-dev");
   const skill0Gui = audit.services.find((row) => row.id === "skill-0-GUI:review-studio-http");
   const nowledgeCompat = audit.services.find((row) => row.id === "chatgpt-local-files-mcp:nowledge-compat-http");
+  const chromeAiModelStore = audit.services.find((row) => row.id === "chrome-ai-model-store-filesystem");
 
   assert.equal(audit.schema, "devgov.service-onboarding-audit.v1");
   assert.ok(audit.summary.services >= state.ports.length);
+  assert.ok(audit.summary.registryReady >= 1);
+  assert.equal(audit.summary.registryUndeclared, 0);
   assert.equal(audit.summary.missingDoctor, 0);
   assert.equal(audit.summary.missingDashboardStatus, 0);
   assert.equal(devgov.readiness, "PARTIAL");
@@ -905,6 +908,13 @@ test("service onboarding audit summarizes registered service gaps", async () => 
     assert.ok(row.quickLinks.some((link) => link.label === "Doctor"));
     assert.ok(row.quickLinks.some((link) => link.label === "Health"));
   }
+  assert.ok(chromeAiModelStore);
+  assert.equal(chromeAiModelStore.registryReadiness, "READY");
+  assert.equal(chromeAiModelStore.flags.missingDoctor, false);
+  assert.equal(chromeAiModelStore.flags.missingRestart, false);
+  assert.equal(chromeAiModelStore.flags.missingDashboardStatus, false);
+  assert.ok(chromeAiModelStore.quickLinks.some((link) => link.label === "Doctor"));
+  assert.ok(chromeAiModelStore.quickLinks.some((link) => link.label === "Health"));
 });
 
 test("doctor verifies DevGov dashboard governance without modifying canonical registries", async () => {

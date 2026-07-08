@@ -6,8 +6,15 @@ export async function loadServiceOnboardingAudit(root = ".") {
 }
 
 export function buildServiceOnboardingAudit(state) {
-  const rows = state.ports
-    .map((entry) => buildServiceOnboardingRow(entry, state))
+  const onboardingEntries = state.onboardingEntries ?? [];
+  const portRows = state.ports
+    .map((entry) => buildServiceOnboardingRow(entry, state, onboardingEntries));
+  const coveredOnboardingIds = new Set(portRows.flatMap((row) => row.onboardingEntries.map((entry) => entry.id)));
+  const onboardingOnlyRows = onboardingEntries
+    .filter((entry) => !coveredOnboardingIds.has(entry.id))
+    .map((entry) => buildOnboardingOnlyRow(entry, state))
+    .filter(Boolean);
+  const rows = [...portRows, ...onboardingOnlyRows]
     .sort(compareOnboardingRows);
 
   return {
@@ -18,6 +25,10 @@ export function buildServiceOnboardingAudit(state) {
       ready: rows.filter((row) => row.readiness === "READY").length,
       partial: rows.filter((row) => row.readiness === "PARTIAL").length,
       blocked: rows.filter((row) => row.readiness === "BLOCKED").length,
+      registryReady: rows.filter((row) => row.registryReadiness === "READY").length,
+      registryPartial: rows.filter((row) => row.registryReadiness === "PARTIAL").length,
+      registryBlocked: rows.filter((row) => row.registryReadiness === "BLOCKED").length,
+      registryUndeclared: rows.filter((row) => row.registryReadiness === "UNDECLARED").length,
       missingDoctor: rows.filter((row) => row.flags.missingDoctor).length,
       missingRestart: rows.filter((row) => row.flags.missingRestart).length,
       missingDashboardStatus: rows.filter((row) => row.flags.missingDashboardStatus).length
@@ -38,6 +49,10 @@ export function renderServiceOnboardingAudit(audit) {
     `- Ready: ${audit.summary.ready}`,
     `- Partial: ${audit.summary.partial}`,
     `- Blocked: ${audit.summary.blocked}`,
+    `- Registry Ready: ${audit.summary.registryReady}`,
+    `- Registry Partial: ${audit.summary.registryPartial}`,
+    `- Registry Blocked: ${audit.summary.registryBlocked}`,
+    `- Registry undeclared: ${audit.summary.registryUndeclared}`,
     `- Missing Doctor: ${audit.summary.missingDoctor}`,
     `- Missing restart governance: ${audit.summary.missingRestart}`,
     `- Missing dashboard status rows: ${audit.summary.missingDashboardStatus}`,
@@ -48,8 +63,9 @@ export function renderServiceOnboardingAudit(audit) {
     lines.push(`## ${row.project} / ${row.service}`);
     lines.push("");
     lines.push(`- Socket: \`${row.socket}\` (${row.protocol}, ${row.visibility})`);
-    lines.push(`- Readiness: \`${row.readiness}\``);
-    lines.push(`- Health URL: ${row.quickTestUrl ? `\`${row.quickTestUrl}\`` : "missing"}`);
+    lines.push(`- Registry readiness: \`${row.registryReadiness}\``);
+    lines.push(`- Control readiness: \`${row.readiness}\``);
+    lines.push(`- Quick Test: ${row.quickTestUrl ? `\`${row.quickTestUrl}\`` : "missing"}`);
     lines.push(`- Doctor: \`${row.doctorState}\``);
     lines.push(`- Restart: \`${row.restartState}\``);
     lines.push(`- Service Status rows: ${row.serviceTargets.length}`);
@@ -76,7 +92,7 @@ export function renderServiceOnboardingAudit(audit) {
   return `${lines.join("\n")}\n`;
 }
 
-function buildServiceOnboardingRow(entry, state) {
+function buildServiceOnboardingRow(entry, state, onboardingEntries = []) {
   const socket = `${entry.host}:${entry.port}`;
   const publicRoutes = state.publicRoutes.filter((route) => route.localHost === entry.host && route.localPort === entry.port);
   const localAgents = state.localAgents.filter((agent) => (
@@ -85,14 +101,17 @@ function buildServiceOnboardingRow(entry, state) {
   ));
   const startupEntries = state.startupEntries.filter((startup) => startup.project === entry.project);
   const serviceTargets = state.serviceTargets.filter((target) => targetMatchesEntry(target, entry, publicRoutes, localAgents));
+  const matchedOnboardingEntries = onboardingEntries.filter((onboardingEntry) => onboardingEntryMatchesPortEntry(onboardingEntry, entry, publicRoutes, localAgents, serviceTargets));
   const quickTestUrl = firstNonEmpty([
     ...serviceTargets.map((target) => target.quickTest?.url),
+    ...serviceTargets.map((target) => target.quickTest?.probeRef),
     ...publicRoutes.map((route) => route.healthUrl),
     ...localAgents.map((agent) => agent.healthUrl)
   ]);
   const doctorState = aggregatePresenceState(serviceTargets.map((target) => target.doctor?.state));
   const restartState = aggregateRestartState(serviceTargets.map((target) => target.restart?.state), startupEntries.length > 0);
   const readiness = aggregateReadiness(serviceTargets.map((target) => target.controlReadiness), quickTestUrl, doctorState, restartState);
+  const registryReadiness = aggregateRegistryReadiness(matchedOnboardingEntries);
   const gaps = [];
   const nextSteps = [];
 
@@ -138,6 +157,12 @@ function buildServiceOnboardingRow(entry, state) {
     protocol: entry.protocol,
     visibility: entry.visibility,
     readiness,
+    registryReadiness,
+    onboardingEntries: matchedOnboardingEntries.map((onboardingEntry) => ({
+      id: onboardingEntry.id,
+      readiness: onboardingEntry.readiness,
+      reviewStatus: onboardingEntry.reviewStatus
+    })),
     doctorState,
     restartState,
     quickTestUrl: quickTestUrl ?? "",
@@ -162,6 +187,76 @@ function targetMatchesEntry(target, entry, publicRoutes, localAgents) {
   if (target.project === entry.project && target.service === entry.service) return true;
   if (publicRoutes.some((route) => `public-route:${route.id}` === target.id)) return true;
   if (localAgents.some((agent) => `local-agent:${agent.id}` === target.id)) return true;
+  return false;
+}
+
+function buildOnboardingOnlyRow(entry, state) {
+  const serviceTargets = state.serviceTargets.filter((target) => target.id === `onboarding:${entry.id}`);
+  if (serviceTargets.length === 0) return null;
+  const quickTestUrl = firstNonEmpty([
+    ...serviceTargets.map((target) => target.quickTest?.url),
+    ...serviceTargets.map((target) => target.quickTest?.probeRef)
+  ]);
+  const doctorState = aggregatePresenceState(serviceTargets.map((target) => target.doctor?.state));
+  const restartState = aggregateRestartState(serviceTargets.map((target) => target.restart?.state), false);
+  const readiness = aggregateReadiness(serviceTargets.map((target) => target.controlReadiness), quickTestUrl, doctorState, restartState);
+  const gaps = [];
+  const nextSteps = [];
+
+  if (!quickTestUrl) {
+    gaps.push("Missing reviewed Quick Test URL or probe reference.");
+    nextSteps.push("Register a safe URL or local probe so this non-port governance item can be checked.");
+  }
+  if (doctorState !== "FOUND") {
+    gaps.push("Missing registered Doctor mechanism.");
+    nextSteps.push("Add a reviewed Doctor wrapper and register the stable reference.");
+  }
+  if (restartState === "MISSING") {
+    gaps.push("Missing stable startup or restart governance reference.");
+    nextSteps.push("Register a reviewed startup or reset path, or mark it explicitly not applicable.");
+  }
+
+  return {
+    id: entry.id,
+    project: serviceTargets[0].project,
+    service: entry.service ?? serviceTargets[0].controlTargetId ?? entry.id,
+    socket: serviceTargets[0].target,
+    host: "",
+    port: null,
+    protocol: entry.protocol ?? "non-port",
+    visibility: entry.visibility ?? "local",
+    readiness,
+    registryReadiness: entry.readiness ?? "UNDECLARED",
+    onboardingEntries: [{ id: entry.id, readiness: entry.readiness, reviewStatus: entry.reviewStatus }],
+    doctorState,
+    restartState,
+    quickTestUrl: quickTestUrl ?? "",
+    serviceTargets: serviceTargets.map((target) => target.id),
+    startupRefs: [],
+    publicRoutes: [],
+    localAgents: [],
+    gaps,
+    nextSteps,
+    quickLinks: buildQuickLinks({
+      quickTestUrl,
+      doctorRefs: unique(serviceTargets.map((target) => target.doctor?.ref).filter(Boolean)),
+      restartRefs: unique(serviceTargets.map((target) => target.restart?.ref).filter(Boolean)),
+      publicRoutes: [],
+      startupEntries: []
+    }),
+    flags: {
+      missingDoctor: doctorState !== "FOUND",
+      missingRestart: restartState === "MISSING",
+      missingDashboardStatus: false
+    }
+  };
+}
+
+function onboardingEntryMatchesPortEntry(onboardingEntry, portEntry, publicRoutes, localAgents, serviceTargets) {
+  if (onboardingEntry.sourceRef === `registry/ports.registry.json#${portEntry.project}:${portEntry.service}`) return true;
+  if (publicRoutes.some((route) => onboardingEntry.sourceRef === `registry/public-routes.registry.json#${route.id}`)) return true;
+  if (localAgents.some((agent) => onboardingEntry.sourceRef === `registry/local-agents.registry.json#${agent.id}`)) return true;
+  if (serviceTargets.some((target) => target.id === `onboarding:${onboardingEntry.id}`)) return true;
   return false;
 }
 
@@ -203,6 +298,14 @@ function aggregateReadiness(states, quickTestUrl, doctorState, restartState) {
   if (states.includes("PARTIAL")) return "PARTIAL";
   if (quickTestUrl && (doctorState === "FOUND" || ["FOUND", "REVIEW_REQUIRED"].includes(restartState))) return "PARTIAL";
   return "BLOCKED";
+}
+
+function aggregateRegistryReadiness(entries) {
+  const states = entries.map((entry) => entry.readiness).filter(Boolean);
+  if (states.includes("BLOCKED")) return "BLOCKED";
+  if (states.includes("PARTIAL")) return "PARTIAL";
+  if (states.includes("READY")) return "READY";
+  return "UNDECLARED";
 }
 
 function compareOnboardingRows(left, right) {

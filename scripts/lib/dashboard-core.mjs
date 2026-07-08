@@ -88,6 +88,7 @@ export async function loadDashboardState(root = ".") {
       itemTypes: agentInstructions.itemTypes,
       entries: agentInstructions.entries
     },
+    onboardingEntries: serviceOnboarding.entries,
     serviceControl: {
       baseUrl: SERVICE_CONTROL_URL,
       entries: serviceControls
