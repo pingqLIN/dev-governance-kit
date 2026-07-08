@@ -54,6 +54,10 @@ export async function loadDashboardState(root = ".") {
     startupEntries: startup.entries,
     serviceTargets
   });
+  const storageRecords = buildStorageRecords({
+    onboardingEntries: serviceOnboarding.entries,
+    serviceTargets
+  });
 
   return {
     app: {
@@ -74,6 +78,7 @@ export async function loadDashboardState(root = ".") {
       workspacePredictionRules: workspacePrediction.rules.length,
       registeredProjects: registeredProjects.length,
       webEntrypoints: webEntrypoints.length,
+      storageRecords: storageRecords.length,
       webConsoleEvents: webConsoleEvents.length
     },
     ports: ports.entries,
@@ -95,6 +100,7 @@ export async function loadDashboardState(root = ".") {
     },
     workspacePrediction,
     registeredProjects,
+    storageRecords,
     localFileCompanions,
     webConsoleEvents,
     webEntrypoints,
@@ -259,6 +265,33 @@ export function buildRegisteredProjects({ onboardingEntries = [], ports = [], pu
       progressRank(left.progressTag) - progressRank(right.progressTag)
       || left.project.localeCompare(right.project)
     ));
+}
+
+export function buildStorageRecords({ onboardingEntries = [], serviceTargets = [] } = {}) {
+  const records = [];
+  const chromeAiModelStore = onboardingEntries.find((entry) => entry.id === "chrome-ai-model-store-filesystem");
+  const chromeAiTarget = serviceTargets.find((target) => target.controlTargetId === "chrome-ai-model-store");
+  if (chromeAiModelStore || chromeAiTarget) {
+    records.push({
+      id: "chrome-ai-model-store",
+      label: "Chrome AI Model Store",
+      project: chromeAiModelStore?.project ?? chromeAiTarget?.project ?? "chrome-ai-model-store",
+      storageKind: "browser-model-cache",
+      modelStore: "OptGuideOnDeviceModel",
+      primaryOwner: "Stable Chrome",
+      sharedWith: ["Chrome Beta", "Chrome Dev", "Chrome Canary when installed"],
+      physicalPolicy: "One Stable-owned model store; installed secondary channels reuse model bytes through filesystem links.",
+      serviceTargetId: chromeAiTarget?.id ?? "",
+      controlTargetId: "chrome-ai-model-store",
+      doctorRef: chromeAiTarget?.doctor?.ref ?? "scripts/service-control/doctor-chrome-ai-model-store.ps1",
+      resetRef: chromeAiTarget?.restart?.ref ?? "scripts/service-control/restart-chrome-ai-model-store.ps1",
+      docsRef: "docs/service-onboarding/chrome-ai-model-store.md",
+      readiness: chromeAiModelStore?.readiness ?? chromeAiTarget?.controlReadiness ?? "PARTIAL",
+      reviewStatus: chromeAiModelStore?.reviewStatus ?? "reviewed",
+      notes: chromeAiModelStore?.notes ?? "Chrome built-in AI model cache sharing governance."
+    });
+  }
+  return records;
 }
 
 function ensureRegisteredProject(projects, projectId) {
@@ -1364,6 +1397,8 @@ export function renderDashboardHtml(state) {
       --header-bg: oklch(99% 0.007 86 / .94);
       --focus: oklch(58% 0.13 183);
       --sticky-header-offset: 176px;
+      --font-sans: "Bahnschrift", "Microsoft JhengHei", sans-serif;
+      --font-mono: "Cascadia Mono", monospace;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -1430,7 +1465,10 @@ export function renderDashboardHtml(state) {
       --header-bg: oklch(20% 0.018 248 / .94);
       --focus: oklch(77% 0.13 176);
     }
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      letter-spacing: 0;
+    }
     body {
       margin: 0;
       background:
@@ -1439,7 +1477,8 @@ export function renderDashboardHtml(state) {
         var(--paper);
       background-size: 28px 28px;
       color: var(--ink);
-      font-family: "Aptos", "Segoe UI", system-ui, sans-serif;
+      font-family: var(--font-sans);
+      font-size: 15px;
     }
     header {
       border-bottom: 2px solid var(--ink);
@@ -1459,9 +1498,9 @@ export function renderDashboardHtml(state) {
       margin: 0 auto;
     }
     h1 {
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(34px, 6vw, 72px);
-      letter-spacing: 0;
+      font-family: var(--font-sans);
+      font-size: clamp(33px, 5vw, 65px);
+      font-weight: 800;
       line-height: .9;
       margin: 0;
     }
@@ -1476,7 +1515,7 @@ export function renderDashboardHtml(state) {
       align-items: center;
       display: flex;
       gap: 10px;
-      font-size: 14px;
+      font-size: 13px;
       justify-content: end;
       max-width: 34ch;
       overflow-wrap: anywhere;
@@ -1537,7 +1576,7 @@ export function renderDashboardHtml(state) {
     }
     .execution-status-label {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
     }
@@ -1550,7 +1589,7 @@ export function renderDashboardHtml(state) {
       color: var(--muted);
       display: flex;
       flex-wrap: wrap;
-      font-size: 12px;
+      font-size: 11px;
       gap: 8px;
       grid-column: 1 / -1;
       min-width: 0;
@@ -1560,8 +1599,8 @@ export function renderDashboardHtml(state) {
     }
     .execution-status-time {
       color: var(--ink);
-      font-family: "Cascadia Mono", Consolas, monospace;
-      font-size: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
     }
     .execution-progress {
       align-self: center;
@@ -1669,7 +1708,7 @@ export function renderDashboardHtml(state) {
     .glyph {
       border: 1px solid currentColor;
       display: inline-grid;
-      font-size: 12px;
+      font-size: 11px;
       height: 22px;
       place-items: center;
       transform-origin: center;
@@ -1733,7 +1772,7 @@ export function renderDashboardHtml(state) {
       bottom: 14px;
       color: var(--muted);
       content: attr(data-action-label);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       left: clamp(18px, 2.4vw, 28px);
       position: absolute;
@@ -1752,22 +1791,22 @@ export function renderDashboardHtml(state) {
     }
     .metric strong {
       display: block;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 36px;
-      font-weight: 700;
+      font-family: var(--font-sans);
+      font-size: 35px;
+      font-weight: 800;
       line-height: 1;
     }
     body.deck-mode .metric strong {
-      font-size: clamp(54px, 7vw, 96px);
+      font-size: clamp(53px, 7vw, 95px);
       line-height: .88;
     }
     .metric span, .muted {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
     }
     body.deck-mode .metric span {
       display: block;
-      font-size: clamp(18px, 2vw, 26px);
+      font-size: clamp(17px, 2vw, 25px);
       margin-top: 10px;
     }
     body.deck-mode #dashboard-port {
@@ -1838,7 +1877,7 @@ export function renderDashboardHtml(state) {
       gap: 6px;
     }
     .prediction-headline strong {
-      font-size: clamp(22px, 3vw, 34px);
+      font-size: clamp(21px, 3vw, 33px);
       line-height: 1;
     }
     .prediction-facts {
@@ -1885,7 +1924,7 @@ export function renderDashboardHtml(state) {
       padding: 12px;
     }
     .prediction-card h3 {
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.2;
       margin: 0;
     }
@@ -1930,7 +1969,7 @@ export function renderDashboardHtml(state) {
     }
     .prediction-rule-group summary span {
       color: var(--muted);
-      font-size: 0.95em;
+      font-size: 0.9em;
       margin-left: 8px;
     }
     .prediction-rule-group table {
@@ -1962,6 +2001,176 @@ export function renderDashboardHtml(state) {
     table[data-table="service-status"] th:nth-child(4) { width: 19%; }
     table[data-table="service-status"] td {
       overflow-wrap: normal;
+    }
+    .storage-asset-list {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+    .storage-asset {
+      background: color-mix(in oklab, var(--panel) 88%, var(--accent) 12%);
+      border: 2px solid var(--ink);
+      display: grid;
+      min-width: 0;
+      transform-origin: top center;
+    }
+    .storage-asset-head {
+      align-items: start;
+      border-bottom: 1px solid var(--ink);
+      display: grid;
+      gap: 12px;
+      grid-template-columns: minmax(210px, .75fr) minmax(0, 1.35fr) auto;
+      padding: 12px;
+    }
+    .storage-asset-identity {
+      display: grid;
+      gap: 5px;
+      min-width: 0;
+    }
+    .storage-asset-kicker, .storage-panel-title {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.25;
+      text-transform: uppercase;
+    }
+    .storage-asset-title {
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+    }
+    .storage-asset-summary {
+      color: var(--muted);
+      line-height: 1.45;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .storage-badge-row {
+      align-items: start;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .storage-asset-body {
+      display: grid;
+      grid-template-columns: minmax(190px, .85fr) minmax(310px, 1.35fr) minmax(220px, .9fr);
+      min-width: 0;
+    }
+    .storage-panel {
+      align-content: start;
+      border-right: 1px solid var(--line);
+      display: grid;
+      gap: 9px;
+      min-width: 0;
+      padding: 12px;
+    }
+    .storage-live-panel {
+      background: color-mix(in oklab, var(--panel-raised) 46%, transparent);
+    }
+    .storage-operations-column {
+      display: grid;
+      grid-template-rows: auto auto;
+      min-width: 0;
+    }
+    .storage-operations-column .storage-panel {
+      border-bottom: 1px solid var(--line);
+      border-right: 0;
+    }
+    .storage-operations-column .storage-panel:last-child {
+      border-bottom: 0;
+    }
+    .storage-detail-cell, .storage-policy-cell, .storage-control-cell {
+      min-width: 0;
+    }
+    .storage-info-grid {
+      display: grid;
+      gap: 4px;
+      grid-template-columns: minmax(0, 1fr);
+      margin: 0;
+    }
+    .storage-info-grid dt {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+    .storage-info-grid dt:first-child {
+      margin-top: 0;
+    }
+    .storage-info-grid dd {
+      line-height: 1.35;
+      margin: 0;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .storage-path code {
+      display: inline;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      word-break: break-word;
+    }
+    .storage-note-list {
+      display: grid;
+      gap: 4px;
+    }
+    .storage-channel-list {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+      min-width: 0;
+    }
+    .storage-channel {
+      background: color-mix(in oklab, var(--panel) 70%, transparent);
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 5px;
+      min-width: 0;
+      padding: 8px;
+    }
+    .storage-channel-head {
+      align-items: start;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: space-between;
+      min-width: 0;
+    }
+    .storage-channel-head strong, .storage-channel-detail {
+      overflow-wrap: anywhere;
+    }
+    .storage-channel-detail {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .storage-control-cell {
+      display: grid;
+      gap: 8px;
+    }
+    .storage-control-cell .check-grid, .storage-control-actions {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+    .storage-control-cell .check-row {
+      grid-template-columns: minmax(64px, .8fr) auto;
+    }
+    .storage-control-cell .check-detail {
+      grid-column: 1 / -1;
+    }
+    .storage-empty {
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      color: var(--muted);
+      padding: 14px;
+    }
+    .storage-asset code, .glyph, .execution-status-time {
+      font-family: var(--font-mono);
+      min-width: 0;
     }
     table[data-table="registered-projects"] {
       table-layout: fixed;
@@ -2064,7 +2273,7 @@ export function renderDashboardHtml(state) {
     }
     .check-label {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       line-height: 1.6;
       text-transform: uppercase;
@@ -2092,7 +2301,7 @@ export function renderDashboardHtml(state) {
     }
     th {
       background: var(--panel-raised);
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
     }
     td {
@@ -2100,8 +2309,8 @@ export function renderDashboardHtml(state) {
     }
     code {
       color: var(--blue);
-      font-family: "Cascadia Mono", Consolas, monospace;
-      font-size: 13px;
+      font-family: var(--font-mono);
+      font-size: 12px;
     }
     .file-ref-stack {
       align-items: flex-start;
@@ -2115,7 +2324,7 @@ export function renderDashboardHtml(state) {
     .pill {
       border: 1px solid var(--ink);
       display: inline-block;
-      font-size: 12px;
+      font-size: 11px;
       line-height: 1.35;
       padding: 2px 7px;
       transform-origin: center;
@@ -2128,7 +2337,7 @@ export function renderDashboardHtml(state) {
       cursor: pointer;
       display: inline-flex;
       font: inherit;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       gap: 4px;
       justify-content: center;
@@ -2149,7 +2358,7 @@ export function renderDashboardHtml(state) {
       opacity: .72;
     }
     .action-key {
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1;
     }
     .inline-actions {
@@ -2188,7 +2397,7 @@ export function renderDashboardHtml(state) {
       grid-template-columns: minmax(0, 1fr) auto;
     }
     .control-modal-header h3 {
-      font-size: clamp(22px, 3vw, 34px);
+      font-size: clamp(21px, 3vw, 33px);
       line-height: 1;
       margin: 0;
     }
@@ -2208,7 +2417,7 @@ export function renderDashboardHtml(state) {
       background: var(--paper);
       border: 2px solid var(--ink);
       color: var(--ink);
-      font: 13px/1.45 "Cascadia Mono", Consolas, monospace;
+      font: 12px/1.45 var(--font-mono);
       margin: 0;
       max-height: 310px;
       min-height: 168px;
@@ -2285,7 +2494,7 @@ export function renderDashboardHtml(state) {
     .inline-meta {
       color: var(--muted);
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       margin-top: 2px;
     }
     @media (max-width: 820px) {
@@ -2312,10 +2521,10 @@ export function renderDashboardHtml(state) {
         width: clamp(166px, 33vw, 236px);
       }
       body.deck-mode .metric strong {
-        font-size: clamp(42px, 9vw, 62px);
+        font-size: clamp(41px, 9vw, 61px);
       }
       body.deck-mode .metric span {
-        font-size: clamp(15px, 3.4vw, 20px);
+        font-size: clamp(14px, 3.4vw, 19px);
         margin-top: 8px;
       }
       body.deck-mode .metric::after {
@@ -2328,9 +2537,22 @@ export function renderDashboardHtml(state) {
       .prediction-facts { grid-template-columns: 1fr; }
       .prediction-facts .guidance-row { grid-template-columns: 1fr; }
       .predictor-actions { justify-content: flex-start; min-width: 0; }
+      .storage-asset-head, .storage-asset-body {
+        grid-template-columns: 1fr;
+      }
+      .storage-badge-row {
+        justify-content: flex-start;
+      }
+      .storage-panel, .storage-live-panel {
+        border-bottom: 1px solid var(--line);
+        border-right: 0;
+      }
+      .storage-operations-column .storage-panel:last-child {
+        border-bottom: 0;
+      }
       table {
         display: block;
-        font-size: 14px;
+        font-size: 13px;
         overflow-x: auto;
         white-space: nowrap;
       }
@@ -2354,16 +2576,16 @@ export function renderDashboardHtml(state) {
         width: clamp(132px, 42vw, 176px);
       }
       body.deck-mode .metric strong {
-        font-size: clamp(34px, 11vw, 48px);
+        font-size: clamp(33px, 11vw, 47px);
       }
       body.deck-mode .metric span {
-        font-size: clamp(13px, 3.9vw, 16px);
+        font-size: clamp(12px, 3.9vw, 15px);
         line-height: 1.15;
         margin-top: 6px;
       }
       body.deck-mode .metric::after {
         bottom: 8px;
-        font-size: 11px;
+        font-size: 10px;
         left: 12px;
       }
     }
@@ -2407,12 +2629,13 @@ export function renderDashboardHtml(state) {
     <button data-view="routes"><span class="glyph">06</span> <span data-i18n="nav.routes">公開路由</span></button>
     <button data-view="terminal"><span class="glyph">07</span> <span data-i18n="nav.terminal">Terminal Profiles</span></button>
     <button data-view="api-keys"><span class="glyph">08</span> <span data-i18n="nav.apiKeys">API Key 治理</span></button>
-    <button data-view="agent-instructions"><span class="glyph">09</span> <span data-i18n="nav.agentInstructions">Agent Instructions</span></button>
-    <button data-view="workspace-predictor"><span class="glyph">10</span> <span data-i18n="nav.workspacePredictor">工作區預測</span></button>
-    <button data-view="web-entrypoints"><span class="glyph">11</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
-    <button data-view="service-status"><span class="glyph">12</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
-    <button data-view="service-onboarding"><span class="glyph">13</span> <span data-i18n="nav.serviceOnboarding">補充程序</span></button>
-    <button data-view="web-console-events"><span class="glyph">14</span> <span data-i18n="nav.webConsoleEvents">Web Console Events</span></button>
+    <button data-view="storage-assets"><span class="glyph">09</span> <span data-i18n="nav.storageAssets">儲存治理</span></button>
+    <button data-view="agent-instructions"><span class="glyph">10</span> <span data-i18n="nav.agentInstructions">Agent Instructions</span></button>
+    <button data-view="workspace-predictor"><span class="glyph">11</span> <span data-i18n="nav.workspacePredictor">工作區預測</span></button>
+    <button data-view="web-entrypoints"><span class="glyph">12</span> <span data-i18n="nav.webEntrypoints">Web 入口</span></button>
+    <button data-view="service-status"><span class="glyph">13</span> <span data-i18n="nav.serviceStatus">服務狀態</span></button>
+    <button data-view="service-onboarding"><span class="glyph">14</span> <span data-i18n="nav.serviceOnboarding">補充程序</span></button>
+    <button data-view="web-console-events"><span class="glyph">15</span> <span data-i18n="nav.webConsoleEvents">Web Console Events</span></button>
   </nav>
   <div>
     <section id="overview" class="active">
@@ -2449,6 +2672,13 @@ export function renderDashboardHtml(state) {
     <section id="api-keys" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.apiKeys">API Key 治理</h2><input data-filter="api-keys" placeholder="篩選 API keys"></div>
       <table data-table="api-keys"></table>
+    </section>
+    <section id="storage-assets" class="table-view">
+      <div class="toolbar"><h2 data-i18n="sections.storageAssets">儲存治理</h2><input data-filter="storage-assets" placeholder="篩選儲存資產"></div>
+      <div class="guidance">
+        <div><strong data-i18n="storageAssets.label">Storage policy:</strong> <span data-i18n="storageAssets.body">Long-lived local storage assets are listed here with their policy, live footprint, channel sharing state, and reviewed Doctor or Reset controls.</span></div>
+      </div>
+      <div data-table="storage-assets" class="storage-asset-list"></div>
     </section>
     <section id="agent-instructions" class="table-view">
       <div class="toolbar"><h2 data-i18n="sections.agentInstructions">Agent Instructions</h2><input data-filter="agent-instructions" placeholder="篩選 agent instructions"></div>
@@ -2553,6 +2783,7 @@ const messages = {
       routes: 'Routes',
       terminal: 'Terminal',
       apiKeys: 'API Keys',
+      storageAssets: 'Storage',
       agentInstructions: 'Agent Instructions',
       workspacePredictor: 'Workspace Predictor',
       webEntrypoints: 'Web Entrypoints',
@@ -2568,6 +2799,7 @@ const messages = {
       routes: 'Public Routes',
       terminal: 'Terminal Profiles',
       apiKeys: 'API Key Governance',
+      storageAssets: 'Storage Governance',
       agentInstructions: 'Agent Instructions',
       workspacePredictor: 'Workspace Rule Predictor',
       webEntrypoints: 'Web Entrypoints',
@@ -2583,6 +2815,7 @@ const messages = {
       routes: 'Filter routes',
       terminal: 'Filter terminal',
       apiKeys: 'Filter API keys',
+      storageAssets: 'Filter storage assets',
       agentInstructions: 'Filter agent instructions',
       workspacePredictor: 'Q:\\\\Projects\\\\example-app',
       webEntrypoints: 'Filter web entrypoints',
@@ -2598,6 +2831,7 @@ const messages = {
       routes: 'Routes',
       profiles: 'Profiles',
       apiKeys: 'API Keys',
+      storageAssets: 'Storage',
       instructions: 'Instructions',
       webEntrypoints: 'Web Entrypoints',
       webConsoleEvents: 'Web Console Events'
@@ -2618,6 +2852,10 @@ const messages = {
     registeredProjects: {
       label: 'Progress tags:',
       body: 'Project progress is aggregated from existing DevGov registry fields: readiness, review status, visibility, service coverage, and next action.'
+    },
+    storageAssets: {
+      label: 'Storage policy:',
+      body: 'Long-lived local storage assets are listed here with their policy, live footprint, channel sharing state, and reviewed Doctor or Reset controls.'
     },
       workspacePredictor: {
         label: 'Prediction model:',
@@ -2778,6 +3016,19 @@ const messages = {
       assetPolicy: 'Asset Policy',
       variable: 'Variable',
       storage: 'Storage',
+      storageAsset: 'Storage Asset',
+      currentStore: 'Current Store',
+      channels: 'Channels',
+      controls: 'Controls',
+      primaryOwner: 'Primary Owner',
+      sharedWith: 'Shared With',
+      modelStore: 'Model Store',
+      physicalPolicy: 'Physical Policy',
+      liveSummary: 'Live Summary',
+      primaryPath: 'Primary Path',
+      versions: 'Versions',
+      physicalSize: 'Physical Size',
+      pendingLiveCheck: 'Pending live check',
       settings: 'Settings',
       type: 'Type',
       layer: 'Layer',
@@ -2834,6 +3085,7 @@ const messages = {
       routes: '公開路由',
       terminal: 'Terminal Profiles',
       apiKeys: 'API Key 治理',
+      storageAssets: '儲存治理',
       agentInstructions: 'Agent Instructions',
       workspacePredictor: '工作區預測',
       webEntrypoints: 'Web 入口',
@@ -2849,6 +3101,7 @@ const messages = {
       routes: '公開路由',
       terminal: 'Terminal Profiles',
       apiKeys: 'API Key 治理',
+      storageAssets: '儲存治理',
       agentInstructions: 'Agent Instructions',
       workspacePredictor: '工作區規則預測',
       webEntrypoints: 'Web 入口',
@@ -2864,6 +3117,7 @@ const messages = {
       routes: '篩選公開路由',
       terminal: '篩選 terminal',
       apiKeys: '篩選 API keys',
+      storageAssets: '篩選儲存資產',
       agentInstructions: '篩選 agent instructions',
       workspacePredictor: 'Q:\\\\Projects\\\\example-app',
       webEntrypoints: '篩選 web 入口',
@@ -2879,6 +3133,7 @@ const messages = {
       routes: 'Routes',
       profiles: 'Profiles',
       apiKeys: 'API Keys',
+      storageAssets: 'Storage',
       instructions: 'Instructions',
       webEntrypoints: 'Web 入口',
       webConsoleEvents: '網頁事件'
@@ -2899,6 +3154,10 @@ const messages = {
     registeredProjects: {
       label: '進度標籤:',
       body: '專案進度由已登錄資料彙整：準備狀態、審查狀態、可見範圍、服務覆蓋與下一步。'
+    },
+    storageAssets: {
+      label: '儲存政策:',
+      body: '長期本機儲存資產會在這裡列出政策、即時占用、channel 共享狀態，以及已審核的 Doctor 或 Reset 控制。'
     },
       workspacePredictor: {
         label: '預測模型:',
@@ -3059,6 +3318,19 @@ const messages = {
       assetPolicy: 'Asset Policy',
       variable: 'Variable',
       storage: 'Storage',
+      storageAsset: '儲存資產',
+      currentStore: '目前儲存',
+      channels: 'Channels',
+      controls: '控制',
+      primaryOwner: 'Primary Owner',
+      sharedWith: '共用對象',
+      modelStore: 'Model Store',
+      physicalPolicy: '實體政策',
+      liveSummary: '即時摘要',
+      primaryPath: 'Primary Path',
+      versions: 'Versions',
+      physicalSize: '實體大小',
+      pendingLiveCheck: '等待 live check',
       settings: 'Settings',
       type: 'Type',
       layer: 'Layer',
@@ -3280,6 +3552,7 @@ document.querySelectorAll('input[data-filter]').forEach(input => {
     if (input.dataset.filter === 'routes') renderRoutes(value);
     if (input.dataset.filter === 'terminal') renderTerminal(value);
     if (input.dataset.filter === 'api-keys') renderApiKeys(value);
+    if (input.dataset.filter === 'storage-assets') renderStorageAssets(value);
     if (input.dataset.filter === 'agent-instructions') renderAgentInstructions(value);
     if (input.dataset.filter === 'web-entrypoints') renderWebEntrypoints(value);
     if (input.dataset.filter === 'service-status') renderServiceStatusTable(value, serviceStatusRows);
@@ -3307,6 +3580,7 @@ function renderAll() {
   renderRoutes(filterValue('routes'));
   renderTerminal(filterValue('terminal'));
   renderApiKeys(filterValue('api-keys'));
+  renderStorageAssets(filterValue('storage-assets'));
   renderAgentInstructions(filterValue('agent-instructions'));
   renderWorkspacePredictor();
   renderWebEntrypoints(filterValue('web-entrypoints'));
@@ -3439,6 +3713,7 @@ function metricDeckItems() {
     { label: t('metrics.routes'), value: state.summary.publicRoutes, view: 'routes' },
     { label: t('metrics.profiles'), value: state.summary.terminalProfiles, view: 'terminal' },
     { label: t('metrics.apiKeys'), value: state.summary.apiKeys, view: 'api-keys' },
+    { label: t('metrics.storageAssets'), value: state.summary.storageRecords, view: 'storage-assets' },
     { label: t('metrics.instructions'), value: state.summary.agentInstructions, view: 'agent-instructions' },
     { label: t('metrics.webEntrypoints'), value: state.summary.webEntrypoints, view: 'web-entrypoints' },
     { label: t('metrics.webConsoleEvents'), value: state.summary.webConsoleEvents, view: 'web-console-events' }
@@ -3765,6 +4040,138 @@ function renderTerminal(query) {
 function renderApiKeys(query) {
   const rows = state.apiKeys.filter(row => match(row, query));
   renderTable('api-keys', [t('labels.variable'), t('labels.service'), t('labels.storage'), t('labels.settings'), t('labels.status')], rows.map(row => [textCell(row.variableName), textCell(row.service), textCell(row.storageLocation), linkify(row.settingsUrl), pill(row.status)]));
+}
+function renderStorageAssets(query) {
+  const rows = state.storageRecords.filter(row => match(row, query));
+  const container = document.querySelector('[data-table="storage-assets"]');
+  if (!container) return;
+  container.innerHTML = rows.length
+    ? rows.map(renderStorageAssetPanel).join('')
+    : '<div class="storage-empty">' + tEsc('labels.pending') + '</div>';
+  bindServiceControlButtons();
+  Motion.rows('storage-assets');
+}
+function renderStorageAssetPanel(row) {
+  return '<article class="storage-asset">'
+    + '<header class="storage-asset-head">'
+    + renderStorageAssetCell(row)
+    + '<div class="storage-asset-summary">' + esc(row.physicalPolicy) + '</div>'
+    + '<div class="storage-badge-row">' + pill(row.readiness) + pill(row.reviewStatus) + '</div>'
+    + '</header>'
+    + '<div class="storage-asset-body">'
+    + renderStoragePanel(t('labels.policy'), renderStoragePolicyCell(row), 'storage-policy-panel')
+    + renderStoragePanel(t('labels.currentStore'), renderStorageCurrentStoreCell(row), 'storage-live-panel')
+    + '<div class="storage-operations-column">'
+    + renderStoragePanel(t('labels.channels'), renderStorageChannelCell(row), 'storage-channel-panel')
+    + renderStoragePanel(t('labels.controls'), renderStorageControlCell(row), 'storage-controls-panel')
+    + '</div>'
+    + '</div>'
+    + '</article>';
+}
+function renderStoragePanel(title, body, className = '') {
+  return '<div class="storage-panel ' + esc(className) + '">'
+    + '<div class="storage-panel-title">' + esc(title) + '</div>'
+    + body
+    + '</div>';
+}
+function renderStorageAssetCell(row) {
+  return '<div class="storage-asset-identity">'
+    + '<span class="storage-asset-kicker">' + esc(row.storageKind) + '</span>'
+    + '<strong class="storage-asset-title">' + esc(row.label) + '</strong>'
+    + '<code>' + esc(row.project) + '</code>'
+    + '</div>';
+}
+function renderStoragePolicyCell(row) {
+  return '<dl class="storage-info-grid storage-policy-cell">'
+    + '<dt>' + tEsc('labels.primaryOwner') + '</dt><dd>' + esc(row.primaryOwner) + '</dd>'
+    + '<dt>' + tEsc('labels.modelStore') + '</dt><dd><code>' + esc(row.modelStore) + '</code></dd>'
+    + '<dt>' + tEsc('labels.policy') + '</dt><dd>' + esc(row.physicalPolicy) + '</dd>'
+    + '<dt>' + tEsc('labels.sharedWith') + '</dt><dd>' + esc((row.sharedWith || []).join(', ')) + '</dd>'
+    + '</dl>';
+}
+function renderStorageCurrentStoreCell(row) {
+  const details = storageLiveDetails(row);
+  const primary = storagePrimaryChannel(details);
+  if (!details?.primaryPath && !primary) {
+    return '<div class="storage-detail-cell"><span>' + tEsc('labels.pendingLiveCheck') + '</span><span class="inline-meta">' + esc(row.physicalPolicy) + '</span></div>';
+  }
+  const versions = primary?.versions?.length ? primary.versions.join(', ') : '';
+  const size = Number.isFinite(primary?.bytes) ? formatStorageBytes(primary.bytes) : '';
+  const warnings = Array.isArray(details.warnings) ? details.warnings : [];
+  return '<div class="storage-detail-cell">'
+    + '<dl class="storage-info-grid">'
+    + (details.summary ? '<dt>' + tEsc('labels.liveSummary') + '</dt><dd>' + esc(details.summary) + '</dd>' : '')
+    + (details.primaryPath ? '<dt>' + tEsc('labels.primaryPath') + '</dt><dd class="storage-path"><code>' + esc(details.primaryPath) + '</code></dd>' : '')
+    + (versions ? '<dt>' + tEsc('labels.versions') + '</dt><dd>' + esc(versions) + '</dd>' : '')
+    + (size ? '<dt>' + tEsc('labels.physicalSize') + '</dt><dd>' + esc(size) + '</dd>' : '')
+    + '</dl>'
+    + (warnings.length ? '<div class="storage-note-list">' + warnings.map(warning => '<span class="inline-meta">' + esc(warning) + '</span>').join('') + '</div>' : '')
+    + '</div>';
+}
+function renderStorageChannelCell(row) {
+  const details = storageLiveDetails(row);
+  const channels = Array.isArray(details?.channels) ? details.channels : [];
+  if (!channels.length) {
+    return '<div class="storage-channel-list">'
+      + (row.sharedWith || []).map(channel => '<span class="inline-meta">' + esc(channel) + '</span>').join('')
+      + '</div>';
+  }
+  return '<div class="storage-channel-list">' + channels.map(renderStorageChannelBadge).join('') + '</div>';
+}
+function renderStorageChannelBadge(channel) {
+  const state = channel.rootExists === false
+    ? 'skipped'
+    : channel.role === 'primary'
+      ? 'primary'
+      : channel.targetMatchesPrimary
+        ? 'linked'
+        : 'drift';
+  const detailParts = [];
+  if (channel.linkType) detailParts.push(channel.linkType);
+  if (Array.isArray(channel.versions) && channel.versions.length) detailParts.push(channel.versions.join(', '));
+  if (Number.isFinite(channel.bytes)) detailParts.push(formatStorageBytes(channel.bytes));
+  if (channel.rootExists === false) detailParts.push('not installed');
+  return '<div class="storage-channel storage-channel-' + esc(state) + '">'
+    + '<div class="storage-channel-head"><strong>' + esc(channel.name) + '</strong>' + pill(state) + '</div>'
+    + (detailParts.length ? '<span class="storage-channel-detail">' + esc(detailParts.join(' / ')) + '</span>' : '')
+    + '</div>';
+}
+function renderStorageControlCell(row) {
+  const target = storageControlTarget(row);
+  if (!target) {
+    return '<div class="storage-control-cell">' + fileRef(row.docsRef) + '</div>';
+  }
+  return '<div class="storage-control-cell">'
+    + '<div class="storage-control-actions">'
+    + renderActionRow(target, 'doctor', target.doctor)
+    + renderActionRow(target, 'restart', target.restart)
+    + '</div>'
+    + '<span class="inline-meta">' + fileRef(row.docsRef) + '</span>'
+    + '</div>';
+}
+function storageControlTarget(row) {
+  return serviceStatusRows.find(target => target.controlTargetId === row.controlTargetId)
+    || state.serviceTargets.find(target => target.controlTargetId === row.controlTargetId);
+}
+function storageLiveDetails(row) {
+  const target = storageControlTarget(row);
+  return target?.quickTest?.details || target?.live?.details || {};
+}
+function storagePrimaryChannel(details) {
+  const channels = Array.isArray(details?.channels) ? details.channels : [];
+  return channels.find(channel => channel.role === 'primary') || null;
+}
+function formatStorageBytes(value) {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes < 0) return '';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  return (unitIndex === 0 ? String(size) : size.toFixed(2)) + ' ' + units[unitIndex];
 }
 function renderAgentInstructions(query) {
   const rows = state.agentInstructions.entries.filter(row => match(row, query));
@@ -4317,6 +4724,7 @@ async function refreshServiceStatus(options = {}) {
     if (taskId) finishExecutionTask(taskId, 'failed', t('executionStatus.details.serviceStatusFailed') + ' ' + error.message);
   } finally {
     renderServiceStatusTable(document.querySelector('input[data-filter="service-status"]').value.toLowerCase(), serviceStatusRows);
+    renderStorageAssets(filterValue('storage-assets'));
   }
 }
 async function refreshServiceOnboarding() {
@@ -4690,6 +5098,7 @@ async function runServiceControl(controlTargetId, action) {
       controlActionStates[actionKey] = { pending: false, message: t('controlDialog.canceled') };
       finishExecutionTask(executionTaskId, 'canceled', t('executionStatus.details.serviceControlCanceled'));
       renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
+      renderStorageAssets(filterValue('storage-assets'));
       return;
     }
   }
@@ -4703,6 +5112,7 @@ async function runServiceControl(controlTargetId, action) {
     detail: t('executionStatus.details.serviceControlRun') + ' target=' + targetLabel
   });
   renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
+  renderStorageAssets(filterValue('storage-assets'));
   try {
     const response = await fetch(state.serviceControl.baseUrl + '/api/service-control/' + action, {
       method: 'POST',
@@ -4733,6 +5143,7 @@ async function runServiceControl(controlTargetId, action) {
     controlActionStates[actionKey] = { pending: false, message: error.message };
     finishExecutionTask(executionTaskId, 'failed', t('executionStatus.details.serviceControlFailed') + ' ' + error.message);
     renderServiceStatusTable(filterValue('service-status'), serviceStatusRows);
+    renderStorageAssets(filterValue('storage-assets'));
   }
 }
 function findServiceControlTarget(controlTargetId) {
@@ -4915,6 +5326,7 @@ function syncI18n() {
     routes: placeholders.routes,
     terminal: placeholders.terminal,
     'api-keys': placeholders.apiKeys,
+    'storage-assets': placeholders.storageAssets,
     'agent-instructions': placeholders.agentInstructions,
     'web-entrypoints': placeholders.webEntrypoints,
     'service-status': placeholders.serviceStatus,
@@ -5039,7 +5451,7 @@ const Motion = {
     const active = table?.closest('section')?.classList.contains('active');
     if (!active) return;
     this.cancel(table);
-    this.stagger(table.querySelectorAll('tr'), [
+    this.stagger(table.querySelectorAll('tr, .storage-asset'), [
       { opacity: 0, transform: 'translateY(8px)' },
       { opacity: 1, transform: 'translateY(0)' }
     ], {
@@ -5221,6 +5633,8 @@ function checkLocalProbe(root, quickTest = {}, timeoutMs) {
         resolveStatus({
           state: code === 0 && parsed.ok ? "ONLINE" : "ERROR",
           error: code === 0 ? undefined : String(parsed.summary ?? stderr.trim() ?? stdout.trim() ?? `Probe exited with code ${code}`),
+          summary: parsed.summary,
+          details: parsed,
           latencyMs: Date.now() - started,
           checkedAt: new Date().toISOString()
         });

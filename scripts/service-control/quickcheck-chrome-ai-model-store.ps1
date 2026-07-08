@@ -12,9 +12,11 @@ $parsed = $jsonText | ConvertFrom-Json
 [pscustomobject]@{
   ok = [bool]$parsed.ok
   summary = [string]$parsed.summary
+  primaryPath = [string]$parsed.primaryPath
+  channels = @($parsed.channels)
   warnings = @($parsed.warnings)
   issues = @($parsed.issues)
-} | ConvertTo-Json -Compress
+} | ConvertTo-Json -Depth 8 -Compress
 
 if (-not [bool]$parsed.ok) {
   exit 1

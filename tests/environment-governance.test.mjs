@@ -383,6 +383,7 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.ok(state.localAgents.some((agent) => agent.id === "local-archive-maintainer"));
   assert.equal(state.summary.agentInstructions, state.agentInstructions.entries.length);
   assert.equal(state.summary.registeredProjects, state.registeredProjects.length);
+  assert.equal(state.summary.storageRecords, state.storageRecords.length);
   assert.equal(state.workspacePrediction.schema, "devgov.workspace-governance-predictor.v1");
   assert.equal(state.workspacePrediction.defaultWorkspaceRoot, "Q:\\Projects");
   assert.equal(state.summary.workspacePredictionRules, state.workspacePrediction.rules.length);
@@ -390,6 +391,7 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.ok(state.agentInstructions.entries.some((entry) => entry.id === "agent.authority.single-runtime-source"));
   assert.equal(state.localFileCompanions["AGENTS.md"], "AGENTS.zh-tw.md");
   assert.ok(state.serviceTargets.some((target) => target.id === "devgov-dashboard"));
+  assert.ok(state.storageRecords.some((record) => record.id === "chrome-ai-model-store"));
   assert.ok(state.registeredProjects.some((project) => project.project === "devgov" && project.services.includes("dashboard-http")));
   assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2.colorgeek.co/health"));
   assert.ok(state.webEntrypoints.some((entry) => entry.project === "tb2" && entry.url === "https://tb2-health-staging.colorgeek.co/health"));
@@ -402,6 +404,16 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /English/);
   assert.match(html, /Local Service Agents/);
   assert.match(html, /API Key Governance/);
+  assert.match(html, /storage-assets/);
+  assert.match(html, /storage-asset-list/);
+  assert.match(html, /Storage Governance/);
+  assert.match(html, /儲存治理/);
+  assert.match(html, /--font-sans/);
+  assert.match(html, /--font-mono/);
+  assert.match(html, /Bahnschrift/);
+  assert.doesNotMatch(html, /Georgia/);
+  assert.doesNotMatch(html, /Times New Roman/);
+  assert.doesNotMatch(html, /Aptos/);
   assert.match(html, /Agent Instructions/);
   assert.match(html, /Workspace Rule Predictor/);
   assert.match(html, /workspace-predictor/);
@@ -494,6 +506,8 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const gsdfEotfTarget = targets.find((target) => target.id === "onboarding:gsdf-eotf-video-adjuster-vite-dev");
   const skill0GuiTarget = targets.find((target) => target.id === "onboarding:skill-0-gui-review-studio-http");
   const nowledgeCompatTarget = targets.find((target) => target.id === "onboarding:chatgpt-local-files-mcp-nowledge-compat-http");
+  const chromeAiModelStoreTarget = targets.find((target) => target.id === "onboarding:chrome-ai-model-store-filesystem");
+  const chromeAiStorageRecord = state.storageRecords.find((record) => record.id === "chrome-ai-model-store");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.equal(devgovProject.progressTag, "PARTIAL");
@@ -588,6 +602,13 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(nowledgeCompatTarget.doctor.state, "FOUND");
   assert.equal(nowledgeCompatTarget.restart.state, "FOUND");
   assert.equal(nowledgeCompatTarget.controlReadiness, "PARTIAL");
+  assert.equal(chromeAiModelStoreTarget.project, "chrome-ai-model-store");
+  assert.equal(chromeAiModelStoreTarget.doctor.state, "FOUND");
+  assert.equal(chromeAiModelStoreTarget.restart.state, "FOUND");
+  assert.equal(chromeAiModelStoreTarget.quickTest.probeRef, "scripts/service-control/quickcheck-chrome-ai-model-store.ps1");
+  assert.equal(chromeAiStorageRecord.modelStore, "OptGuideOnDeviceModel");
+  assert.equal(chromeAiStorageRecord.controlTargetId, "chrome-ai-model-store");
+  assert.ok(chromeAiStorageRecord.sharedWith.includes("Chrome Dev"));
 });
 
 test("live service-status view excludes retired targets from the active control surface and recomputes readiness from probe results", async () => {
@@ -603,6 +624,7 @@ test("live service-status view excludes retired targets from the active control 
   const lmStudioRouteTarget = status.services.find((target) => target.id === "public-route:lmstudio");
   const retiredRouteTarget = status.retiredServices.find((target) => target.id === "public-route:mcp-colorgeek");
   const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
+  const chromeAiModelStoreTarget = status.services.find((target) => target.id === "onboarding:chrome-ai-model-store-filesystem");
 
   assert.equal(status.schema, "devgov.service-status.v1");
   assertLiveReadiness(dashboardTarget);
@@ -615,6 +637,7 @@ test("live service-status view excludes retired targets from the active control 
   assertLiveReadiness(mcpRouteTarget);
   assertLiveReadiness(lmStudioRouteTarget);
   assertLiveReadiness(tunnelClientTarget);
+  assertLiveReadiness(chromeAiModelStoreTarget);
   if (localArchiveTarget.quickTest.statusCode === 401) {
     assert.equal(localArchiveTarget.quickTest.state, "ONLINE");
   }
@@ -627,6 +650,9 @@ test("live service-status view excludes retired targets from the active control 
   assert.equal(mcpRouteTarget.doctor.state, "FOUND");
   assert.equal(mcpRouteTarget.restart.state, "REVIEW_REQUIRED");
   assert.equal(mcpRouteTarget.controlReadiness, "PARTIAL");
+  assert.equal(chromeAiModelStoreTarget.quickTest.state, "ONLINE");
+  assert.match(chromeAiModelStoreTarget.quickTest.details.primaryPath, /OptGuideOnDeviceModel$/);
+  assert.ok(chromeAiModelStoreTarget.quickTest.details.channels.some((channel) => channel.name === "Dev" && channel.targetMatchesPrimary));
   assert.equal(retiredRouteTarget, undefined);
 });
 
