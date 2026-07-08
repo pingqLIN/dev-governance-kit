@@ -1868,46 +1868,27 @@ export function renderDashboardHtml(state) {
       gap: 14px;
     }
     .prediction-stage {
-      --prediction-stage-columns: minmax(230px, .52fr) minmax(0, 1.48fr);
+      --prediction-step-column: clamp(260px, 27vw, 306px);
+      --prediction-stage-columns: var(--prediction-step-column) minmax(0, 1fr);
       align-items: start;
       background: var(--panel);
       border: 2px solid var(--ink);
       display: grid;
-      gap: 12px;
+      gap: clamp(12px, 2vw, 18px);
       grid-template-columns: var(--prediction-stage-columns);
       padding: 12px;
     }
-    .prediction-stage--intake {
-      --prediction-intake-column: 281px;
-      --prediction-intake-margin-bottom: 10px;
-      --prediction-stage-columns: var(--prediction-intake-column) minmax(0, 1fr);
-      align-items: end;
-      margin-bottom: var(--prediction-intake-margin-bottom);
-    }
-    .prediction-stage--intake > .prediction-step {
-      justify-self: start;
-      width: min(100%, var(--prediction-intake-column));
-    }
+    .prediction-stage--intake,
     .prediction-stage--outcome {
-      --prediction-outcome-column: 306px;
-      --prediction-outcome-step-offset: 14px;
-      --prediction-outcome-step-trim: 18px;
-      --prediction-outcome-step-min-height: 90px;
-      --prediction-stage-columns: var(--prediction-outcome-column) minmax(0, 1fr);
+      --prediction-stage-columns: var(--prediction-step-column) minmax(0, 1fr);
     }
-    .prediction-stage--outcome > .prediction-step {
+    .prediction-stage > .prediction-step {
       justify-self: stretch;
-      margin-left: var(--prediction-outcome-step-offset);
-      min-height: var(--prediction-outcome-step-min-height);
-      width: calc(100% - var(--prediction-outcome-step-trim));
-    }
-    .prediction-stage:not(.prediction-stage--intake, .prediction-stage--outcome) > .prediction-step {
-      justify-self: stretch;
-      margin-left: 0;
       min-height: 0;
-      width: auto;
+      width: 100%;
     }
     .prediction-stage-body {
+      align-self: start;
       display: grid;
       gap: 10px;
       min-width: 0;
@@ -1915,7 +1896,7 @@ export function renderDashboardHtml(state) {
     .prediction-step {
       align-items: start;
       display: grid;
-      gap: 10px;
+      column-gap: 12px;
       grid-template-columns: 44px minmax(0, 1fr);
       min-width: 0;
     }
@@ -1929,6 +1910,7 @@ export function renderDashboardHtml(state) {
       font-weight: 700;
       height: 36px;
       justify-content: center;
+      justify-self: start;
       line-height: 1;
       width: 36px;
     }
@@ -2007,14 +1989,18 @@ export function renderDashboardHtml(state) {
       min-width: 0;
     }
     .prediction-tab-section {
-      display: grid;
-      gap: 10px;
+      background: var(--panel);
+      border: 2px solid var(--ink);
+      display: block;
       min-width: 0;
     }
-    .prediction-tab-section h3 {
-      font-size: 15px;
-      line-height: 1.2;
-      margin: 0;
+    .prediction-tab-section + .prediction-tab-section {
+      margin-top: 10px;
+    }
+    .prediction-tab-section-body {
+      display: grid;
+      gap: 10px;
+      padding: 10px;
     }
     .prediction-tab-intro {
       background: var(--panel);
@@ -2047,49 +2033,147 @@ export function renderDashboardHtml(state) {
     .prediction-rule-summary {
       background: var(--panel);
       border: 2px solid var(--ink);
+      display: block;
+    }
+    .prediction-rule-summary-body {
       display: grid;
       gap: 10px;
-      padding: 12px;
+      padding: 10px;
     }
-    .prediction-rule-summary p {
+    .prediction-rule-summary-body p {
       margin: 0;
       opacity: 0.8;
     }
     .prediction-rule-layer {
+      background: var(--panel);
       border: 2px solid var(--ink);
+      display: block;
+    }
+    .prediction-rule-layer + .prediction-rule-layer {
+      margin-top: 8px;
+    }
+    .prediction-tab-section > summary,
+    .prediction-rule-summary > summary,
+    .prediction-rule-layer > summary,
+    .prediction-rule-group > summary,
+    .prediction-rule-item > summary {
+      cursor: pointer;
+      list-style: none;
+    }
+    .prediction-tab-section > summary::-webkit-details-marker,
+    .prediction-rule-summary > summary::-webkit-details-marker,
+    .prediction-rule-layer > summary::-webkit-details-marker,
+    .prediction-rule-group > summary::-webkit-details-marker,
+    .prediction-rule-item > summary::-webkit-details-marker {
+      display: none;
+    }
+    .prediction-tab-section > summary::after,
+    .prediction-rule-summary > summary::after,
+    .prediction-rule-layer > summary::after,
+    .prediction-rule-group > summary::after,
+    .prediction-rule-item > summary::after {
+      align-items: center;
+      background: var(--ink);
+      color: var(--paper);
+      content: "+";
+      display: inline-flex;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      height: 24px;
+      justify-content: center;
+      line-height: 1;
+      width: 24px;
+    }
+    .prediction-tab-section[open] > summary::after,
+    .prediction-rule-summary[open] > summary::after,
+    .prediction-rule-layer[open] > summary::after,
+    .prediction-rule-group[open] > summary::after,
+    .prediction-rule-item[open] > summary::after {
+      content: "-";
+    }
+    .prediction-tab-section > summary,
+    .prediction-rule-summary > summary,
+    .prediction-rule-layer > summary,
+    .prediction-rule-group > summary,
+    .prediction-rule-item > summary {
+      align-items: start;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      padding: 10px;
+    }
+    .prediction-tab-section[open] > summary,
+    .prediction-rule-summary[open] > summary,
+    .prediction-rule-layer[open] > summary,
+    .prediction-rule-group[open] > summary,
+    .prediction-rule-item[open] > summary {
+      border-bottom: 1px solid var(--ink);
+    }
+    .prediction-rule-summary-copy {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+    }
+    .prediction-rule-summary-copy strong,
+    .prediction-rule-id {
+      overflow-wrap: anywhere;
+    }
+    .prediction-rule-summary-copy span {
+      color: var(--muted);
+      font-size: 0.9em;
+    }
+    .prediction-rule-layer-body {
       display: grid;
       gap: 8px;
       padding: 10px;
-      background: var(--panel);
-    }
-    .prediction-rule-layer h4 {
-      margin: 0;
     }
     .prediction-rule-group {
       background: var(--paper);
       border: 2px solid var(--ink);
-      padding: 8px;
+      display: block;
     }
-    .prediction-rule-group + .prediction-rule-group,
-    .prediction-rule-group + .prediction-rule-layer,
-    .prediction-rule-layer + .prediction-rule-layer {
-      margin-top: 8px;
+    .prediction-rule-list {
+      display: grid;
     }
-    .prediction-rule-group summary {
-      cursor: pointer;
+    .prediction-rule-item {
+      border-top: 1px solid var(--line);
+      display: block;
+    }
+    .prediction-rule-item:first-child {
+      border-top: 0;
+    }
+    .prediction-rule-item > summary {
+      align-items: center;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+    .prediction-rule-id {
+      font-family: var(--font-mono);
+      font-size: 12px;
       font-weight: 700;
-      list-style: none;
+      line-height: 1.35;
     }
-    .prediction-rule-group summary::-webkit-details-marker {
-      display: none;
+    .prediction-rule-details {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 10px;
     }
-    .prediction-rule-group summary span {
+    .prediction-rule-detail-row {
+      display: grid;
+      gap: 6px;
+      grid-template-columns: minmax(96px, 0.26fr) minmax(0, 1fr);
+    }
+    .prediction-rule-detail-row dt {
       color: var(--muted);
-      font-size: 0.9em;
-      margin-left: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0;
     }
-    .prediction-rule-group table {
-      margin-top: 8px;
+    .prediction-rule-detail-row dd {
+      margin: 0;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
     .prediction-rule-exec-list {
       margin: 0;
@@ -2672,6 +2756,9 @@ export function renderDashboardHtml(state) {
       .prediction-facts { grid-template-columns: 1fr; }
       .prediction-facts .guidance-row { grid-template-columns: 1fr; }
       .predictor-actions { justify-content: flex-start; min-width: 0; }
+      .prediction-rule-detail-row {
+        grid-template-columns: 1fr;
+      }
       .storage-asset-head, .storage-asset-body {
         grid-template-columns: 1fr;
       }
@@ -4748,20 +4835,24 @@ function renderWorkspacePredictionSummary(prediction) {
     + '</div>';
 }
 function renderWorkspacePredictionNotes(prediction) {
-  return '<div class="prediction-tab-section">'
-    + '<h3>' + esc(t('workspacePredictor.risksTitle')) + '</h3>'
+  return '<details class="prediction-tab-section">'
+    + '<summary><span class="prediction-rule-summary-copy"><strong>' + esc(t('workspacePredictor.risksTitle')) + '</strong><span>' + esc(workspaceItemCountLabel(prediction.notes.length)) + '</span></span></summary>'
+    + '<div class="prediction-tab-section-body">'
     + '<div class="prediction-cards">'
     + prediction.notes.map((note) => '<article class="prediction-card">' + pill(note.state) + '<h3>' + esc(note.title) + '</h3><span>' + esc(note.body) + '</span></article>').join('')
     + '</div>'
     + '</div>'
-    + '<div class="prediction-tab-section">'
-    + '<h3>' + esc(t('workspacePredictor.layersTitle')) + '</h3>'
+    + '</details>'
+    + '<details class="prediction-tab-section">'
+    + '<summary><span class="prediction-rule-summary-copy"><strong>' + esc(t('workspacePredictor.layersTitle')) + '</strong><span>' + esc(workspaceItemCountLabel(prediction.layers.length)) + '</span></span></summary>'
+    + '<div class="prediction-tab-section-body">'
     + renderPredictionTable([t('labels.layer'), t('labels.applies'), t('labels.reason')], prediction.layers.map((layer) => [
       textCell(layer.id),
       pill(layer.applies),
       textCell(layer.reason)
     ]))
-    + '</div>';
+    + '</div>'
+    + '</details>';
 }
 function workspaceRuleTypeBucket(rule) {
   return String(rule?.type || 'unknown').toLowerCase();
@@ -4835,8 +4926,9 @@ function renderWorkspacePredictionRulesSummary(prediction) {
   const modeLabel = t(isFull ? 'workspacePredictor.ruleList.modeFull' : 'workspacePredictor.ruleList.modeCompact');
   const listHint = t(isFull ? 'workspacePredictor.ruleList.fullHint' : 'workspacePredictor.ruleList.compactHint');
   const summaryRules = prediction.allRules;
-  return '<div class="prediction-rule-summary">'
-    + '<div><strong>' + esc(modeLabel) + '</strong> · ' + esc(t('workspacePredictor.ruleList.typeSummary')) + '</div>'
+  return '<details class="prediction-rule-summary">'
+    + '<summary><span class="prediction-rule-summary-copy"><strong>' + esc(modeLabel) + ' · ' + esc(t('workspacePredictor.ruleList.typeSummary')) + '</strong><span>' + esc(workspaceRuleCountLabel(summaryRules.length)) + '</span></span></summary>'
+    + '<div class="prediction-rule-summary-body">'
     + '<p>' + esc(listHint) + '</p>'
     + renderPredictionTable(
       [t('labels.type'), t('labels.count')],
@@ -4856,7 +4948,8 @@ function renderWorkspacePredictionRulesSummary(prediction) {
           textCell(String(count))
         ])
     )
-    + '</div>';
+    + '</div>'
+    + '</details>';
 }
 function renderWorkspacePredictionRuleBuckets(prediction) {
   const groups = groupWorkspacePredictionRules(prediction.rules);
@@ -4865,28 +4958,44 @@ function renderWorkspacePredictionRuleBuckets(prediction) {
   }
   return groups.map(({ layer, total, types }) => {
     const typeSections = types.map(({ type, rules }) => {
-        return '<details class="prediction-rule-group" open>'
-        + '<summary><strong>' + esc(localizedWorkspaceRuleCell('ruleTypes', type)) + '</strong> <span>' + esc(String(rules.length)) + ' rule' + (rules.length > 1 ? 's' : '') + '</span></summary>'
-        + renderPredictionTable([
-          t('workspacePredictor.ruleHeaders.rule'),
-          t('workspacePredictor.ruleHeaders.applies'),
-          t('workspacePredictor.ruleHeaders.evidence'),
-          t('workspacePredictor.ruleHeaders.reason'),
-          t('workspacePredictor.ruleHeaders.execution')
-        ], rules.map((rule) => [
-          textCell(rule.id),
-          localizedWorkspaceRulePill(rule.applies),
-          fileRefWithCompanion(rule.evidence),
-          textCell(rule.reason),
-          renderWorkspaceRuleExecution(rule.execution)
-        ]))
+        return '<details class="prediction-rule-group">'
+        + '<summary><span class="prediction-rule-summary-copy"><strong>' + esc(localizedWorkspaceRuleValue('ruleTypes', type)) + '</strong><span>' + esc(workspaceRuleCountLabel(rules.length)) + '</span></span></summary>'
+        + '<div class="prediction-rule-list">'
+        + rules.map(renderWorkspaceRuleItem).join('')
+        + '</div>'
         + '</details>';
     }).join('');
-    return '<section class="prediction-rule-layer">'
-      + '<h4>' + esc(localizedWorkspaceRuleCell('ruleLayers', layer)) + ' · ' + esc(String(total)) + '</h4>'
+    return '<details class="prediction-rule-layer">'
+      + '<summary><span class="prediction-rule-summary-copy"><strong>' + esc(localizedWorkspaceRuleValue('ruleLayers', layer)) + '</strong><span>' + esc(workspaceRuleCountLabel(total)) + '</span></span></summary>'
+      + '<div class="prediction-rule-layer-body">'
       + typeSections
-      + '</section>';
+      + '</div>'
+      + '</details>';
   }).join('');
+}
+function workspaceRuleCountLabel(count) {
+  return currentLanguage === 'zhTw'
+    ? String(count) + ' ' + t('labels.rule')
+    : String(count) + ' rule' + (count === 1 ? '' : 's');
+}
+function workspaceItemCountLabel(count) {
+  return currentLanguage === 'zhTw'
+    ? String(count) + ' 項'
+    : String(count) + ' item' + (count === 1 ? '' : 's');
+}
+function renderWorkspaceRuleItem(rule) {
+  return '<details class="prediction-rule-item">'
+    + '<summary><span class="prediction-rule-id">' + esc(rule.id) + '</span>' + localizedWorkspaceRulePill(rule.applies) + '</summary>'
+    + '<dl class="prediction-rule-details">'
+    + renderWorkspaceRuleDetail(t('workspacePredictor.ruleHeaders.applies'), localizedWorkspaceRulePill(rule.applies))
+    + renderWorkspaceRuleDetail(t('workspacePredictor.ruleHeaders.evidence'), fileRefWithCompanion(rule.evidence))
+    + renderWorkspaceRuleDetail(t('workspacePredictor.ruleHeaders.reason'), textCell(rule.reason))
+    + renderWorkspaceRuleDetail(t('workspacePredictor.ruleHeaders.execution'), renderWorkspaceRuleExecution(rule.execution))
+    + '</dl>'
+    + '</details>';
+}
+function renderWorkspaceRuleDetail(label, content) {
+  return '<div class="prediction-rule-detail-row"><dt>' + esc(label) + '</dt><dd>' + content + '</dd></div>';
 }
 function renderWorkspaceRuleExecution(execution) {
   const items = Array.isArray(execution) ? execution : [];
@@ -4928,11 +5037,16 @@ function localizedWorkspaceRuleValue(group, value) {
 }
 function renderWorkspacePredictionChecks(prediction) {
   return '<div class="prediction-tab-intro"><strong>' + esc(t('workspacePredictor.checksTitle')) + '</strong><span>' + esc(t('workspacePredictor.checksBody')) + '</span></div>'
+    + '<details class="prediction-tab-section">'
+    + '<summary><span class="prediction-rule-summary-copy"><strong>' + esc(t('workspacePredictor.checksTitle')) + '</strong><span>' + esc(workspaceItemCountLabel(prediction.checks.length)) + '</span></span></summary>'
+    + '<div class="prediction-tab-section-body">'
     + renderPredictionTable([t('labels.rule'), t('labels.when'), t('labels.command')], prediction.checks.map((check) => [
       textCell(localizedWorkspaceCheckText(check.label)),
       textCell(localizedWorkspaceCheckText(check.when)),
       '<code>' + esc(check.command) + '</code>'
-    ]));
+    ]))
+    + '</div>'
+    + '</details>';
 }
 function localizedWorkspaceCheckText(value) {
   const text = String(value || '');
