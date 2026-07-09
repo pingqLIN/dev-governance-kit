@@ -4,13 +4,14 @@ import http from "node:http";
 import https from "node:https";
 import path from "node:path";
 import { loadApprovedServiceControls, SERVICE_CONTROL_HOST, SERVICE_CONTROL_PORT, SERVICE_CONTROL_URL } from "./service-control-core.mjs";
+import { loadResourceCoordinationRegistry } from "./resource-coordination-core.mjs";
 
 export const DASHBOARD_HOST = "127.0.0.1";
 export const DASHBOARD_PORT = 3000;
 export const DASHBOARD_URL = `http://${DASHBOARD_HOST}:${DASHBOARD_PORT}`;
 
 export async function loadDashboardState(root = ".") {
-  const [pkg, ports, startup, publicRoutes, terminalProfiles, localAgents, apiKeys, agentInstructions, serviceOnboarding, serviceControls] = await Promise.all([
+  const [pkg, ports, startup, publicRoutes, terminalProfiles, localAgents, apiKeys, agentInstructions, serviceOnboarding, serviceControls, resourceCoordination] = await Promise.all([
     readJson(path.join(root, "package.json")),
     readJson(path.join(root, "registry", "ports.registry.json")),
     readJson(path.join(root, "registry", "startup.registry.json")),
@@ -20,7 +21,8 @@ export async function loadDashboardState(root = ".") {
     readJson(path.join(root, "registry", "api-keys.registry.json")),
     readJson(path.join(root, "registry", "agent-instructions.registry.json")),
     readJson(path.join(root, "registry", "service-onboarding.registry.json")),
-    loadApprovedServiceControls(root)
+    loadApprovedServiceControls(root),
+    loadResourceCoordinationRegistry(root)
   ]);
   const webConsoleEvents = await readDashboardEvents(path.join(root, "reports", "web-console-events.json"));
   const localFileCompanions = await buildLocalFileCompanions(root, [
@@ -76,6 +78,8 @@ export async function loadDashboardState(root = ".") {
       apiKeys: apiKeys.entries.length,
       agentInstructions: agentInstructions.entries.length,
       workspacePredictionRules: workspacePrediction.rules.length,
+      resourceCoordinationSignals: resourceCoordination.registry.signals.length,
+      exclusiveResources: resourceCoordination.registry.exclusiveResources.length,
       registeredProjects: registeredProjects.length,
       webEntrypoints: webEntrypoints.length,
       storageRecords: storageRecords.length,
@@ -97,6 +101,16 @@ export async function loadDashboardState(root = ".") {
     serviceControl: {
       baseUrl: SERVICE_CONTROL_URL,
       entries: serviceControls
+    },
+    resourceCoordination: {
+      registryErrors: resourceCoordination.errors,
+      platform: resourceCoordination.registry.platform,
+      freshness: resourceCoordination.registry.freshness,
+      channels: resourceCoordination.registry.channels,
+      signals: resourceCoordination.registry.signals,
+      exclusiveResources: resourceCoordination.registry.exclusiveResources,
+      policies: resourceCoordination.registry.policies,
+      stages: resourceCoordination.registry.stages
     },
     workspacePrediction,
     registeredProjects,

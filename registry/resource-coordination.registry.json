@@ -1,0 +1,202 @@
+{
+  "schema": "devgov.resource-coordination.registry.v1",
+  "description": "Canonical shared-resource coordination platform for local multi-project development. It reuses existing DevGov dashboard, service-status, service-control, report, and operating-system observation surfaces before introducing new coordination mechanisms.",
+  "sourceOfTruth": "registry/resource-coordination.registry.json",
+  "platform": {
+    "id": "devgov-shared-resource-coordination",
+    "mode": "observe-first",
+    "operatorSurface": "DevGov dashboard",
+    "communicationSurface": "reports/resource-coordination-snapshot.json",
+    "observationSurface": "DevGov /api/resource-coordination plus operating-system process and resource summaries",
+    "status": "candidate",
+    "notes": "This platform is a common read model for agents and operators. It does not schedule, stop, restart, or throttle work by default."
+  },
+  "freshness": {
+    "snapshotMaxAgeSeconds": 300,
+    "exclusiveClaimMaxAgeSeconds": 1800,
+    "activeClaimRefreshSeconds": 300,
+    "staleState": "stale-untrusted",
+    "status": "approved",
+    "notes": "Resource coordination status must be time-bounded. Stale snapshots or claims are historical evidence only and must not be used as current congestion or ownership facts."
+  },
+  "channels": [
+    {
+      "id": "dashboard-state-api",
+      "kind": "dashboard-api",
+      "surface": "DevGov /api/state and /api/service-status",
+      "direction": "read",
+      "riskLevel": "L0",
+      "status": "approved",
+      "notes": "Primary existing shared status surface for registered services, ports, local agents, and readiness rows."
+    },
+    {
+      "id": "resource-coordination-snapshot",
+      "kind": "report-artifact",
+      "surface": "reports/resource-coordination-snapshot.json and reports/resource-coordination-snapshot.md",
+      "direction": "read",
+      "riskLevel": "L1",
+      "status": "candidate",
+      "notes": "Generated local evidence for shared host pressure and contention disposition. Reports may include local process-family counts but not command lines, secrets, or credential paths."
+    },
+    {
+      "id": "service-control-events",
+      "kind": "event-log",
+      "surface": "reports/service-control-events.json",
+      "direction": "read",
+      "riskLevel": "L1",
+      "status": "approved",
+      "notes": "Existing server-authored local control log. Use it as evidence of reviewed control actions, not as a scheduler queue."
+    },
+    {
+      "id": "dashboard-web-console-events",
+      "kind": "event-log",
+      "surface": "reports/web-console-events.json",
+      "direction": "write",
+      "riskLevel": "L1",
+      "status": "candidate",
+      "notes": "Existing local dashboard event sink for sanitized observation events. Do not use it for control commands or approval."
+    },
+    {
+      "id": "operating-system-resource-observation",
+      "kind": "os-signal",
+      "surface": "Operating-system CPU, memory, and process-family summaries",
+      "direction": "read",
+      "riskLevel": "L1",
+      "status": "candidate",
+      "notes": "Use built-in host observation mechanisms first. Canonical records must not store process IDs, full commands, usernames, paths, or secret-bearing environment values."
+    }
+  ],
+  "signals": [
+    {
+      "id": "lag-is-not-target-instability",
+      "kind": "human-observation",
+      "source": "operator observation across concurrent Codex development sessions",
+      "interpretation": "Lag, timeout, browser delay, or slow tool response is a degraded observation signal, not direct proof that the target project process is unstable.",
+      "congestionUse": "primary",
+      "status": "approved",
+      "notes": "Agents must compare target-local evidence with shared host pressure before assigning cause."
+    },
+    {
+      "id": "target-health-evidence",
+      "kind": "target-health",
+      "source": "DevGov service-status, health procedures, Doctor results, and project logs",
+      "interpretation": "Target instability requires target-local evidence such as failing health checks, reproducible errors, crashed listeners, or explicit Doctor failures.",
+      "congestionUse": "exclusion",
+      "status": "approved",
+      "notes": "A healthy target under host pressure should be classified as environment-contention or unknown-degraded, not target-unhealthy."
+    },
+    {
+      "id": "host-resource-pressure",
+      "kind": "host-resource",
+      "source": "Operating-system CPU, memory, disk, GPU, process, and browser profile observations",
+      "interpretation": "High shared host pressure can explain lag across otherwise healthy projects and should be recorded before remediation.",
+      "congestionUse": "primary",
+      "status": "candidate",
+      "notes": "Use available built-in counters and existing DevGov snapshots before adding a resident monitor."
+    },
+    {
+      "id": "control-queue-intent",
+      "kind": "queue-state",
+      "source": "DevGov service-control and dashboard execution status",
+      "interpretation": "Reviewed control actions can provide future scheduling or queue evidence, but they are not an automatic throttle in v1.",
+      "congestionUse": "future",
+      "status": "candidate",
+      "notes": "Scheduling requires a separate reviewed apply path and operator-approved policy."
+    }
+  ],
+  "exclusiveResources": [
+    {
+      "id": "browser-automation-profile",
+      "resource": "Browser automation profile or authenticated browser session",
+      "exclusivity": "exclusive-while-active",
+      "registrationSurface": "resource-coordination snapshot or sanitized dashboard observation event",
+      "useGate": "Register intended browser/profile use before automation when concurrent agents may share the same browser, cookies, extension state, or DevTools session.",
+      "status": "candidate",
+      "notes": "Claims must not include cookie values, session data, profile paths, or credentials."
+    },
+    {
+      "id": "gpu-3d-rendering",
+      "resource": "GPU-heavy 3D rendering, WebGL, WebGPU, canvas verification, video rendering, or model inference",
+      "exclusivity": "capacity-limited",
+      "registrationSurface": "resource-coordination snapshot or sanitized dashboard observation event",
+      "useGate": "Register expected GPU or rendering-heavy work before starting long visual checks or render loops.",
+      "status": "candidate",
+      "notes": "Prefer bounded runs, close render surfaces after verification, and record only project/service intent in canonical data."
+    },
+    {
+      "id": "foreground-screen-control",
+      "resource": "Foreground screen, pointer, keyboard, simulator, or interactive desktop control",
+      "exclusivity": "exclusive-while-active",
+      "registrationSurface": "resource-coordination snapshot or sanitized dashboard observation event",
+      "useGate": "Register screen or foreground-control use before tasks that can steal focus, type into windows, resize displays, or interfere with another agent's visual inspection.",
+      "status": "candidate",
+      "notes": "Do not store screenshots, window titles containing private data, or personal activity in canonical registry data."
+    }
+  ],
+  "policies": [
+    {
+      "id": "diagnose-contention-before-repair",
+      "requirement": "Before treating lag as a target project failure, inspect target health evidence and shared host pressure.",
+      "enforcement": "Classify degraded observations as target-unhealthy, environment-contention, or unknown-degraded; avoid remediation until the classification is evidence-backed.",
+      "status": "approved",
+      "notes": "This prevents unnecessary restarts, edits, or rollback work when the host is simply overloaded by concurrent development."
+    },
+    {
+      "id": "reuse-existing-local-mechanisms",
+      "requirement": "Use existing local operating-system monitors, DevGov dashboard state, service-status rows, service-control logs, and report artifacts before adding new resident services.",
+      "enforcement": "Any new coordinator, queue, or scheduler must explain why the existing DevGov and OS mechanisms are insufficient.",
+      "status": "approved",
+      "notes": "This keeps resource coordination from becoming another heavy always-on dependency."
+    },
+    {
+      "id": "scheduling-is-review-gated",
+      "requirement": "Automatic throttling, pausing, restarting, killing, priority changes, or cross-project scheduling requires a separate reviewed apply path.",
+      "enforcement": "The v1 platform may observe and communicate status only. It must not mutate runtime state or allocate resources automatically.",
+      "status": "approved",
+      "notes": "Future scheduling can build on this registry but must pass service-control and operator approval gates."
+    },
+    {
+      "id": "exclusive-resource-registration",
+      "requirement": "Register intended use before taking browser profiles, GPU-heavy rendering, foreground screen control, or other capacity-limited exclusive resources.",
+      "enforcement": "Use the resource-coordination surface or an approved report artifact to publish a sanitized claim before starting work; if a conflicting active claim exists, pause or negotiate instead of assuming the target process is unstable.",
+      "status": "approved",
+      "notes": "Registration is a coordination signal, not permission to reveal secrets, capture private screens, or bypass higher approval gates."
+    },
+    {
+      "id": "freshness-required",
+      "requirement": "Every resource snapshot and exclusive-resource claim must have a generated, observed, or refreshed timestamp plus an expiry rule.",
+      "enforcement": "Treat stale status as unknown-degraded or historical evidence; refresh observation before diagnosing current congestion, active ownership, or scheduling priority.",
+      "status": "approved",
+      "notes": "This prevents old resource claims from blocking current work."
+    }
+  ],
+  "stages": [
+    {
+      "id": "observe",
+      "name": "Observe",
+      "trigger": "Lag, timeout, slow browser automation, delayed health response, or user-reported contention.",
+      "allowedActions": "Read existing dashboard state, service-status, generated resource snapshots, and operating-system summaries.",
+      "requiredGate": "No extra approval for read-only observation inside the approved workspace.",
+      "status": "approved",
+      "notes": "This is the default stage for LLMs participating in concurrent local development."
+    },
+    {
+      "id": "communicate",
+      "name": "Communicate",
+      "trigger": "Multiple projects or agents need a shared explanation of current resource pressure.",
+      "allowedActions": "Write sanitized local report artifacts or dashboard observation events without command lines, secrets, or credential paths.",
+      "requiredGate": "Use existing report and dashboard event surfaces; do not turn communication into control approval.",
+      "status": "candidate",
+      "notes": "This provides a common message board/read model without a new resident broker."
+    },
+    {
+      "id": "schedule",
+      "name": "Schedule",
+      "trigger": "Operator requests active coordination, throttling, or priority management across project work.",
+      "allowedActions": "Design a reviewed scheduler or queue that calls only approved service-control actions.",
+      "requiredGate": "Separate explicit operator approval, rollback plan, privacy review, and service-control policy review.",
+      "status": "blocked",
+      "notes": "Blocked by design until a later scheduling proposal is reviewed."
+    }
+  ]
+}

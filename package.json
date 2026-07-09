@@ -16,6 +16,7 @@
     "scan:docs": "node scripts/scan-docs.mjs",
     "scan:agents": "node scripts/scan-agent-instructions.mjs",
     "scan:context-budget": "node scripts/scan-context-budget.mjs",
+    "scan:resource-coordination": "node scripts/scan-resource-coordination.mjs",
     "scan:api-keys": "node scripts/scan-api-keys.mjs",
     "scan:service-onboarding": "node scripts/scan-service-onboarding.mjs",
     "av:triage": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/Invoke-AntivirusTriage.ps1",

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -65,6 +65,60 @@ test("scan-context-budget refuses absolute JSON output paths outside reports by 
   const result = spawnSync(
     process.execPath,
     ["scripts/scan-context-budget.mjs", "--json-out", join(tmpdir(), "devgov-context-budget.json")],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
+test("scan-agent-instructions refuses resource proposal paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "scripts/scan-agent-instructions.mjs",
+      "--agents-file",
+      "AGENTS.md",
+      "--resource-proposal-out",
+      join(tmpdir(), "devgov-agents-resource-proposal.md")
+    ],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
+test("scan-agent-instructions writes resource overlay proposal without modifying target AGENTS", () => {
+  const targetPath = "reports/agent-overlay-target.test.md";
+  const targetText = "# AGENTS.md\n\n## Project Rules\n\nUse focused tests.\n";
+  writeFileSync(targetPath, targetText, "utf8");
+
+  const result = spawnSync(
+    process.execPath,
+    [
+      "scripts/scan-agent-instructions.mjs",
+      "--agents-file",
+      targetPath,
+      "--resource-proposal-out",
+      "reports/agent-overlay-proposal.test.md",
+      "--resource-proposal-json-out",
+      "reports/agent-overlay-proposal.test.json"
+    ],
+    { encoding: "utf8" }
+  );
+
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  assert.equal(readFileSyncUtf8(targetPath), targetText);
+  const proposal = JSON.parse(readFileSyncUtf8("reports/agent-overlay-proposal.test.json"));
+  assert.equal(proposal.status, "proposal-required");
+  assert.match(readFileSyncUtf8("reports/agent-overlay-proposal.test.md"), /Suggested Manual Overlay/);
+});
+
+test("scan-resource-coordination refuses absolute output paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/scan-resource-coordination.mjs", "--out", join(tmpdir(), "devgov-resource-coordination.md")],
     { encoding: "utf8" }
   );
 
@@ -149,6 +203,17 @@ test("PORTS template uses placeholders instead of approved allocations", async (
 
   assert.match(text, /`<service>`/);
   assert.doesNotMatch(text, /\|\s*frontend\s*\|\s*3101\s*\|/);
+});
+
+test("resource coordination AGENTS templates stay thin and proposal-only", async () => {
+  const english = await readFile("templates/AGENTS.resource-coordination.md", "utf8");
+  const chinese = await readFile("templates/AGENTS.resource-coordination.zh-tw.md", "utf8");
+
+  assert.match(english, /## Shared Resource Coordination/);
+  assert.match(english, /Project Exclusive Resources/);
+  assert.match(english, /do not bulk-apply it to projects automatically/);
+  assert.match(chinese, /Shared Resource Coordination/);
+  assert.match(chinese, /不要對多個專案自動 bulk apply/);
 });
 
 test("dashboard bookmark template targets the on-demand protocol handler", async () => {

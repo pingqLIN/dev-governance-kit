@@ -22,6 +22,7 @@ The current project scope covers global-home and local development-environment g
 - generate local static document-search artifacts
 - govern AGENTS instruction scope, item types, and queryable indexes
 - audit observable Codex context-budget sources and route tools or skills through compact indexes
+- coordinate shared local development resource contention without adding heavy resident monitors
 - provide a local loopback dashboard on the reviewed long-lived `127.0.0.1:3000` port
 - run self-check, limited self-repair, and local report generation through the Doctor command
 - validate conflicts and required fields
@@ -162,6 +163,40 @@ Keep the always-loaded surface limited to safety rules, authority order, credent
 Skill routing records should name the trigger, the minimal instruction path or registry entry, and the avoid-when cases. Do not paste full skill bodies, full platform tool descriptions, local machine paths, private planning notes, or raw conversation archives into canonical registry records.
 
 Run `npm run scan:context-budget` when auditing local prompt overhead. The command writes local evidence to `reports/context-budget-audit.md` and `reports/context-budget-audit.json`. Treat the report as an estimate: platform system prompts, developer instructions, native tool schemas, and connector schemas are runtime-owned and only partially observable from local files.
+
+## Shared Resource Coordination
+
+Lag, timeout, slow browser automation, delayed tool responses, or sluggish UI feedback are not direct proof that the target project process is unstable. Treat them first as degraded observations until target-local evidence and shared host pressure are compared.
+
+Classify degraded observations with this model:
+
+1. `target-unhealthy`: target-local evidence exists, such as failing health checks, crashed listeners, reproducible project errors, or Doctor failures.
+2. `environment-contention`: target-local evidence is weak or healthy, while shared host resources, exclusive resources, or concurrent project activity plausibly explain the lag.
+3. `unknown-degraded`: evidence is insufficient or stale; refresh observation before remediation.
+
+Use existing local mechanisms before adding new ones:
+
+- DevGov dashboard `/api/state`, `/api/service-status`, and `/api/resource-coordination`.
+- `registry/resource-coordination.registry.json` as the canonical shared-resource coordination contract.
+- `npm run scan:resource-coordination` for an on-demand lightweight snapshot written to `reports/`.
+- Existing service-control and dashboard event reports as evidence, not as scheduler queues.
+- Built-in operating-system CPU, memory, process, GPU, disk, browser, or screen-observation tools when extra context is required.
+
+Keep the resource-coordination path lightweight. Do not add resident monitors, polling loops, queues, schedulers, or new services until existing DevGov and operating-system mechanisms are proven insufficient.
+
+Status must be time-bound. Resource snapshots and exclusive-resource claims need generated, observed, refreshed, or expiry timestamps. A stale claim or snapshot is historical evidence only; it must not block current work or justify current remediation without refresh.
+
+Register intended use before taking capacity-limited or exclusive resources, especially:
+
+- authenticated browser profiles, browser automation sessions, DevTools sessions, or extension state,
+- GPU-heavy 3D rendering, WebGL/WebGPU, canvas verification, video rendering, or local model inference,
+- foreground screen, pointer, keyboard, simulator, display, or interactive desktop control.
+
+Registration should use the resource-coordination surface or a sanitized report/event artifact. It must not store secrets, cookies, session data, credential paths, full local paths, command lines, screenshots containing private data, or personal activity in canonical registry data.
+
+Project AGENTS rollout should use the thin resource-coordination overlay templates and proposal-only scanner. Generate proposal reports with `npm run scan:agents -- --agents-file <path>` and keep them as evidence under `reports/`. Do not bulk-apply the overlay or silently edit target project AGENTS files.
+
+Scheduling is future work and remains review-gated. Automatic throttling, pausing, restarting, killing, priority changes, or cross-project scheduling requires a separate explicit operator request, service-control review, rollback plan, and privacy review.
 
 ## Port Governance Rules
 

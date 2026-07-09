@@ -1,6 +1,6 @@
 # DevGov
 
-`DevGov` is a memorable user/home-level governance toolkit and dashboard. It keeps Global AGENTS planning, development services, local service agents, Terminal profiles, startup automation, public routes, development API key locations, AGENTS instruction governance, worktrees, self-checks, and local documentation search behind auditable sources of truth.
+`DevGov` is a memorable user/home-level governance toolkit and dashboard. It keeps Global AGENTS planning, development services, local service agents, shared resource coordination, Terminal profiles, startup automation, public routes, development API key locations, AGENTS instruction governance, worktrees, self-checks, and local documentation search behind auditable sources of truth.
 
 The repository is designed to live in user/home-level Codex storage rather than inside a single workspace project tree. It manages Global-layer planning, indexing, validation, and coordination; it does not silently rewrite the live Global AGENTS file or override platform/runtime instructions.
 
@@ -26,10 +26,14 @@ Chinese companion and reference documents:
 - [docs/codex-local-state-governance.zh-tw.md](docs/codex-local-state-governance.zh-tw.md)
 - [docs/context-budget-governance.md](docs/context-budget-governance.md)
 - [docs/context-budget-governance.zh-tw.md](docs/context-budget-governance.zh-tw.md)
+- [docs/resource-coordination-governance.md](docs/resource-coordination-governance.md)
+- [docs/resource-coordination-governance.zh-tw.md](docs/resource-coordination-governance.zh-tw.md)
 - [docs/local-antivirus-governance.md](docs/local-antivirus-governance.md)
 - [docs/local-antivirus-governance.zh-tw.md](docs/local-antivirus-governance.zh-tw.md)
 - [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
+- [templates/AGENTS.resource-coordination.md](templates/AGENTS.resource-coordination.md)
+- [templates/AGENTS.resource-coordination.zh-tw.md](templates/AGENTS.resource-coordination.zh-tw.md)
 
 Scan one project without changing it:
 
@@ -115,10 +119,22 @@ Build the local AGENTS instruction search artifacts:
 npm run scan:agents
 ```
 
+Generate a proposal-only shared-resource overlay report for one AGENTS file:
+
+```powershell
+npm run scan:agents -- --agents-file path\to\AGENTS.md --resource-proposal-out reports\agent-resource-overlay.md
+```
+
 Audit observable local context-budget sources:
 
 ```powershell
 npm run scan:context-budget
+```
+
+Capture a lightweight shared-resource contention snapshot:
+
+```powershell
+npm run scan:resource-coordination
 ```
 
 Audit supplementation gaps for already-registered services:
@@ -187,11 +203,15 @@ Reserved DevGov service:
 
 ## Dashboard And Startup
 
-The dashboard entry point is `http://127.0.0.1:3000`. It reads canonical registry files directly and exposes `/health`, `/api/state`, `/api/local-agents`, and `/api/doctor` for local checks.
+The dashboard entry point is `http://127.0.0.1:3000`. It reads canonical registry files directly and exposes `/health`, `/api/state`, `/api/local-agents`, `/api/resource-coordination`, and `/api/doctor` for local checks.
 
 Local service agents are tracked in `registry/local-agents.registry.json`. These records identify resident loopback services such as Local Archive Maintainer without storing service-local homes, token files, logs, generated data, or full command lines in canonical registry data.
 
 Agent instruction governance is tracked in `registry/agent-instructions.registry.json`. The dashboard includes an Agent Instructions view, `/api/agent-instructions` returns the source-of-truth layers, item types, and entries, and `/api/unitext-agent-instructions` exposes a UniText-style query index for local integration.
+
+Shared resource coordination is tracked in `registry/resource-coordination.registry.json`. It defines the lightweight communication/read-model surface for concurrent LLM development sessions, including lag diagnosis, freshness rules, and exclusive-resource registration for browser profiles, GPU-heavy rendering, and foreground screen control. The default scan is on-demand and small; scheduling remains a separate reviewed future apply path.
+
+Project AGENTS rollout should stay thin. Use `templates/AGENTS.resource-coordination.md` as the manual overlay source and `npm run scan:agents -- --agents-file <path>` to produce a proposal report. The scanner does not apply changes to target projects.
 
 Network service status is available in the Service Status view and `/api/service-status`. The `Quick Test` table column runs safe health checks and reports whether each service has a detected Doctor mechanism and restart readiness. Reviewed Doctor/restart controls attach to the status flag itself; one-click restart remains review-gated until the service has an approved restart command, backup/rollback expectation, and permission boundary. The standardized contract is documented in `docs/service-control-readiness-spec.md`, with the agent workflow in `registry/skills/service-control-readiness/SKILL.md`.
 
@@ -209,7 +229,7 @@ The public `gov.colorgeek.co` and `dev.colorgeek.co` routes are also review-gate
 
 ## Doctor
 
-`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, API key governance records, AGENTS instruction governance records, required scripts including the antivirus dry-run entry, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
+`npm run doctor` validates the package identity, registry schemas, dashboard port allocation, startup governance records, API key governance records, AGENTS instruction governance records, resource-coordination governance records, required scripts including the antivirus dry-run entry, dashboard port availability, and document index buildability. It writes `reports/devgov-doctor-report.json`.
 
 `npm run doctor:repair` is intentionally limited to local generated artifacts under `reports/`; it regenerates the static document search files without changing canonical registry data.
 

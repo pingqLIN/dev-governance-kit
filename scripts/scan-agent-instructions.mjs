@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 import fs from "node:fs/promises";
-import { buildAgentInstructionIndex, renderAgentInstructionTextIndex, validateAgentInstructionsRegistry } from "./lib/agent-instructions-core.mjs";
+import {
+  buildAgentInstructionIndex,
+  buildResourceCoordinationOverlayProposal,
+  renderAgentInstructionTextIndex,
+  renderResourceCoordinationOverlayProposal,
+  validateAgentInstructionsRegistry
+} from "./lib/agent-instructions-core.mjs";
 import { writeReport } from "./lib/report-output.mjs";
 
 function parseArgs(argv) {
@@ -8,6 +14,10 @@ function parseArgs(argv) {
     registry: "registry/agent-instructions.registry.json",
     jsonOut: "reports/agent-instructions-index.json",
     textOut: "reports/agent-instructions-index.txt",
+    agentsFile: null,
+    resourceTemplate: "templates/AGENTS.resource-coordination.md",
+    resourceProposalOut: "reports/agent-instructions-resource-coordination-proposal.md",
+    resourceProposalJsonOut: "reports/agent-instructions-resource-coordination-proposal.json",
     allowOutsideReports: false
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -15,6 +25,10 @@ function parseArgs(argv) {
     if (value === "--registry") args.registry = argv[++index];
     if (value === "--json-out") args.jsonOut = argv[++index];
     if (value === "--text-out") args.textOut = argv[++index];
+    if (value === "--agents-file") args.agentsFile = argv[++index];
+    if (value === "--resource-template") args.resourceTemplate = argv[++index];
+    if (value === "--resource-proposal-out") args.resourceProposalOut = argv[++index];
+    if (value === "--resource-proposal-json-out") args.resourceProposalJsonOut = argv[++index];
     if (value === "--allow-outside-reports") args.allowOutsideReports = true;
   }
   return args;
@@ -33,3 +47,16 @@ const index = buildAgentInstructionIndex(registry);
 await writeReport(args.jsonOut, `${JSON.stringify(index, null, 2)}\n`, args.allowOutsideReports);
 await writeReport(args.textOut, renderAgentInstructionTextIndex(index), args.allowOutsideReports);
 console.log(`Indexed ${index.records.length} agent instruction records. Wrote ${args.jsonOut} and ${args.textOut}`);
+
+if (args.agentsFile) {
+  const agentsText = await fs.readFile(args.agentsFile, "utf8");
+  const proposal = buildResourceCoordinationOverlayProposal(agentsText, {
+    target: args.agentsFile,
+    template: args.resourceTemplate
+  });
+  await writeReport(args.resourceProposalJsonOut, `${JSON.stringify(proposal, null, 2)}\n`, args.allowOutsideReports);
+  await writeReport(args.resourceProposalOut, renderResourceCoordinationOverlayProposal(proposal), args.allowOutsideReports);
+  console.log(
+    `Resource coordination overlay proposal status: ${proposal.status}. Wrote ${args.resourceProposalOut} and ${args.resourceProposalJsonOut}`
+  );
+}

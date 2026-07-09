@@ -5,6 +5,7 @@ import path, { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildUniTextAgentInstructionIndex, checkServiceStatuses, DASHBOARD_HOST, DASHBOARD_PORT, loadDashboardState, renderDashboardHtml } from "./lib/dashboard-core.mjs";
 import { runDoctorChecks } from "./lib/doctor-core.mjs";
+import { buildResourceCoordinationSnapshot } from "./lib/resource-coordination-core.mjs";
 import { loadServiceOnboardingAudit } from "./lib/service-onboarding-core.mjs";
 import { executeServiceControl, SERVICE_CONTROL_HOST, SERVICE_CONTROL_PORT } from "./lib/service-control-core.mjs";
 import { isAllowedControlOrigin } from "./lib/service-control-resolver.mjs";
@@ -85,6 +86,12 @@ const server = http.createServer(async (request, response) => {
     }
     if (url.pathname === "/api/service-status") {
       sendJson(response, await checkServiceStatuses(root));
+      return;
+    }
+    if (url.pathname === "/api/resource-coordination") {
+      const sampleMs = clampInteger(Number(url.searchParams.get("sampleMs") ?? 100), 25, 1000);
+      const includeProcessFamilies = url.searchParams.get("includeProcesses") === "1";
+      sendJson(response, await buildResourceCoordinationSnapshot(root, { sampleMs, includeProcessFamilies }));
       return;
     }
     if (url.pathname === "/api/service-onboarding") {
@@ -201,6 +208,11 @@ function parseArgs(argv) {
     if (value === "--port") parsed.port = argv[++index];
   }
   return parsed;
+}
+
+function clampInteger(value, min, max) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, Math.trunc(value)));
 }
 
 function sendJson(response, value, options = {}) {

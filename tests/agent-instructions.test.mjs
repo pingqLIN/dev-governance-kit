@@ -3,7 +3,9 @@ import fs from "node:fs/promises";
 import { test } from "node:test";
 import {
   buildAgentInstructionIndex,
+  buildResourceCoordinationOverlayProposal,
   renderAgentInstructionTextIndex,
+  renderResourceCoordinationOverlayProposal,
   validateAgentInstructionsRegistry
 } from "../scripts/lib/agent-instructions-core.mjs";
 import { validateGovernanceRegistry } from "../scripts/lib/governance-registry-core.mjs";
@@ -53,8 +55,12 @@ test("agent instruction text index is queryable by scope, type, and evidence", a
   assert.match(text, /type=external-review-input/);
   assert.match(text, /type=context-budget/);
   assert.match(text, /agent\.tool\.governed-port-preflight/);
+  assert.match(text, /agent\.workflow\.resource-contention-diagnostic/);
+  assert.match(text, /agent\.tool\.resource-coordination-agents-overlay/);
+  assert.match(text, /agent\.safety\.exclusive-resource-registration/);
   assert.match(text, /evidence=AGENTS\.md#UniText Coordination/);
   assert.match(text, /evidence=AGENTS\.md#Context Budget Governance/);
+  assert.match(text, /evidence=AGENTS\.md#Shared Resource Coordination/);
 });
 
 test("agent instruction evidence anchors exist in AGENTS.md", async () => {
@@ -76,6 +82,29 @@ test("AGENTS.md remains the single authoritative runtime source", async () => {
   assert.ok(registry.entries.some((entry) => entry.id === "agent.authority.single-runtime-source"));
   assert.ok(registry.entries.every((entry) => entry.source !== "AGENTS.zh-tw.md"));
   assert.ok(registry.entries.every((entry) => !entry.evidence.startsWith("AGENTS.zh-tw.md#")));
+});
+
+test("resource coordination overlay proposal detects missing thin overlay", () => {
+  const proposal = buildResourceCoordinationOverlayProposal("# AGENTS.md\n\n## Project Rules\n\nUse local tests.\n", {
+    generatedAt: "2026-07-09T00:00:00.000Z",
+    target: "tests/fixtures/minimal/AGENTS.md"
+  });
+
+  assert.equal(proposal.status, "proposal-required");
+  assert.ok(proposal.findings.some((finding) => finding.id === "shared-resource-heading" && finding.status === "missing"));
+  assert.match(proposal.proposedInsertion, /## Shared Resource Coordination/);
+  assert.match(renderResourceCoordinationOverlayProposal(proposal), /proposal-only/);
+});
+
+test("resource coordination overlay template satisfies scanner markers", async () => {
+  const template = await fs.readFile("templates/AGENTS.resource-coordination.md", "utf8");
+  const proposal = buildResourceCoordinationOverlayProposal(template, {
+    generatedAt: "2026-07-09T00:00:00.000Z",
+    target: "templates/AGENTS.resource-coordination.md"
+  });
+
+  assert.equal(proposal.status, "covered");
+  assert.equal(proposal.proposedInsertion, "");
 });
 
 test("global-home planning responsibility is explicit and review-gated", async () => {

@@ -13,6 +13,13 @@ const VALID_CREDENTIAL_KIND = new Set(["api-key", "token", "secret", "password",
 const VALID_ONBOARDING_READINESS = new Set(["READY", "PARTIAL", "BLOCKED"]);
 const VALID_ONBOARDING_REVIEW = new Set(["reviewed", "needs-implementation", "needs-owner", "blocked"]);
 const VALID_CLOUDFLARE_ARCH_KIND = new Set(["loopback-origin", "public-route", "access-policy", "startup-control", "evidence-boundary"]);
+const VALID_RESOURCE_COORDINATION_MODE = new Set(["observe-first", "communicate", "schedule-reviewed"]);
+const VALID_RESOURCE_CHANNEL_KIND = new Set(["dashboard-api", "report-artifact", "event-log", "os-signal", "service-control"]);
+const VALID_RESOURCE_CHANNEL_DIRECTION = new Set(["read", "write", "read-write"]);
+const VALID_RESOURCE_RISK_LEVEL = new Set(["L0", "L1", "L2", "L3", "L4"]);
+const VALID_RESOURCE_SIGNAL_KIND = new Set(["target-health", "host-resource", "runtime-load", "human-observation", "queue-state"]);
+const VALID_RESOURCE_CONGESTION_USE = new Set(["primary", "context", "exclusion", "future"]);
+const VALID_RESOURCE_EXCLUSIVITY = new Set(["exclusive-while-active", "capacity-limited", "shared"]);
 const DESIGN_THEMES = ["light", "dark"];
 const DESIGN_THEME_TOKENS = ["ink", "muted", "line", "paper", "panel", "panelRaised", "input", "accent", "accentInk", "link", "okBg", "warnBg", "badBg", "neutralBg", "gridLine", "headerBg", "focus"];
 const DESIGN_TYPOGRAPHY_ROLES = ["display", "headline", "title", "body", "label", "mono"];
@@ -67,6 +74,9 @@ export function validateGovernanceRegistry(registry) {
   }
   if (registry.schema === "devgov.design-system.registry.v1") {
     return validateDesignSystemRegistry(registry);
+  }
+  if (registry.schema === "devgov.resource-coordination.registry.v1") {
+    return validateResourceCoordinationRegistry(registry);
   }
   return [`registry.schema is not supported: ${registry.schema ?? "<missing>"}`];
 }
@@ -314,6 +324,160 @@ export function validateServiceControlRegistry(registry) {
     if (!VALID_STATUS.has(entry.status)) errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
   }
   return errors;
+}
+
+export function validateResourceCoordinationRegistry(registry) {
+  const errors = [];
+  if (registry.schema !== "devgov.resource-coordination.registry.v1") errors.push("registry.schema must be devgov.resource-coordination.registry.v1");
+  requireStrings(registry, ["description", "sourceOfTruth"], "registry", errors);
+  if (looksMachineLocal(registry.description ?? "") || looksMachineLocal(registry.sourceOfTruth ?? "")) {
+    errors.push("registry envelope must not contain machine-local paths or MCP aliases");
+  }
+  if (!registry.platform || typeof registry.platform !== "object" || Array.isArray(registry.platform)) {
+    errors.push("registry.platform must be an object");
+  } else {
+    requireStrings(registry.platform, ["id", "mode", "operatorSurface", "communicationSurface", "observationSurface", "status", "notes"], "platform", errors);
+    rejectMachineLocalStrings(deepStringValues(registry.platform, "platform"), "platform", errors);
+    if (!VALID_RESOURCE_COORDINATION_MODE.has(registry.platform.mode)) {
+      errors.push(`platform.mode must be one of ${[...VALID_RESOURCE_COORDINATION_MODE].join(", ")}`);
+    }
+    if (!VALID_STATUS.has(registry.platform.status)) {
+      errors.push(`platform.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    }
+  }
+
+  validateFreshnessContract(registry.freshness, errors);
+  validateResourceChannels(registry.channels, errors);
+  validateResourceSignals(registry.signals, errors);
+  validateExclusiveResources(registry.exclusiveResources, errors);
+  validateResourcePolicies(registry.policies, errors);
+  validateResourceStages(registry.stages, errors);
+  return errors;
+}
+
+function validateFreshnessContract(freshness, errors) {
+  if (!freshness || typeof freshness !== "object" || Array.isArray(freshness)) {
+    errors.push("registry.freshness must be an object");
+    return;
+  }
+  requireStrings(freshness, ["staleState", "status", "notes"], "freshness", errors);
+  rejectMachineLocalStrings(deepStringValues(freshness, "freshness"), "freshness", errors);
+  for (const field of ["snapshotMaxAgeSeconds", "exclusiveClaimMaxAgeSeconds", "activeClaimRefreshSeconds"]) {
+    if (!Number.isInteger(freshness[field]) || freshness[field] < 1) {
+      errors.push(`freshness.${field} must be a positive integer`);
+    }
+  }
+  if (!VALID_STATUS.has(freshness.status)) {
+    errors.push(`freshness.status must be one of ${[...VALID_STATUS].join(", ")}`);
+  }
+}
+
+function validateResourceChannels(channels, errors) {
+  if (!Array.isArray(channels)) {
+    errors.push("registry.channels must be an array");
+    return;
+  }
+  const seen = new Set();
+  for (const [index, channel] of channels.entries()) {
+    const label = `channels[${index}]`;
+    requireStrings(channel, ["id", "kind", "surface", "direction", "riskLevel", "status", "notes"], label, errors);
+    rejectMachineLocalStrings(deepStringValues(channel, label), label, errors);
+    if (seen.has(channel.id)) errors.push(`${label}.id duplicates another channel`);
+    seen.add(channel.id);
+    if (!VALID_RESOURCE_CHANNEL_KIND.has(channel.kind)) {
+      errors.push(`${label}.kind must be one of ${[...VALID_RESOURCE_CHANNEL_KIND].join(", ")}`);
+    }
+    if (!VALID_RESOURCE_CHANNEL_DIRECTION.has(channel.direction)) {
+      errors.push(`${label}.direction must be one of ${[...VALID_RESOURCE_CHANNEL_DIRECTION].join(", ")}`);
+    }
+    if (!VALID_RESOURCE_RISK_LEVEL.has(channel.riskLevel)) {
+      errors.push(`${label}.riskLevel must be one of ${[...VALID_RESOURCE_RISK_LEVEL].join(", ")}`);
+    }
+    if (!VALID_STATUS.has(channel.status)) {
+      errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    }
+  }
+}
+
+function validateResourceSignals(signals, errors) {
+  if (!Array.isArray(signals)) {
+    errors.push("registry.signals must be an array");
+    return;
+  }
+  const seen = new Set();
+  for (const [index, signal] of signals.entries()) {
+    const label = `signals[${index}]`;
+    requireStrings(signal, ["id", "kind", "source", "interpretation", "congestionUse", "status", "notes"], label, errors);
+    rejectMachineLocalStrings(deepStringValues(signal, label), label, errors);
+    if (seen.has(signal.id)) errors.push(`${label}.id duplicates another signal`);
+    seen.add(signal.id);
+    if (!VALID_RESOURCE_SIGNAL_KIND.has(signal.kind)) {
+      errors.push(`${label}.kind must be one of ${[...VALID_RESOURCE_SIGNAL_KIND].join(", ")}`);
+    }
+    if (!VALID_RESOURCE_CONGESTION_USE.has(signal.congestionUse)) {
+      errors.push(`${label}.congestionUse must be one of ${[...VALID_RESOURCE_CONGESTION_USE].join(", ")}`);
+    }
+    if (!VALID_STATUS.has(signal.status)) {
+      errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    }
+  }
+}
+
+function validateExclusiveResources(resources, errors) {
+  if (!Array.isArray(resources)) {
+    errors.push("registry.exclusiveResources must be an array");
+    return;
+  }
+  const seen = new Set();
+  for (const [index, resource] of resources.entries()) {
+    const label = `exclusiveResources[${index}]`;
+    requireStrings(resource, ["id", "resource", "exclusivity", "registrationSurface", "useGate", "status", "notes"], label, errors);
+    rejectMachineLocalStrings(deepStringValues(resource, label), label, errors);
+    if (seen.has(resource.id)) errors.push(`${label}.id duplicates another exclusive resource`);
+    seen.add(resource.id);
+    if (!VALID_RESOURCE_EXCLUSIVITY.has(resource.exclusivity)) {
+      errors.push(`${label}.exclusivity must be one of ${[...VALID_RESOURCE_EXCLUSIVITY].join(", ")}`);
+    }
+    if (!VALID_STATUS.has(resource.status)) {
+      errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    }
+  }
+}
+
+function validateResourcePolicies(policies, errors) {
+  if (!Array.isArray(policies)) {
+    errors.push("registry.policies must be an array");
+    return;
+  }
+  const seen = new Set();
+  for (const [index, policy] of policies.entries()) {
+    const label = `policies[${index}]`;
+    requireStrings(policy, ["id", "requirement", "enforcement", "status", "notes"], label, errors);
+    rejectMachineLocalStrings(deepStringValues(policy, label), label, errors);
+    if (seen.has(policy.id)) errors.push(`${label}.id duplicates another policy`);
+    seen.add(policy.id);
+    if (!VALID_STATUS.has(policy.status)) {
+      errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    }
+  }
+}
+
+function validateResourceStages(stages, errors) {
+  if (!Array.isArray(stages)) {
+    errors.push("registry.stages must be an array");
+    return;
+  }
+  const seen = new Set();
+  for (const [index, stage] of stages.entries()) {
+    const label = `stages[${index}]`;
+    requireStrings(stage, ["id", "name", "trigger", "allowedActions", "requiredGate", "status", "notes"], label, errors);
+    rejectMachineLocalStrings(deepStringValues(stage, label), label, errors);
+    if (seen.has(stage.id)) errors.push(`${label}.id duplicates another stage`);
+    seen.add(stage.id);
+    if (!VALID_STATUS.has(stage.status)) {
+      errors.push(`${label}.status must be one of ${[...VALID_STATUS].join(", ")}`);
+    }
+  }
 }
 
 export function validateDesignSystemRegistry(registry) {
