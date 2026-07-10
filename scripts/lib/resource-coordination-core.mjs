@@ -152,8 +152,10 @@ export function buildResourceCoordinationMemoryHintProposal(options = {}) {
     mode: "proposal-only",
     status: "review-required",
     template: "templates/CODEX.memory.rcg-hint.md",
+    reviewGateTemplate: "templates/CODEX.memory.rcg-update-gate.md",
     proposalNames: ["CODEX.memory.rcg-hint", "rcg-memory-hint"],
     writeTarget: "No automatic Codex memory write; use only after the operator explicitly asks to update memory.",
+    reviewGate: buildMemoryHintReviewGate(),
     constraints: [
       "Soft awareness only; not an authoritative current-state ledger.",
       "Not a resource lock, transaction store, scheduling queue, or task-dispatch gate.",
@@ -175,6 +177,7 @@ export function renderResourceCoordinationMemoryHintProposal(proposal) {
     `mode: ${proposal.mode}`,
     `status: ${proposal.status}`,
     `template: ${proposal.template}`,
+    `reviewGateTemplate: ${proposal.reviewGateTemplate}`,
     `proposalNames: ${proposal.proposalNames.join(", ")}`,
     "",
     "This report is proposal-only. It does not write to Codex memory, modify runtime state, apply a lock, or schedule work.",
@@ -191,6 +194,19 @@ export function renderResourceCoordinationMemoryHintProposal(proposal) {
     lines.push(`- ${constraint}`);
   }
 
+  lines.push("", "## Review Gate", "");
+  lines.push(`- Required operator intent: ${proposal.reviewGate.requiredOperatorIntent}`);
+  lines.push(`- Memory write surface: ${proposal.reviewGate.memoryWriteSurface}`);
+  lines.push(`- Source artifact: ${proposal.reviewGate.sourceArtifact}`);
+  lines.push("", "### Required Checks", "");
+  for (const check of proposal.reviewGate.requiredChecks) {
+    lines.push(`- ${check}`);
+  }
+  lines.push("", "### Denied Shortcuts", "");
+  for (const shortcut of proposal.reviewGate.deniedShortcuts) {
+    lines.push(`- ${shortcut}`);
+  }
+
   lines.push(
     "",
     "## Proposed Memory Hint",
@@ -205,6 +221,27 @@ export function renderResourceCoordinationMemoryHintProposal(proposal) {
   );
 
   return `${lines.join("\n")}\n`;
+}
+
+function buildMemoryHintReviewGate() {
+  return {
+    requiredOperatorIntent: "The operator must explicitly ask to update Codex memory with the reviewed RCG hint.",
+    memoryWriteSurface: "Use only a runtime-approved Codex memory update mechanism; DevGov scanners never write memory directly.",
+    sourceArtifact: "Start from a generated proposal artifact under reports and review the exact JSON before any memory update.",
+    requiredChecks: [
+      "Confirm the hint is a positive recent-use event, not a negative availability state.",
+      "Confirm project is a stable project id, not a machine-local path.",
+      "Confirm intent is sanitized and contains no secrets, credential paths, full commands, screenshots, or personal activity.",
+      "Confirm resourceClass, confidence, source, observedAt, validUntil, authority, and afterExpiry match the RCG schema.",
+      "Confirm validUntil is short-term and expired hints will be treated as historical-only."
+    ],
+    deniedShortcuts: [
+      "Do not treat generating a proposal as approval to update memory.",
+      "Do not treat an acknowledgement-only response, timeout, or vague OK as memory-update approval.",
+      "Do not infer current resource availability from a missing or expired memory hint.",
+      "Do not write memory from a scanner, dashboard refresh, test, doctor run, or report-generation command."
+    ]
+  };
 }
 
 export async function collectHostResourceSnapshot(options = {}) {

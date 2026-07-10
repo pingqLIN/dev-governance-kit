@@ -33,6 +33,8 @@ test("resource coordination registry models exclusive resources and freshness", 
   assert.ok(registry.exclusiveResources.some((resource) => resource.id === "foreground-screen-control"));
   assert.ok(registry.channels.some((channel) => channel.id === "codex-memory-resource-hints" && channel.kind === "memory-hint"));
   assert.ok(registry.policies.some((policy) => policy.id === "memory-hints-are-soft-awareness"));
+  assert.ok(registry.policies.some((policy) => policy.id === "memory-update-is-explicit-operator-gated"));
+  assert.ok(registry.stages.some((stage) => stage.id === "memory-hint-review"));
   assert.ok(registry.policies.some((policy) => policy.id === "freshness-required"));
 });
 
@@ -95,7 +97,11 @@ test("resource coordination memory hint proposal is soft and time-bounded", () =
   assert.equal(proposal.proposedMemoryHint.authority, "soft-hint-only");
   assert.equal(proposal.proposedMemoryHint.afterExpiry, "historical-only");
   assert.equal(proposal.proposedMemoryHint.validUntil, "2026-07-10T00:10:00.000Z");
+  assert.equal(proposal.reviewGateTemplate, "templates/CODEX.memory.rcg-update-gate.md");
+  assert.match(proposal.reviewGate.requiredOperatorIntent, /explicitly ask to update Codex memory/);
+  assert.match(proposal.reviewGate.deniedShortcuts.join(" "), /generating a proposal/);
   assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /does not write to Codex memory/);
+  assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /Required Checks/);
   assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /soft-hint-only/);
 });
 

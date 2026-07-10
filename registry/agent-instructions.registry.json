@@ -418,6 +418,18 @@
       "notes": "Turns exclusive resource use into a visible coordination signal without granting unsafe access."
     },
     {
+      "id": "agent.safety.resource-coordination-memory-update-gate",
+      "type": "safety-gate",
+      "layer": "repo-local",
+      "appliesTo": "Any real Codex memory update derived from an RCG memory hint proposal.",
+      "requirement": "Require explicit operator intent and exact JSON review before writing any RCG hint into Codex memory.",
+      "enforcement": "Use templates/CODEX.memory.rcg-update-gate.md; do not treat proposal generation, planning OK, acknowledgement-only replies, timeouts, scanners, tests, Doctor runs, or dashboard refreshes as memory-write approval.",
+      "evidence": "AGENTS.md#Shared Resource Coordination",
+      "status": "candidate",
+      "source": "AGENTS.md",
+      "notes": "Keeps the proposal-only scanner separate from runtime-approved memory update mechanisms."
+    },
+    {
       "id": "agent.safety.resource-status-freshness",
       "type": "safety-gate",
       "layer": "workspace",

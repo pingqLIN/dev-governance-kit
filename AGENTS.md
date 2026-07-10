@@ -201,6 +201,8 @@ Project AGENTS rollout should use the thin resource-coordination overlay templat
 
 Codex memory-hint rollout should use the proposal-only template `templates/CODEX.memory.rcg-hint.md` and `npm run scan:resource-coordination -- --memory-hint-proposal`. The scanner may write reviewed proposal artifacts under `reports/`, but it must not write real Codex memory unless the operator explicitly asks to update memory.
 
+Real Codex memory updates require the reviewed gate in `templates/CODEX.memory.rcg-update-gate.md`. Treat proposal generation, planning approval, acknowledgement-only replies, timeouts, dashboard refreshes, scanners, tests, Doctor runs, and vague OK responses as insufficient approval for memory writes. Review the exact JSON proposal before any runtime-approved memory update mechanism is used.
+
 Scheduling is future work and remains review-gated. Automatic throttling, pausing, restarting, killing, priority changes, or cross-project scheduling requires a separate explicit operator request, service-control review, rollback plan, and privacy review.
 
 ## Port Governance Rules

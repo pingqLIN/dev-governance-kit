@@ -64,6 +64,10 @@ Each hint should follow this shape:
 
 The template lives at `templates/CODEX.memory.rcg-hint.md`.
 
+Real memory updates require a separate reviewed gate. Use `templates/CODEX.memory.rcg-update-gate.md` after generating a proposal and before any runtime-approved memory update mechanism is used.
+
+Do not treat proposal generation, planning approval, acknowledgement-only replies, timeouts, dashboard refreshes, scanner runs, tests, Doctor runs, or vague OK responses as approval to write memory. Review the exact JSON proposal first.
+
 ## Command
 
 Run:
@@ -79,6 +83,8 @@ To generate a proposal-only Codex memory hint without writing real memory, run:
 ```powershell
 npm run scan:resource-coordination -- --memory-hint-proposal --memory-hint-project stable-project-id --memory-hint-resource-class browser-profile --memory-hint-intent "Browser automation smoke check"
 ```
+
+Then review `templates/CODEX.memory.rcg-update-gate.md` before any explicit memory-update workflow.
 
 ## Project AGENTS Rollout
 

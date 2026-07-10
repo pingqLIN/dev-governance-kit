@@ -193,6 +193,13 @@
       "enforcement": "Write only positive, sanitized, time-bound hints with observedAt, validUntil, authority, and afterExpiry fields; never write negative availability states such as no current occupancy.",
       "status": "candidate",
       "notes": "This uses eventual consistency intentionally. Stale, duplicated, missing, or delayed memory hints affect prompt quality only and must not justify hard scheduling, locks, or remediation."
+    },
+    {
+      "id": "memory-update-is-explicit-operator-gated",
+      "requirement": "A real Codex memory update derived from RCG requires explicit operator intent after reviewing the exact proposal JSON.",
+      "enforcement": "Use the reviewed update-gate template; proposal generation, planning OK, acknowledgement-only replies, timeouts, scanners, tests, Doctor runs, and dashboard refreshes are not approval to write memory.",
+      "status": "candidate",
+      "notes": "DevGov may generate proposal artifacts, but it does not own or silently invoke the runtime memory write surface."
     }
   ],
   "stages": [
@@ -213,6 +220,15 @@
       "requiredGate": "Use existing report and dashboard event surfaces; do not turn communication into control approval.",
       "status": "candidate",
       "notes": "This provides a common message board/read model without a new resident broker."
+    },
+    {
+      "id": "memory-hint-review",
+      "name": "Memory Hint Review",
+      "trigger": "An operator explicitly asks to update Codex memory with a reviewed RCG resource hint.",
+      "allowedActions": "Review the exact generated JSON proposal and, only after explicit operator intent, use a runtime-approved memory update mechanism.",
+      "requiredGate": "Explicit operator memory-update request plus exact JSON review; DevGov scanner output alone is never an apply signal.",
+      "status": "candidate",
+      "notes": "This stage documents the human gate and does not add a scanner-side memory write implementation."
     },
     {
       "id": "schedule",
