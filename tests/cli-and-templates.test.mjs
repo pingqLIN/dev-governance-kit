@@ -126,6 +126,52 @@ test("scan-resource-coordination refuses absolute output paths outside reports b
   assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
 });
 
+test("scan-resource-coordination refuses memory hint proposal paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "scripts/scan-resource-coordination.mjs",
+      "--memory-hint-proposal-out",
+      join(tmpdir(), "devgov-rcg-memory-hint.md")
+    ],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
+test("scan-resource-coordination writes proposal-only memory hint reports", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "scripts/scan-resource-coordination.mjs",
+      "--sample-ms",
+      "25",
+      "--memory-hint-proposal",
+      "--memory-hint-project",
+      "devgov",
+      "--memory-hint-resource-class",
+      "devtools",
+      "--memory-hint-intent",
+      "DevTools timing inspection",
+      "--memory-hint-proposal-out",
+      "reports/rcg-memory-hint.test.md",
+      "--memory-hint-proposal-json-out",
+      "reports/rcg-memory-hint.test.json"
+    ],
+    { encoding: "utf8" }
+  );
+
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  const proposal = JSON.parse(readFileSyncUtf8("reports/rcg-memory-hint.test.json"));
+  assert.equal(proposal.mode, "proposal-only");
+  assert.equal(proposal.proposedMemoryHint.project, "devgov");
+  assert.equal(proposal.proposedMemoryHint.resourceClass, "devtools");
+  assert.equal(proposal.proposedMemoryHint.authority, "soft-hint-only");
+  assert.match(readFileSyncUtf8("reports/rcg-memory-hint.test.md"), /does not write to Codex memory/);
+});
+
 test("scan-service-onboarding refuses absolute output paths outside reports by default", () => {
   const result = spawnSync(
     process.execPath,
@@ -208,12 +254,19 @@ test("PORTS template uses placeholders instead of approved allocations", async (
 test("resource coordination AGENTS templates stay thin and proposal-only", async () => {
   const english = await readFile("templates/AGENTS.resource-coordination.md", "utf8");
   const chinese = await readFile("templates/AGENTS.resource-coordination.zh-tw.md", "utf8");
+  const memoryEnglish = await readFile("templates/CODEX.memory.rcg-hint.md", "utf8");
+  const memoryChinese = await readFile("templates/CODEX.memory.rcg-hint.zh-tw.md", "utf8");
 
   assert.match(english, /## Shared Resource Coordination/);
   assert.match(english, /Project Exclusive Resources/);
   assert.match(english, /do not bulk-apply it to projects automatically/);
   assert.match(chinese, /Shared Resource Coordination/);
   assert.match(chinese, /不要對多個專案自動 bulk apply/);
+  assert.match(memoryEnglish, /proposal-only/);
+  assert.match(memoryEnglish, /soft-hint-only/);
+  assert.match(memoryEnglish, /not write this template or a derived hint to real Codex memory/);
+  assert.match(memoryChinese, /proposal-only/);
+  assert.match(memoryChinese, /不要把這個 template 或衍生 hint 寫入真實 Codex memory/);
 });
 
 test("dashboard bookmark template targets the on-demand protocol handler", async () => {

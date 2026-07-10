@@ -33,6 +33,8 @@
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 - [templates/AGENTS.resource-coordination.md](templates/AGENTS.resource-coordination.md)
 - [templates/AGENTS.resource-coordination.zh-tw.md](templates/AGENTS.resource-coordination.zh-tw.md)
+- [templates/CODEX.memory.rcg-hint.md](templates/CODEX.memory.rcg-hint.md)
+- [templates/CODEX.memory.rcg-hint.zh-tw.md](templates/CODEX.memory.rcg-hint.zh-tw.md)
 
 ## 快速開始
 
@@ -138,6 +140,12 @@ npm run scan:context-budget
 npm run scan:resource-coordination
 ```
 
+產生 proposal-only Codex memory hint，作為短期 RCG awareness：
+
+```powershell
+npm run scan:resource-coordination -- --memory-hint-proposal --memory-hint-project stable-project-id --memory-hint-resource-class browser-profile --memory-hint-intent "Browser automation smoke check"
+```
+
 稽核已登記服務的補充程序缺口：
 
 ```powershell
@@ -210,7 +218,7 @@ DevGov 保留服務：
 
 Agent instruction governance 會記錄在 `registry/agent-instructions.registry.json`。儀表板包含 Agent Instructions view，`/api/agent-instructions` 會回傳 source-of-truth layers、item types 與 entries，`/api/unitext-agent-instructions` 則提供 UniText-style query index，供本機整合使用。
 
-Shared resource coordination 會記錄在 `registry/resource-coordination.registry.json`。它定義多個並行 LLM 開發工作可共用的輕量 communication / read-model surface，包括 lag diagnosis、freshness rules，以及 browser profiles、GPU-heavy rendering、foreground screen control 等排他資源的使用前登記。預設 scan 是 on-demand 且很小；scheduling 仍是日後需要另行 review 的 apply path。
+Shared resource coordination 會記錄在 `registry/resource-coordination.registry.json`。它定義多個並行 LLM 開發工作可共用的輕量 communication / read-model surface，包括 lag diagnosis、freshness rules、browser profiles、GPU-heavy rendering、foreground screen control 等排他資源的使用前登記，以及 proposal-only Codex memory hints 作為短期 soft awareness。預設 scan 是 on-demand 且很小；memory hints 不是 authoritative state、lock 或 scheduling gate，scheduling 仍是日後需要另行 review 的 apply path。
 
 Project AGENTS rollout 應維持輕薄。以 `templates/AGENTS.resource-coordination.md` 作為 manual overlay source，並用 `npm run scan:agents -- --agents-file <path>` 產生 proposal report。scanner 不會對 target projects apply changes。
 

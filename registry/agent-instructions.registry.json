@@ -394,6 +394,18 @@
       "notes": "Keeps cross-project rollout reviewable and prevents the scanner from becoming an apply tool."
     },
     {
+      "id": "agent.tool.resource-coordination-memory-hint-proposal",
+      "type": "tool-entry",
+      "layer": "repo-local",
+      "appliesTo": "Generating Codex memory hint proposals for short-term shared-resource awareness.",
+      "requirement": "Use the proposal-only RCG memory hint template and scanner output before any reviewed Codex memory update.",
+      "enforcement": "Generate proposal reports with npm run scan:resource-coordination -- --memory-hint-proposal; do not write real Codex memory unless the operator explicitly asks to update memory.",
+      "evidence": "AGENTS.md#Shared Resource Coordination",
+      "status": "candidate",
+      "source": "AGENTS.md",
+      "notes": "Memory hints are soft awareness only and must not be treated as locks, authoritative current state, transaction records, or scheduling gates."
+    },
+    {
       "id": "agent.safety.exclusive-resource-registration",
       "type": "safety-gate",
       "layer": "workspace",

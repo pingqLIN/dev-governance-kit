@@ -9,9 +9,11 @@ v1 平台採 observe-first：
 - `registry/resource-coordination.registry.json` 是 canonical policy 與 channel contract。
 - `npm run scan:resource-coordination` 會把輕量 snapshot 寫入 `reports/`。
 - 儀表板提供 `/api/resource-coordination` 作為同一份 read model。
+- Codex memory 可以承載短期 soft hint，但只能作為經 proposal review 的 awareness，不是 authoritative current state。
 - 優先重用既有 dashboard state、service-status rows、service-control events 與作業系統觀測機制。
 
 此平台本身不會 throttle、restart、pause、kill 或 schedule 工作。
+它也不是 lock、transaction store、scheduler、task-dispatch gate 或 strong-consistency coordinator。
 
 ## 診斷
 
@@ -37,6 +39,31 @@ v1 平台採 observe-first：
 
 Coordination status 必須會過期。Snapshots 與 exclusive-resource claims 需要 generated、observed、refreshed 或 expiry timestamps。Stale status 只能當歷史 evidence；沒有 refresh 前，不得阻擋目前工作或合理化目前 remediation。
 
+## Codex Memory Hints
+
+Codex memory 可以承擔 RCG 的一部分，作為短期全局 awareness。只用它記錄正向、time-bound hints，例如近期 browser、GPU、foreground、DevTools 或 local-model work。不要寫「目前無佔用」這類負向狀態。
+
+Memory hints 可以 eventual consistent、重複、不完整或延遲，因為它只是 soft context。它不能被視為 current ownership、lock、transaction record 或 scheduling approval。
+
+每筆 hint 建議使用以下 shape：
+
+```json
+{
+  "kind": "rcg-short-term-resource-hint",
+  "project": "stable-project-id",
+  "resourceClass": "browser-profile | gpu-rendering | foreground-control | local-model | devtools",
+  "intent": "short sanitized description",
+  "observedAt": "ISO-8601 timestamp",
+  "validUntil": "ISO-8601 timestamp",
+  "confidence": "observed | declared | inferred",
+  "source": "codex-task | devgov-scan | dashboard-event",
+  "authority": "soft-hint-only",
+  "afterExpiry": "historical-only"
+}
+```
+
+Template 位於 `templates/CODEX.memory.rcg-hint.md`。
+
 ## 指令
 
 執行：
@@ -46,6 +73,12 @@ npm run scan:resource-coordination
 ```
 
 預設 scan 刻意保持很小：短時間 CPU/memory sample 加上既有 DevGov registry counts。只有需要 process-family counts 時才使用 `--include-processes`；它只記錄名稱與數量，不記錄 command lines 或 process IDs。
+
+若要產生 proposal-only Codex memory hint，且不寫入真實 memory，執行：
+
+```powershell
+npm run scan:resource-coordination -- --memory-hint-proposal --memory-hint-project stable-project-id --memory-hint-resource-class browser-profile --memory-hint-intent "Browser automation smoke check"
+```
 
 ## Project AGENTS Rollout
 

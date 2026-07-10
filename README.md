@@ -34,6 +34,8 @@ Chinese companion and reference documents:
 - [templates/AGENTS.port-governance.zh-tw.md](templates/AGENTS.port-governance.zh-tw.md)
 - [templates/AGENTS.resource-coordination.md](templates/AGENTS.resource-coordination.md)
 - [templates/AGENTS.resource-coordination.zh-tw.md](templates/AGENTS.resource-coordination.zh-tw.md)
+- [templates/CODEX.memory.rcg-hint.md](templates/CODEX.memory.rcg-hint.md)
+- [templates/CODEX.memory.rcg-hint.zh-tw.md](templates/CODEX.memory.rcg-hint.zh-tw.md)
 
 Scan one project without changing it:
 
@@ -137,6 +139,12 @@ Capture a lightweight shared-resource contention snapshot:
 npm run scan:resource-coordination
 ```
 
+Generate a proposal-only Codex memory hint for short-term RCG awareness:
+
+```powershell
+npm run scan:resource-coordination -- --memory-hint-proposal --memory-hint-project stable-project-id --memory-hint-resource-class browser-profile --memory-hint-intent "Browser automation smoke check"
+```
+
 Audit supplementation gaps for already-registered services:
 
 ```powershell
@@ -209,7 +217,7 @@ Local service agents are tracked in `registry/local-agents.registry.json`. These
 
 Agent instruction governance is tracked in `registry/agent-instructions.registry.json`. The dashboard includes an Agent Instructions view, `/api/agent-instructions` returns the source-of-truth layers, item types, and entries, and `/api/unitext-agent-instructions` exposes a UniText-style query index for local integration.
 
-Shared resource coordination is tracked in `registry/resource-coordination.registry.json`. It defines the lightweight communication/read-model surface for concurrent LLM development sessions, including lag diagnosis, freshness rules, and exclusive-resource registration for browser profiles, GPU-heavy rendering, and foreground screen control. The default scan is on-demand and small; scheduling remains a separate reviewed future apply path.
+Shared resource coordination is tracked in `registry/resource-coordination.registry.json`. It defines the lightweight communication/read-model surface for concurrent LLM development sessions, including lag diagnosis, freshness rules, exclusive-resource registration for browser profiles, GPU-heavy rendering, and foreground screen control, plus proposal-only Codex memory hints for short-term soft awareness. The default scan is on-demand and small; memory hints are not authoritative state, locks, or scheduling gates, and scheduling remains a separate reviewed future apply path.
 
 Project AGENTS rollout should stay thin. Use `templates/AGENTS.resource-coordination.md` as the manual overlay source and `npm run scan:agents -- --agents-file <path>` to produce a proposal report. The scanner does not apply changes to target projects.
 

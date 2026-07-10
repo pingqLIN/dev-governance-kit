@@ -181,6 +181,7 @@ Use existing local mechanisms before adding new ones:
 - `npm run scan:resource-coordination` for an on-demand lightweight snapshot written to `reports/`.
 - Existing service-control and dashboard event reports as evidence, not as scheduler queues.
 - Built-in operating-system CPU, memory, process, GPU, disk, browser, or screen-observation tools when extra context is required.
+- Codex memory short-term resource hints, only as soft awareness and never as authoritative current state.
 
 Keep the resource-coordination path lightweight. Do not add resident monitors, polling loops, queues, schedulers, or new services until existing DevGov and operating-system mechanisms are proven insufficient.
 
@@ -194,7 +195,11 @@ Register intended use before taking capacity-limited or exclusive resources, esp
 
 Registration should use the resource-coordination surface or a sanitized report/event artifact. It must not store secrets, cookies, session data, credential paths, full local paths, command lines, screenshots containing private data, or personal activity in canonical registry data.
 
+Codex memory may store positive, short-term RCG hints for recent resource use, but only when an explicit memory-update workflow is requested. Hints must include `observedAt`, `validUntil`, `authority: soft-hint-only`, and `afterExpiry: historical-only`. Do not write negative availability states such as "no current occupancy". Missing, duplicated, delayed, or expired hints must not be treated as locks, task gates, transaction records, scheduling approval, or proof that a resource is currently free.
+
 Project AGENTS rollout should use the thin resource-coordination overlay templates and proposal-only scanner. Generate proposal reports with `npm run scan:agents -- --agents-file <path>` and keep them as evidence under `reports/`. Do not bulk-apply the overlay or silently edit target project AGENTS files.
+
+Codex memory-hint rollout should use the proposal-only template `templates/CODEX.memory.rcg-hint.md` and `npm run scan:resource-coordination -- --memory-hint-proposal`. The scanner may write reviewed proposal artifacts under `reports/`, but it must not write real Codex memory unless the operator explicitly asks to update memory.
 
 Scheduling is future work and remains review-gated. Automatic throttling, pausing, restarting, killing, priority changes, or cross-project scheduling requires a separate explicit operator request, service-control review, rollback plan, and privacy review.
 

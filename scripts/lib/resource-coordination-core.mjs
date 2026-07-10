@@ -21,6 +21,16 @@ const DEVELOPMENT_PROCESS_HINTS = new Set([
   "codex"
 ]);
 
+const RESOURCE_MEMORY_HINT_CLASSES = new Set([
+  "browser-profile",
+  "gpu-rendering",
+  "foreground-control",
+  "local-model",
+  "devtools"
+]);
+const RESOURCE_MEMORY_HINT_CONFIDENCE = new Set(["observed", "declared", "inferred"]);
+const RESOURCE_MEMORY_HINT_SOURCE = new Set(["codex-task", "devgov-scan", "dashboard-event"]);
+
 export async function loadResourceCoordinationRegistry(root = ".") {
   const registry = await readJson(path.join(root, "registry", "resource-coordination.registry.json"));
   const errors = validateResourceCoordinationRegistry(registry);
@@ -102,6 +112,99 @@ export function classifyResourcePressure(host) {
     confidence: "low",
     reasons: reasons.length ? reasons : ["No high shared host pressure was detected in the lightweight snapshot."]
   };
+}
+
+export function buildResourceCoordinationMemoryHintProposal(options = {}) {
+  const generatedAt = options.generatedAt ?? new Date().toISOString();
+  const observedAt = options.observedAt ?? generatedAt;
+  const validForSeconds = normalizePositiveInteger(options.validForSeconds, 1800);
+  const resourceClass = requireAllowed(
+    options.resourceClass ?? "browser-profile",
+    RESOURCE_MEMORY_HINT_CLASSES,
+    "resourceClass"
+  );
+  const confidence = requireAllowed(
+    options.confidence ?? "declared",
+    RESOURCE_MEMORY_HINT_CONFIDENCE,
+    "confidence"
+  );
+  const source = requireAllowed(
+    options.source ?? "devgov-scan",
+    RESOURCE_MEMORY_HINT_SOURCE,
+    "source"
+  );
+  const hint = {
+    kind: "rcg-short-term-resource-hint",
+    project: safeHintText(options.project, "stable-project-id", "project"),
+    resourceClass,
+    intent: safeHintText(options.intent, "Short sanitized description of intended resource use.", "intent"),
+    observedAt,
+    validUntil: options.validUntil ?? computeExpiry(observedAt, validForSeconds),
+    confidence,
+    source,
+    authority: "soft-hint-only",
+    afterExpiry: "historical-only"
+  };
+
+  return {
+    schema: "devgov.resource-coordination.memory-hint-proposal.v1",
+    generatedAt,
+    mode: "proposal-only",
+    status: "review-required",
+    template: "templates/CODEX.memory.rcg-hint.md",
+    proposalNames: ["CODEX.memory.rcg-hint", "rcg-memory-hint"],
+    writeTarget: "No automatic Codex memory write; use only after the operator explicitly asks to update memory.",
+    constraints: [
+      "Soft awareness only; not an authoritative current-state ledger.",
+      "Not a resource lock, transaction store, scheduling queue, or task-dispatch gate.",
+      "Positive recent-use hint only; do not write negative availability states such as no current occupancy.",
+      "Readers must compare observedAt and validUntil and treat expired hints as historical-only.",
+      "Do not include secrets, cookies, session data, credential paths, full commands, screenshots, personal activity, or machine-local paths."
+    ],
+    proposedMemoryHint: hint,
+    recommendation: "Review and copy this JSON only when an explicit memory-update request exists; otherwise keep it as a report artifact."
+  };
+}
+
+export function renderResourceCoordinationMemoryHintProposal(proposal) {
+  const lines = [
+    "# RCG Codex Memory Hint Proposal",
+    "",
+    `schema: ${proposal.schema}`,
+    `generatedAt: ${proposal.generatedAt}`,
+    `mode: ${proposal.mode}`,
+    `status: ${proposal.status}`,
+    `template: ${proposal.template}`,
+    `proposalNames: ${proposal.proposalNames.join(", ")}`,
+    "",
+    "This report is proposal-only. It does not write to Codex memory, modify runtime state, apply a lock, or schedule work.",
+    "",
+    "## Write Target",
+    "",
+    proposal.writeTarget,
+    "",
+    "## Constraints",
+    ""
+  ];
+
+  for (const constraint of proposal.constraints) {
+    lines.push(`- ${constraint}`);
+  }
+
+  lines.push(
+    "",
+    "## Proposed Memory Hint",
+    "",
+    "```json",
+    JSON.stringify(proposal.proposedMemoryHint, null, 2),
+    "```",
+    "",
+    "## Recommendation",
+    "",
+    proposal.recommendation
+  );
+
+  return `${lines.join("\n")}\n`;
 }
 
 export async function collectHostResourceSnapshot(options = {}) {
@@ -280,6 +383,44 @@ function computeExpiry(generatedAt, maxAgeSeconds) {
   const time = new Date(generatedAt).getTime();
   if (Number.isNaN(time)) return "";
   return new Date(time + maxAgeSeconds * 1000).toISOString();
+}
+
+function normalizePositiveInteger(value, fallback) {
+  if (Number.isInteger(value) && value > 0) return value;
+  return fallback;
+}
+
+function nonEmptyString(value, fallback) {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function requireAllowed(value, allowed, label) {
+  const text = nonEmptyString(value, "");
+  if (!allowed.has(text)) {
+    throw new Error(`${label} must be one of ${[...allowed].join(", ")}`);
+  }
+  return text;
+}
+
+function safeHintText(value, fallback, label) {
+  const text = nonEmptyString(value, fallback);
+  if (looksMachineLocal(text)) {
+    throw new Error(`${label} must not contain machine-local paths`);
+  }
+  if (looksSecretValue(text)) {
+    throw new Error(`${label} must not contain credential-like values`);
+  }
+  return text;
+}
+
+function looksMachineLocal(value) {
+  return /(?:^|[\s"'`(])(?:[A-Za-z]:[\\/]|\\\\|windows-projects:|linux-mirror:)/i.test(value);
+}
+
+function looksSecretValue(value) {
+  const text = String(value ?? "");
+  return /\b(?:sk-[A-Za-z0-9_-]{16,}|xox[baprs]-[A-Za-z0-9-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|hf_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,})\b/.test(text);
 }
 
 function formatPercent(value) {

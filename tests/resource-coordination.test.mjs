@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { test } from "node:test";
 import {
+  buildResourceCoordinationMemoryHintProposal,
   buildResourceCoordinationSnapshot,
   classifyResourcePressure,
+  renderResourceCoordinationMemoryHintProposal,
   renderResourceCoordinationSnapshot
 } from "../scripts/lib/resource-coordination-core.mjs";
 import {
@@ -29,6 +31,8 @@ test("resource coordination registry models exclusive resources and freshness", 
   assert.ok(registry.exclusiveResources.some((resource) => resource.id === "browser-automation-profile"));
   assert.ok(registry.exclusiveResources.some((resource) => resource.id === "gpu-3d-rendering"));
   assert.ok(registry.exclusiveResources.some((resource) => resource.id === "foreground-screen-control"));
+  assert.ok(registry.channels.some((channel) => channel.id === "codex-memory-resource-hints" && channel.kind === "memory-hint"));
+  assert.ok(registry.policies.some((policy) => policy.id === "memory-hints-are-soft-awareness"));
   assert.ok(registry.policies.some((policy) => policy.id === "freshness-required"));
 });
 
@@ -72,6 +76,45 @@ test("resource coordination snapshot is time-bounded and renderable", async () =
   assert.equal(snapshot.expiresAt, "2026-07-09T00:05:00.000Z");
   assert.equal(snapshot.exclusiveResources.length >= 3, true);
   assert.match(renderResourceCoordinationSnapshot(snapshot), /Exclusive Resources/);
+});
+
+test("resource coordination memory hint proposal is soft and time-bounded", () => {
+  const proposal = buildResourceCoordinationMemoryHintProposal({
+    generatedAt: "2026-07-10T00:00:00.000Z",
+    project: "devgov",
+    resourceClass: "gpu-rendering",
+    intent: "Canvas verification smoke check",
+    confidence: "declared",
+    source: "codex-task",
+    validForSeconds: 600
+  });
+
+  assert.equal(proposal.schema, "devgov.resource-coordination.memory-hint-proposal.v1");
+  assert.equal(proposal.mode, "proposal-only");
+  assert.equal(proposal.proposedMemoryHint.kind, "rcg-short-term-resource-hint");
+  assert.equal(proposal.proposedMemoryHint.authority, "soft-hint-only");
+  assert.equal(proposal.proposedMemoryHint.afterExpiry, "historical-only");
+  assert.equal(proposal.proposedMemoryHint.validUntil, "2026-07-10T00:10:00.000Z");
+  assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /does not write to Codex memory/);
+  assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /soft-hint-only/);
+});
+
+test("resource coordination memory hint proposal rejects unsafe text", () => {
+  assert.throws(
+    () => buildResourceCoordinationMemoryHintProposal({
+      project: "Q:\\Projects\\private",
+      intent: "Browser automation"
+    }),
+    /machine-local paths/
+  );
+
+  assert.throws(
+    () => buildResourceCoordinationMemoryHintProposal({
+      project: "devgov",
+      intent: "Use sk-1234567890abcdefghijklmnop"
+    }),
+    /credential-like values/
+  );
 });
 
 test("resource coordination registry rejects machine-local paths", async () => {

@@ -6,8 +6,8 @@
     "id": "devgov-shared-resource-coordination",
     "mode": "observe-first",
     "operatorSurface": "DevGov dashboard",
-    "communicationSurface": "reports/resource-coordination-snapshot.json",
-    "observationSurface": "DevGov /api/resource-coordination plus operating-system process and resource summaries",
+    "communicationSurface": "reports/resource-coordination-snapshot.json plus proposal-only short-term memory hint artifacts",
+    "observationSurface": "DevGov /api/resource-coordination plus operating-system process summaries and optional Codex memory soft hints",
     "status": "candidate",
     "notes": "This platform is a common read model for agents and operators. It does not schedule, stop, restart, or throttle work by default."
   },
@@ -64,6 +64,15 @@
       "riskLevel": "L1",
       "status": "candidate",
       "notes": "Use built-in host observation mechanisms first. Canonical records must not store process IDs, full commands, usernames, paths, or secret-bearing environment values."
+    },
+    {
+      "id": "codex-memory-resource-hints",
+      "kind": "memory-hint",
+      "surface": "Codex memory short-term resource awareness hints",
+      "direction": "read-write",
+      "riskLevel": "L1",
+      "status": "candidate",
+      "notes": "Soft hints only. They may be delayed, duplicated, incomplete, or stale and must not be treated as authoritative current state, a lock, a transaction store, or a scheduling gate."
     }
   ],
   "signals": [
@@ -102,6 +111,15 @@
       "congestionUse": "future",
       "status": "candidate",
       "notes": "Scheduling requires a separate reviewed apply path and operator-approved policy."
+    },
+    {
+      "id": "short-term-memory-awareness",
+      "kind": "runtime-load",
+      "source": "Codex memory entries shaped as positive, time-bound resource-use hints",
+      "interpretation": "Recent memory hints can inform cross-project reasoning about browser, GPU, foreground, DevTools, or local-model work, but they do not prove current occupancy.",
+      "congestionUse": "context",
+      "status": "candidate",
+      "notes": "Readers must check observedAt and validUntil. Expired hints are historical-only and missing hints do not mean the resource is free."
     }
   ],
   "exclusiveResources": [
@@ -168,6 +186,13 @@
       "enforcement": "Treat stale status as unknown-degraded or historical evidence; refresh observation before diagnosing current congestion, active ownership, or scheduling priority.",
       "status": "approved",
       "notes": "This prevents old resource claims from blocking current work."
+    },
+    {
+      "id": "memory-hints-are-soft-awareness",
+      "requirement": "Codex memory may carry short-term resource-awareness hints, but those hints are not authoritative current state.",
+      "enforcement": "Write only positive, sanitized, time-bound hints with observedAt, validUntil, authority, and afterExpiry fields; never write negative availability states such as no current occupancy.",
+      "status": "candidate",
+      "notes": "This uses eventual consistency intentionally. Stale, duplicated, missing, or delayed memory hints affect prompt quality only and must not justify hard scheduling, locks, or remediation."
     }
   ],
   "stages": [
