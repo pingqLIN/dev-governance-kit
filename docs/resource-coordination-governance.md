@@ -64,11 +64,18 @@ Each hint should follow this shape:
 
 The template lives at `templates/CODEX.memory.rcg-hint.md`.
 
-Real memory updates require a separate reviewed gate. Use `templates/CODEX.memory.rcg-update-gate.md` after generating a proposal and before any runtime-approved memory update mechanism is used.
+Real memory updates require a separate reviewed gate in the `memory-field` or
+runtime-owned memory architecture. DevGov's
+`templates/CODEX.memory.rcg-update-gate.md` is now only a deprecated external
+handoff reference stub.
 
 Do not treat proposal generation, planning approval, acknowledgement-only replies, timeouts, dashboard refreshes, scanner runs, tests, Doctor runs, or vague OK responses as approval to write memory. Review the exact JSON proposal first.
 
-After reviewing the gate and exact proposal, hand the reviewed payload to the `memory-field` or runtime-owned memory update architecture. DevGov remains proposal-only for real memory coordination: scanners, Doctor, dashboard refreshes, tests, and reports must not write real memory.
+After reviewing the exact proposal, hand the reviewed payload to
+`memory-field:research/handoff/rcg-memory-update-gate.md` or a later
+runtime-owned memory update architecture review. DevGov remains proposal-only
+for real memory coordination: scanners, Doctor, dashboard refreshes, tests, and
+reports must not write real memory.
 
 ## Command
 
@@ -86,7 +93,10 @@ To generate a proposal-only Codex memory hint without writing real memory, run:
 npm run scan:resource-coordination -- --memory-hint-proposal --memory-hint-project stable-project-id --memory-hint-resource-class browser-profile --memory-hint-intent "Browser automation smoke check"
 ```
 
-Then review `templates/CODEX.memory.rcg-update-gate.md` before any explicit memory-update workflow.
+Then use `templates/CODEX.memory.rcg-update-gate.md` only as a DevGov handoff
+reference and complete the formal review in
+`memory-field:research/handoff/rcg-memory-update-gate.md` before any explicit
+memory-update workflow.
 
 ## Project AGENTS Rollout
 

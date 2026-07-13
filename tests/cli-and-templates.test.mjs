@@ -209,8 +209,11 @@ test("scan-resource-coordination writes proposal-only memory hint reports", () =
   assert.equal(proposal.proposedMemoryHint.project, "devgov");
   assert.equal(proposal.proposedMemoryHint.resourceClass, "devtools");
   assert.equal(proposal.proposedMemoryHint.authority, "soft-hint-only");
-  assert.match(proposal.reviewGate.requiredOperatorIntent, /explicitly ask to update Codex memory/);
+  assert.equal(proposal.externalReviewGate, "memory-field:research/handoff/rcg-memory-update-gate.md");
+  assert.equal(proposal.handoffReference.noDevGovWrite, true);
+  assert.match(proposal.reviewGate.requiredOperatorIntent, /explicitly ask to hand the reviewed RCG proposal/);
   assert.match(readFileSyncUtf8("reports/rcg-memory-hint.test.md"), /does not write to Codex memory/);
+  assert.match(readFileSyncUtf8("reports/rcg-memory-hint.test.md"), /DevGov Handoff Reference/);
   assert.match(readFileSyncUtf8("reports/rcg-memory-hint.test.md"), /Review Gate/);
 });
 
@@ -332,9 +335,12 @@ test("resource coordination AGENTS templates stay thin and proposal-only", async
   assert.match(memoryChinese, /不要把這個 template 或衍生 hint 寫入真實 Codex memory/);
   assert.match(gateEnglish, /Required Operator Intent/);
   assert.match(gateEnglish, /Do not treat the following as approval/);
-  assert.match(gateEnglish, /runtime-approved Codex memory update mechanism/);
+  assert.match(gateEnglish, /deprecated as a DevGov-local update gate/);
+  assert.match(gateEnglish, /memory-field:research\/handoff\/rcg-memory-update-gate\.md/);
+  assert.match(gateEnglish, /noDevGovWrite/);
   assert.match(gateChinese, /Required Operator Intent/);
   assert.match(gateChinese, /不得視為 approval/);
+  assert.match(gateChinese, /external handoff reference stub/);
 });
 
 test("dashboard bookmark template targets the on-demand protocol handler", async () => {

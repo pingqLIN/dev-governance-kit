@@ -153,8 +153,18 @@ export function buildResourceCoordinationMemoryHintProposal(options = {}) {
     status: "review-required",
     template: "templates/CODEX.memory.rcg-hint.md",
     reviewGateTemplate: "templates/CODEX.memory.rcg-update-gate.md",
+    externalReviewGate: "memory-field:research/handoff/rcg-memory-update-gate.md",
     proposalNames: ["CODEX.memory.rcg-hint", "rcg-memory-hint"],
-    writeTarget: "No automatic Codex memory write; use only after the operator explicitly asks to update memory.",
+    writeTarget: "No automatic Codex memory write; DevGov hands reviewed proposals to memory-field or a runtime-owned memory architecture.",
+    handoffReference: {
+      proposalSchema: "devgov.resource-coordination.memory-hint-proposal.v1",
+      sourceReport: "reports/resource-coordination-memory-hint-proposal.json",
+      reviewGate: "memory-field:research/handoff/rcg-memory-update-gate.md",
+      targetArchitecture: "memory-field",
+      authority: "proposal-only",
+      consumerAction: "external-runtime-owned",
+      noDevGovWrite: true
+    },
     reviewGate: buildMemoryHintReviewGate(),
     constraints: [
       "Soft awareness only; not an authoritative current-state ledger.",
@@ -178,6 +188,7 @@ export function renderResourceCoordinationMemoryHintProposal(proposal) {
     `status: ${proposal.status}`,
     `template: ${proposal.template}`,
     `reviewGateTemplate: ${proposal.reviewGateTemplate}`,
+    `externalReviewGate: ${proposal.externalReviewGate}`,
     `proposalNames: ${proposal.proposalNames.join(", ")}`,
     "",
     "This report is proposal-only. It does not write to Codex memory, modify runtime state, apply a lock, or schedule work.",
@@ -198,6 +209,9 @@ export function renderResourceCoordinationMemoryHintProposal(proposal) {
   lines.push(`- Required operator intent: ${proposal.reviewGate.requiredOperatorIntent}`);
   lines.push(`- Memory write surface: ${proposal.reviewGate.memoryWriteSurface}`);
   lines.push(`- Source artifact: ${proposal.reviewGate.sourceArtifact}`);
+  lines.push(`- External review gate: ${proposal.externalReviewGate}`);
+  lines.push("", "### DevGov Handoff Reference", "");
+  lines.push("```json", JSON.stringify(proposal.handoffReference, null, 2), "```");
   lines.push("", "### Required Checks", "");
   for (const check of proposal.reviewGate.requiredChecks) {
     lines.push(`- ${check}`);
@@ -225,15 +239,17 @@ export function renderResourceCoordinationMemoryHintProposal(proposal) {
 
 function buildMemoryHintReviewGate() {
   return {
-    requiredOperatorIntent: "The operator must explicitly ask to update Codex memory with the reviewed RCG hint.",
-    memoryWriteSurface: "Use only a runtime-approved Codex memory update mechanism; DevGov scanners never write memory directly.",
-    sourceArtifact: "Start from a generated proposal artifact under reports and review the exact JSON before any memory update.",
+    requiredOperatorIntent: "The operator must explicitly ask to hand the reviewed RCG proposal to memory-field or a runtime-owned memory architecture.",
+    memoryWriteSurface: "DevGov has no real Codex memory write surface; DevGov scanners never write memory directly.",
+    sourceArtifact: "Start from a generated proposal artifact under reports and review the exact JSON before any external handoff.",
     requiredChecks: [
+      "Confirm the proposal points to memory-field:research/handoff/rcg-memory-update-gate.md or a later runtime-owned review gate.",
       "Confirm the hint is a positive recent-use event, not a negative availability state.",
       "Confirm project is a stable project id, not a machine-local path.",
       "Confirm intent is sanitized and contains no secrets, credential paths, full commands, screenshots, or personal activity.",
       "Confirm resourceClass, confidence, source, observedAt, validUntil, authority, and afterExpiry match the RCG schema.",
-      "Confirm validUntil is short-term and expired hints will be treated as historical-only."
+      "Confirm validUntil is short-term and expired hints will be treated as historical-only.",
+      "Confirm the handoff keeps consumerAction external-runtime-owned and noDevGovWrite true."
     ],
     deniedShortcuts: [
       "Do not treat generating a proposal as approval to update memory.",

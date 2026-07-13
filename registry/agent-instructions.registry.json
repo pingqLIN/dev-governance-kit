@@ -435,11 +435,11 @@
       "layer": "repo-local",
       "appliesTo": "Any real Codex memory update derived from an RCG memory hint proposal.",
       "requirement": "Keep DevGov proposal-only; require explicit operator intent and exact JSON review before any external memory architecture writes an RCG hint into Codex memory.",
-      "enforcement": "Use templates/CODEX.memory.rcg-update-gate.md for review and hand the reviewed payload to the memory-field or runtime-owned memory update surface. DevGov scanners, tests, Doctor runs, dashboard refreshes, and vague OK responses must not write real memory.",
+      "enforcement": "Use templates/CODEX.memory.rcg-update-gate.md only as a deprecated DevGov handoff reference, then hand the reviewed payload to memory-field:research/handoff/rcg-memory-update-gate.md or a later runtime-owned memory update surface. DevGov scanners, tests, Doctor runs, dashboard refreshes, and vague OK responses must not write real memory.",
       "evidence": "AGENTS.md#Shared Resource Coordination",
       "status": "candidate",
       "source": "AGENTS.md",
-      "notes": "Keeps DevGov scanners and Doctor proposal-only while the memory-field architecture owns real memory writes."
+      "notes": "Keeps DevGov scanners and Doctor proposal-only while the memory-field architecture owns the formal review gate for real memory writes."
     },
     {
       "id": "agent.safety.resource-status-freshness",

@@ -98,9 +98,13 @@ test("resource coordination memory hint proposal is soft and time-bounded", () =
   assert.equal(proposal.proposedMemoryHint.afterExpiry, "historical-only");
   assert.equal(proposal.proposedMemoryHint.validUntil, "2026-07-10T00:10:00.000Z");
   assert.equal(proposal.reviewGateTemplate, "templates/CODEX.memory.rcg-update-gate.md");
-  assert.match(proposal.reviewGate.requiredOperatorIntent, /explicitly ask to update Codex memory/);
+  assert.equal(proposal.externalReviewGate, "memory-field:research/handoff/rcg-memory-update-gate.md");
+  assert.equal(proposal.handoffReference.noDevGovWrite, true);
+  assert.equal(proposal.handoffReference.consumerAction, "external-runtime-owned");
+  assert.match(proposal.reviewGate.requiredOperatorIntent, /explicitly ask to hand the reviewed RCG proposal/);
   assert.match(proposal.reviewGate.deniedShortcuts.join(" "), /generating a proposal/);
   assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /does not write to Codex memory/);
+  assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /DevGov Handoff Reference/);
   assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /Required Checks/);
   assert.match(renderResourceCoordinationMemoryHintProposal(proposal), /soft-hint-only/);
 });

@@ -197,9 +197,9 @@
     {
       "id": "memory-update-is-explicit-operator-gated",
       "requirement": "A real Codex memory update derived from RCG requires explicit operator intent after reviewing the exact proposal JSON.",
-      "enforcement": "Use the reviewed update-gate template and hand the reviewed payload to the memory-field or runtime-owned memory update surface. Proposal generation, planning OK, acknowledgement-only replies, timeouts, scanners, tests, Doctor runs, and dashboard refreshes are not approval for DevGov to write memory.",
+      "enforcement": "Use the DevGov update-gate template only as a deprecated handoff reference, then hand the reviewed payload to memory-field:research/handoff/rcg-memory-update-gate.md or a later runtime-owned memory update surface. Proposal generation, planning OK, acknowledgement-only replies, timeouts, scanners, tests, Doctor runs, and dashboard refreshes are not approval for DevGov to write memory.",
       "status": "candidate",
-      "notes": "DevGov remains proposal-only for real memory coordination while memory-field owns the future write architecture."
+      "notes": "DevGov remains proposal-only for real memory coordination while memory-field owns the formal review gate and future write architecture."
     }
   ],
   "stages": [

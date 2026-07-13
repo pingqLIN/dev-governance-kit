@@ -1,12 +1,18 @@
 # CODEX.memory.rcg-update-gate
 
-將 RCG memory hint proposal 轉成真實 Codex memory update 前使用的 reviewed gate template。
+Status: deprecated as a DevGov-local update gate。
 
-這不是 apply command。它定義的是 proposal 產生後、任何 memory update 發生前必須經過的人工 checkpoint。
+這個檔案現在只是 external handoff reference stub。它保留舊 DevGov 入口的可發現性，但正式 RCG memory update gate 屬於 `memory-field` architecture：
+
+```text
+memory-field:research/handoff/rcg-memory-update-gate.md
+```
+
+DevGov 維持 proposal-only。這不是 apply command、writer、runtime-control path、queue、scheduler，也不是 Codex memory mutation mechanism。
 
 ## Required Operator Intent
 
-只有在 operator 明確要求「把已 review 的 RCG hint 更新到 Codex memory」時，才能繼續。
+只有在 operator 明確要求「把已 review 的 RCG proposal 交給 memory-field 或 runtime-owned memory architecture」時，才能繼續。
 
 下列情況不得視為 approval：
 
@@ -21,19 +27,37 @@
 
 從 `reports/` 底下產生的 proposal 開始，例如 `resource-coordination-memory-hint-proposal.json`。
 
-Review 即將被寫入的精確 JSON。不要從記憶、聊天紀錄或非正式 summary 重新拼出 hint。
+Review 精確 JSON proposal。不要從記憶、聊天紀錄或非正式 summary 重新拼出 hint。
 
-## Required Checks
+## DevGov Handoff Reference
 
+DevGov handoff reference 應維持最小欄位：
+
+```json
+{
+  "proposalSchema": "devgov.resource-coordination.memory-hint-proposal.v1",
+  "sourceReport": "reports/resource-coordination-memory-hint-proposal.json",
+  "reviewGate": "memory-field:research/handoff/rcg-memory-update-gate.md",
+  "targetArchitecture": "memory-field",
+  "authority": "proposal-only",
+  "consumerAction": "external-runtime-owned",
+  "noDevGovWrite": true
+}
+```
+
+## Required Checks Before Handoff
+
+- proposal 指向上方 memory-field review gate。
 - hint 是正向近期使用事件，不是負向 availability state。
 - `project` 是 stable project id，不是 machine-local path。
 - `intent` 已 sanitized，且沒有 secrets、credential paths、完整 commands、screenshots 或 personal activity。
-- `resourceClass`、`confidence`、`source`、`observedAt`、`validUntil`、`authority` 與 `afterExpiry` 符合 RCG schema。
+- `resourceClass`、`confidence`、`source`、`observedAt`、`validUntil`、`authority` 與 `afterExpiry` 符合 RCG proposal schema。
 - `validUntil` 是短期時效。
 - hint 保持 `authority: "soft-hint-only"` 與 `afterExpiry: "historical-only"`。
+- handoff reference 保持 `consumerAction: "external-runtime-owned"` 與 `noDevGovWrite: true`。
 
-## Memory Write Surface
+## DevGov Write Surface
 
-只能使用 runtime-approved Codex memory update mechanism。DevGov scanners、dashboard refreshes、tests、Doctor 與 report-generation commands 都不得寫入真實 Codex memory。
+DevGov 沒有真實 Codex memory write surface。DevGov scanners、dashboard refreshes、tests、Doctor 與 report-generation commands 都不得寫入真實 Codex memory。
 
-寫入 memory 後，只回報 reviewed hint 已記錄。不要印出 secrets 或不相關的 memory content。
+handoff 後，只回報 reviewed proposal 已交給 external memory architecture。不要印出 secrets 或不相關的 memory content。
