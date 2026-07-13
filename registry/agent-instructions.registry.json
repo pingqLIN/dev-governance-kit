@@ -322,6 +322,18 @@
       "notes": "Turns the port registry from documentation into an executable startup gate."
     },
     {
+      "id": "agent.tool.project-settings-governance-helper",
+      "type": "tool-entry",
+      "layer": "repo-local",
+      "appliesTo": "Existing project configuration scans, workspace port audits, and governed startup preparation.",
+      "requirement": "Use scan:project, scan:workspace, and port:preflight as the project settings governance helper path before changing target project port behavior.",
+      "enforcement": "Parse target project config files as text or JSON only, keep evidence under reports, and do not apply target project edits automatically.",
+      "evidence": "AGENTS.md#Port Governance Rules",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Makes project settings governance a reviewed helper surface instead of an ad hoc scanner."
+    },
+    {
       "id": "agent.context.default-no-tool",
       "type": "context-budget",
       "layer": "global-home",
@@ -399,7 +411,7 @@
       "layer": "repo-local",
       "appliesTo": "Generating Codex memory hint proposals for short-term shared-resource awareness.",
       "requirement": "Use the proposal-only RCG memory hint template and scanner output before any reviewed Codex memory update.",
-      "enforcement": "Generate proposal reports with npm run scan:resource-coordination -- --memory-hint-proposal; do not write real Codex memory unless the operator explicitly asks to update memory.",
+      "enforcement": "Generate proposal reports with npm run scan:resource-coordination -- --memory-hint-proposal; do not write real Codex memory from DevGov. Hand reviewed memory-update requests to memory-field or the runtime-owned memory update architecture.",
       "evidence": "AGENTS.md#Shared Resource Coordination",
       "status": "candidate",
       "source": "AGENTS.md",
@@ -422,12 +434,12 @@
       "type": "safety-gate",
       "layer": "repo-local",
       "appliesTo": "Any real Codex memory update derived from an RCG memory hint proposal.",
-      "requirement": "Require explicit operator intent and exact JSON review before writing any RCG hint into Codex memory.",
-      "enforcement": "Use templates/CODEX.memory.rcg-update-gate.md; do not treat proposal generation, planning OK, acknowledgement-only replies, timeouts, scanners, tests, Doctor runs, or dashboard refreshes as memory-write approval.",
+      "requirement": "Keep DevGov proposal-only; require explicit operator intent and exact JSON review before any external memory architecture writes an RCG hint into Codex memory.",
+      "enforcement": "Use templates/CODEX.memory.rcg-update-gate.md for review and hand the reviewed payload to the memory-field or runtime-owned memory update surface. DevGov scanners, tests, Doctor runs, dashboard refreshes, and vague OK responses must not write real memory.",
       "evidence": "AGENTS.md#Shared Resource Coordination",
       "status": "candidate",
       "source": "AGENTS.md",
-      "notes": "Keeps the proposal-only scanner separate from runtime-approved memory update mechanisms."
+      "notes": "Keeps DevGov scanners and Doctor proposal-only while the memory-field architecture owns real memory writes."
     },
     {
       "id": "agent.safety.resource-status-freshness",

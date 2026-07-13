@@ -199,9 +199,9 @@ Codex memory may store positive, short-term RCG hints for recent resource use, b
 
 Project AGENTS rollout should use the thin resource-coordination overlay templates and proposal-only scanner. Generate proposal reports with `npm run scan:agents -- --agents-file <path>` and keep them as evidence under `reports/`. Do not bulk-apply the overlay or silently edit target project AGENTS files.
 
-Codex memory-hint rollout should use the proposal-only template `templates/CODEX.memory.rcg-hint.md` and `npm run scan:resource-coordination -- --memory-hint-proposal`. The scanner may write reviewed proposal artifacts under `reports/`, but it must not write real Codex memory unless the operator explicitly asks to update memory.
+Codex memory-hint rollout should use the proposal-only template `templates/CODEX.memory.rcg-hint.md` and `npm run scan:resource-coordination -- --memory-hint-proposal`. The scanner may write reviewed proposal artifacts under `reports/`, but it must not write real Codex memory; explicit memory-update requests should be handed to `memory-field` or the runtime-owned memory update architecture after review.
 
-Real Codex memory updates require the reviewed gate in `templates/CODEX.memory.rcg-update-gate.md`. Treat proposal generation, planning approval, acknowledgement-only replies, timeouts, dashboard refreshes, scanners, tests, Doctor runs, and vague OK responses as insufficient approval for memory writes. Review the exact JSON proposal before any runtime-approved memory update mechanism is used.
+Real Codex memory updates require the reviewed gate in `templates/CODEX.memory.rcg-update-gate.md`. Treat proposal generation, planning approval, acknowledgement-only replies, timeouts, dashboard refreshes, scanners, tests, Doctor runs, and vague OK responses as insufficient approval for memory writes. Review the exact JSON proposal before handing it to the `memory-field` or runtime-owned memory update architecture. DevGov scanners, Doctor, and reports must remain proposal-only and must not write real memory.
 
 Scheduling is future work and remains review-gated. Automatic throttling, pausing, restarting, killing, priority changes, or cross-project scheduling requires a separate explicit operator request, service-control review, rollback plan, and privacy review.
 

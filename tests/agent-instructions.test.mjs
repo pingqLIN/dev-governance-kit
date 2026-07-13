@@ -55,6 +55,7 @@ test("agent instruction text index is queryable by scope, type, and evidence", a
   assert.match(text, /type=external-review-input/);
   assert.match(text, /type=context-budget/);
   assert.match(text, /agent\.tool\.governed-port-preflight/);
+  assert.match(text, /agent\.tool\.project-settings-governance-helper/);
   assert.match(text, /agent\.workflow\.resource-contention-diagnostic/);
   assert.match(text, /agent\.tool\.resource-coordination-agents-overlay/);
   assert.match(text, /agent\.tool\.resource-coordination-memory-hint-proposal/);

@@ -11,6 +11,7 @@ import { buildServiceOnboardingAudit } from "../scripts/lib/service-onboarding-c
 import { executeServiceControl, loadApprovedServiceControls, readServiceControlEvents, SERVICE_CONTROL_PORT } from "../scripts/lib/service-control-core.mjs";
 import { isAllowedControlOrigin, SERVICE_CONTROL_ALLOWED_ORIGINS } from "../scripts/lib/service-control-resolver.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
+import { buildNewProjectApiKeyPlan, renderEnvExampleLines, renderNewProjectApiKeyPlan } from "../scripts/lib/new-project-api-key-core.mjs";
 import { validateApiKeysRegistry, validateDesignSystemRegistry, validateLocalAgentsRegistry, validateLocalCloudflareRegistry, validatePublicRoutesRegistry, validateServiceControlRegistry, validateServiceOnboardingRegistry, validateStartupRegistry, validateTerminalProfilesRegistry } from "../scripts/lib/governance-registry-core.mjs";
 import { parseCloudflaredConfig } from "../scripts/lib/public-routes-core.mjs";
 import { scanStartupFolder } from "../scripts/lib/startup-core.mjs";
@@ -322,6 +323,25 @@ test("API key registry suggestions promote only machine scope by default", () =>
   ]);
 
   assert.deepEqual(entries.map((entry) => entry.id), ["machine-openai-api-key"]);
+});
+
+test("new project API key plan renders registry-backed env templates without values", async () => {
+  const plan = await buildNewProjectApiKeyPlan({
+    projectName: "demo-api-client",
+    services: ["OpenAI Platform"],
+    noLiveEnv: true
+  });
+  const report = renderNewProjectApiKeyPlan(plan);
+  const envLines = renderEnvExampleLines(plan);
+
+  assert.equal(plan.schema, "devgov.new-project-api-key-plan.v1");
+  assert.equal(plan.projectName, "demo-api-client");
+  assert.ok(plan.credentials.every((credential) => credential.service === "OpenAI Platform"));
+  assert.ok(plan.credentials.some((credential) => credential.variableName === "OPENAI_API_KEY"));
+  assert.ok(envLines.some((line) => line === "OPENAI_API_KEY="));
+  assert.match(report, /process\.env/);
+  assert.match(report, /override:false/);
+  assert.doesNotMatch(report, /sk-test-secret/);
 });
 
 test("docs index excludes reports and redacts credential-like content", async () => {

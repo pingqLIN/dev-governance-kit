@@ -68,6 +68,8 @@ Template 位於 `templates/CODEX.memory.rcg-hint.md`。
 
 不要把 proposal generation、planning approval、acknowledgement-only replies、timeouts、dashboard refreshes、scanner runs、tests、Doctor runs 或模糊的 OK 回覆視為寫入 memory 的 approval。必須先 review 精確 JSON proposal。
 
+Review gate 與精確 proposal 完成後，將 reviewed payload 交由 `memory-field` 或 runtime-owned memory update architecture 處理。DevGov 對真實 memory coordination 維持 proposal-only：scanners、Doctor、dashboard refreshes、tests 與 reports 都不得寫入真實 memory。
+
 ## 指令
 
 執行：

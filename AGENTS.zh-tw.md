@@ -167,6 +167,40 @@ Skill routing records 應標示 trigger、最小 instruction path 或 registry e
 
 稽核本機 prompt overhead 時，執行 `npm run scan:context-budget`。此命令會把本機 evidence 寫到 `reports/context-budget-audit.md` 與 `reports/context-budget-audit.json`。報告只是估算：platform system prompts、developer instructions、native tool schemas 與 connector schemas 屬於 runtime-owned surface，只能從本機檔案部分觀察。
 
+## Shared Resource Coordination
+
+Lag、timeout、browser automation 變慢、tool response 延遲或 UI 卡頓，不等於目標專案不穩。先比較 target-local evidence 與 shared host pressure，再判斷是 `target-unhealthy`、`environment-contention` 或 `unknown-degraded`。
+
+優先使用既有本機機制，不新增沉重常駐服務：
+
+- DevGov dashboard `/api/state`、`/api/service-status` 與 `/api/resource-coordination`。
+- `registry/resource-coordination.registry.json` 作為 canonical shared-resource coordination contract。
+- `npm run scan:resource-coordination` 產生 on-demand lightweight snapshot 到 `reports/`。
+- 既有 service-control、dashboard event reports 與作業系統 CPU、memory、process、GPU、disk、browser 或 screen-observation tools。
+- Codex memory short-term resource hints 只能作為 soft awareness，不得當成 authoritative current state。
+
+狀態必須 time-bound。Resource snapshots 與 exclusive-resource claims 需要 generated、observed、refreshed 或 expiry timestamps；過期 claim 或 snapshot 只能作為 historical evidence，不能阻擋目前工作或支撐目前 remediation。
+
+使用 capacity-limited 或 exclusive resources 前，先登記意圖，尤其是：
+
+- authenticated browser profiles、browser automation sessions、DevTools sessions 或 extension state；
+- GPU-heavy 3D rendering、WebGL/WebGPU、canvas verification、video rendering 或 local model inference；
+- foreground screen、pointer、keyboard、simulator、display 或 interactive desktop control。
+
+登記應使用 resource-coordination surface 或 sanitized report/event artifact。不得把 secrets、cookies、session data、credential paths、完整本機路徑、command lines、含有私人資料的 screenshots 或 personal activity 放進 canonical registry data。
+
+Codex memory 可以在 explicit memory-update workflow 被要求時，記錄近期資源使用的正向、短期 RCG hints。Hints 必須包含 `observedAt`、`validUntil`、`authority: soft-hint-only` 與 `afterExpiry: historical-only`。不要寫「目前無佔用」這類負向 availability state。Missing、duplicated、delayed 或 expired hints 不得被視為 lock、task gate、transaction record、scheduling approval，或資源目前可用的證明。
+
+Project AGENTS rollout 應使用 thin resource-coordination overlay templates 與 proposal-only scanner。用 `npm run scan:agents -- --agents-file <path>` 產生 proposal reports，並把 evidence 保留在 `reports/`。不要 bulk-apply overlay，也不要靜默編輯 target project AGENTS files。
+
+Codex memory-hint rollout 應使用 proposal-only template `templates/CODEX.memory.rcg-hint.md` 與 `npm run scan:resource-coordination -- --memory-hint-proposal`。Scanner 可以把 reviewed proposal artifacts 寫到 `reports/`，但不得寫入真實 Codex memory；明確 memory-update request 應在 review 後交由 `memory-field` 或 runtime-owned memory update architecture 處理。
+
+真實 Codex memory updates 需要 `templates/CODEX.memory.rcg-update-gate.md` 的 reviewed gate。Proposal generation、planning approval、acknowledgement-only replies、timeouts、dashboard refreshes、scanners、tests、Doctor runs 與模糊 OK 都不足以授權 memory writes。使用任何 runtime-approved memory update mechanism 前，必須先 review 精確 JSON proposal。
+
+Review 精確 JSON proposal 後，交由 `memory-field` 或 runtime-owned memory update architecture 處理真實 memory update。DevGov scanners、Doctor 與 reports 必須維持 proposal-only，不得寫入真實 memory。
+
+Scheduling 是 future work，仍維持 review-gated。Automatic throttling、pausing、restarting、killing、priority changes 或 cross-project scheduling 都需要另一個明確 operator request、service-control review、rollback plan 與 privacy review。
+
 ## Port Governance Rules
 
 1. 修改 port allocation rules 前，先讀 `registry/ports.registry.json`。

@@ -68,6 +68,8 @@ Real memory updates require a separate reviewed gate. Use `templates/CODEX.memor
 
 Do not treat proposal generation, planning approval, acknowledgement-only replies, timeouts, dashboard refreshes, scanner runs, tests, Doctor runs, or vague OK responses as approval to write memory. Review the exact JSON proposal first.
 
+After reviewing the gate and exact proposal, hand the reviewed payload to the `memory-field` or runtime-owned memory update architecture. DevGov remains proposal-only for real memory coordination: scanners, Doctor, dashboard refreshes, tests, and reports must not write real memory.
+
 ## Command
 
 Run:

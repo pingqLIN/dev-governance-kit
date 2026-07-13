@@ -69,10 +69,10 @@
       "id": "codex-memory-resource-hints",
       "kind": "memory-hint",
       "surface": "Codex memory short-term resource awareness hints",
-      "direction": "read-write",
+      "direction": "read",
       "riskLevel": "L1",
       "status": "candidate",
-      "notes": "Soft hints only. They may be delayed, duplicated, incomplete, or stale and must not be treated as authoritative current state, a lock, a transaction store, or a scheduling gate."
+      "notes": "Soft hints only. DevGov may read hints as context and generate reviewed proposal artifacts, but real memory writes belong to the memory-field or runtime-owned memory update architecture. Hints may be delayed, duplicated, incomplete, or stale and must not be treated as authoritative current state, a lock, a transaction store, or a scheduling gate."
     }
   ],
   "signals": [
@@ -197,9 +197,9 @@
     {
       "id": "memory-update-is-explicit-operator-gated",
       "requirement": "A real Codex memory update derived from RCG requires explicit operator intent after reviewing the exact proposal JSON.",
-      "enforcement": "Use the reviewed update-gate template; proposal generation, planning OK, acknowledgement-only replies, timeouts, scanners, tests, Doctor runs, and dashboard refreshes are not approval to write memory.",
+      "enforcement": "Use the reviewed update-gate template and hand the reviewed payload to the memory-field or runtime-owned memory update surface. Proposal generation, planning OK, acknowledgement-only replies, timeouts, scanners, tests, Doctor runs, and dashboard refreshes are not approval for DevGov to write memory.",
       "status": "candidate",
-      "notes": "DevGov may generate proposal artifacts, but it does not own or silently invoke the runtime memory write surface."
+      "notes": "DevGov remains proposal-only for real memory coordination while memory-field owns the future write architecture."
     }
   ],
   "stages": [
@@ -225,10 +225,10 @@
       "id": "memory-hint-review",
       "name": "Memory Hint Review",
       "trigger": "An operator explicitly asks to update Codex memory with a reviewed RCG resource hint.",
-      "allowedActions": "Review the exact generated JSON proposal and, only after explicit operator intent, use a runtime-approved memory update mechanism.",
-      "requiredGate": "Explicit operator memory-update request plus exact JSON review; DevGov scanner output alone is never an apply signal.",
+      "allowedActions": "Review the exact generated JSON proposal and hand the reviewed payload to the memory-field or runtime-owned memory update surface.",
+      "requiredGate": "Explicit operator memory-update request plus exact JSON review; DevGov scanner output and proposal reports alone are never apply signals.",
       "status": "candidate",
-      "notes": "This stage documents the human gate and does not add a scanner-side memory write implementation."
+      "notes": "This stage documents the human gate. Scanner, Doctor, dashboard refresh, and tests must not trigger real memory writes from DevGov."
     },
     {
       "id": "schedule",

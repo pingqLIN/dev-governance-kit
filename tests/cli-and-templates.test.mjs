@@ -72,6 +72,46 @@ test("scan-context-budget refuses absolute JSON output paths outside reports by 
   assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
 });
 
+test("new project API key plan refuses output paths outside reports by default", () => {
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/plan-new-project-api-keys.mjs", "--no-live-env", "--out", join(tmpdir(), "devgov-new-project-api-keys.md")],
+    { encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
+});
+
+test("new project API key plan writes sanitized reports", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "scripts/plan-new-project-api-keys.mjs",
+      "--project-name",
+      "demo-api-client",
+      "--service",
+      "OpenAI Platform",
+      "--no-live-env",
+      "--out",
+      "reports/new-project-api-key-plan.test.md",
+      "--json-out",
+      "reports/new-project-api-key-plan.test.json"
+    ],
+    { encoding: "utf8" }
+  );
+
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  const report = readFileSyncUtf8("reports/new-project-api-key-plan.test.md");
+  const json = JSON.parse(readFileSyncUtf8("reports/new-project-api-key-plan.test.json"));
+  assert.equal(json.schema, "devgov.new-project-api-key-plan.v1");
+  assert.equal(json.projectName, "demo-api-client");
+  assert.ok(json.credentials.some((credential) => credential.variableName === "OPENAI_API_KEY"));
+  assert.match(report, /dotenv: Load \.env\.local or \.env with override:false/);
+  assert.match(report, /OPENAI_API_KEY=/);
+  assert.doesNotMatch(report, /sk-/);
+});
+
 test("scan-agent-instructions refuses resource proposal paths outside reports by default", () => {
   const result = spawnSync(
     process.execPath,
@@ -251,6 +291,25 @@ test("PORTS template uses placeholders instead of approved allocations", async (
 
   assert.match(text, /`<service>`/);
   assert.doesNotMatch(text, /\|\s*frontend\s*\|\s*3101\s*\|/);
+});
+
+test("new project API key templates stay blank and prefer OS environment", async () => {
+  const envExample = await readFile("templates/new-project.env.example", "utf8");
+  const resolver = await readFile("templates/api-key-env-resolver.mjs", "utf8");
+  const docs = await readFile("docs/new-project-api-key-onboarding.md", "utf8");
+  const docsChinese = await readFile("docs/new-project-api-key-onboarding.zh-tw.md", "utf8");
+
+  assert.match(envExample, /override:false/);
+  assert.match(envExample, /OPENAI_API_KEY=/);
+  assert.match(envExample, /CF_API_TOKEN=/);
+  assert.doesNotMatch(envExample, /sk-/);
+  assert.doesNotMatch(envExample, /password/i);
+  assert.match(resolver, /process\.env/);
+  assert.match(resolver, /Missing required environment variable/);
+  assert.match(docs, /OS User\/Machine environment variables/);
+  assert.match(docs, /registry\/api-keys\.registry\.json/);
+  assert.match(docsChinese, /OS User\/Machine environment variables/);
+  assert.match(docsChinese, /不得存 credential values/);
 });
 
 test("resource coordination AGENTS templates stay thin and proposal-only", async () => {
