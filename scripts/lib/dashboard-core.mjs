@@ -1318,6 +1318,34 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const continuousMemoryField = onboardingEntries.find((entry) => entry.id === "continuous-memory-field-on-demand-health");
+  if (continuousMemoryField) {
+    targets.push({
+      id: "onboarding:continuous-memory-field-on-demand-health",
+      controlTargetId: "continuous-memory-field",
+      project: "Continuous Memory Field",
+      label: "Continuous Memory Field",
+      kind: "source-repo-health",
+      registryStatus: "approved",
+      url: "",
+      target: "on-demand-project-health",
+      quickTest: buildQuickTest("", {
+        notes: "Safe local project-shape probe only. Confirms package identity, core docs, observation schema, source entry, and data placeholder without starting a runtime.",
+        probeRef: "scripts/service-control/quickcheck-continuous-memory-field.ps1",
+        timeoutSeconds: 30
+      }),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: continuousMemoryField.doctorProcedure
+      },
+      restart: {
+        state: "NOT_APPLICABLE",
+        ref: "",
+        notes: continuousMemoryField.resetProcedure
+      }
+    });
+  }
   return targets;
 }
 

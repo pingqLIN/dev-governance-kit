@@ -289,6 +289,7 @@ function aggregatePresenceState(states) {
 function aggregateRestartState(states, hasStartupEntries) {
   if (states.includes("FOUND")) return "FOUND";
   if (states.includes("REVIEW_REQUIRED")) return "REVIEW_REQUIRED";
+  if (states.includes("NOT_APPLICABLE")) return "NOT_APPLICABLE";
   if (states.includes("DISABLED")) return "DISABLED";
   return hasStartupEntries ? "REVIEW_REQUIRED" : "MISSING";
 }

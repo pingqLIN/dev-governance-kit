@@ -558,6 +558,7 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const skill0GuiTarget = targets.find((target) => target.id === "onboarding:skill-0-gui-review-studio-http");
   const nowledgeCompatTarget = targets.find((target) => target.id === "onboarding:chatgpt-local-files-mcp-nowledge-compat-http");
   const chromeAiModelStoreTarget = targets.find((target) => target.id === "onboarding:chrome-ai-model-store-filesystem");
+  const continuousMemoryFieldTarget = targets.find((target) => target.id === "onboarding:continuous-memory-field-on-demand-health");
   const chromeAiStorageRecord = state.storageRecords.find((record) => record.id === "chrome-ai-model-store");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
@@ -657,6 +658,12 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(chromeAiModelStoreTarget.doctor.state, "FOUND");
   assert.equal(chromeAiModelStoreTarget.restart.state, "FOUND");
   assert.equal(chromeAiModelStoreTarget.quickTest.probeRef, "scripts/service-control/quickcheck-chrome-ai-model-store.ps1");
+  assert.equal(continuousMemoryFieldTarget.project, "Continuous Memory Field");
+  assert.equal(continuousMemoryFieldTarget.target, "on-demand-project-health");
+  assert.equal(continuousMemoryFieldTarget.quickTest.probeRef, "scripts/service-control/quickcheck-continuous-memory-field.ps1");
+  assert.equal(continuousMemoryFieldTarget.doctor.state, "FOUND");
+  assert.equal(continuousMemoryFieldTarget.restart.state, "NOT_APPLICABLE");
+  assert.equal(continuousMemoryFieldTarget.controlReadiness, "PARTIAL");
   assert.equal(chromeAiStorageRecord.modelStore, "OptGuideOnDeviceModel");
   assert.equal(chromeAiStorageRecord.controlTargetId, "chrome-ai-model-store");
   assert.ok(chromeAiStorageRecord.sharedWith.includes("Chrome Dev"));
@@ -676,6 +683,7 @@ test("live service-status view excludes retired targets from the active control 
   const retiredRouteTarget = status.retiredServices.find((target) => target.id === "public-route:mcp-colorgeek");
   const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
   const chromeAiModelStoreTarget = status.services.find((target) => target.id === "onboarding:chrome-ai-model-store-filesystem");
+  const continuousMemoryFieldTarget = status.services.find((target) => target.id === "onboarding:continuous-memory-field-on-demand-health");
 
   assert.equal(status.schema, "devgov.service-status.v1");
   assertLiveReadiness(dashboardTarget);
@@ -689,6 +697,7 @@ test("live service-status view excludes retired targets from the active control 
   assertLiveReadiness(lmStudioRouteTarget);
   assertLiveReadiness(tunnelClientTarget);
   assertLiveReadiness(chromeAiModelStoreTarget);
+  assertLiveReadiness(continuousMemoryFieldTarget);
   if (localArchiveTarget.quickTest.statusCode === 401) {
     assert.equal(localArchiveTarget.quickTest.state, "ONLINE");
   }
@@ -704,6 +713,8 @@ test("live service-status view excludes retired targets from the active control 
   assert.equal(chromeAiModelStoreTarget.quickTest.state, "ONLINE");
   assert.match(chromeAiModelStoreTarget.quickTest.details.primaryPath, /OptGuideOnDeviceModel$/);
   assert.ok(chromeAiModelStoreTarget.quickTest.details.channels.some((channel) => channel.name === "Dev" && channel.targetMatchesPrimary));
+  assert.equal(continuousMemoryFieldTarget.quickTest.state, "ONLINE");
+  assert.equal(continuousMemoryFieldTarget.restart.state, "NOT_APPLICABLE");
   assert.equal(retiredRouteTarget, undefined);
 });
 
@@ -940,11 +951,15 @@ test("service control registry exposes reviewed controls for newly supplemented 
   const mcpDoctor = controls.find((entry) => entry.controlTargetId === "mcp-colorgeek" && entry.action === "doctor");
   const nowledgeDoctor = controls.find((entry) => entry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && entry.action === "doctor");
   const nowledgeRestart = controls.find((entry) => entry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && entry.action === "restart");
+  const continuousMemoryFieldDoctor = controls.find((entry) => entry.controlTargetId === "continuous-memory-field" && entry.action === "doctor");
+  const continuousMemoryFieldRestart = controls.find((entry) => entry.controlTargetId === "continuous-memory-field" && entry.action === "restart");
 
-  for (const control of [gsdfDoctor, gsdfRestart, skill0Doctor, skill0Restart, mcpDoctor, nowledgeDoctor, nowledgeRestart]) {
+  for (const control of [gsdfDoctor, gsdfRestart, skill0Doctor, skill0Restart, mcpDoctor, nowledgeDoctor, nowledgeRestart, continuousMemoryFieldDoctor]) {
     assert.ok(control);
     assert.equal(control.status, "approved");
   }
+  assert.equal(continuousMemoryFieldRestart, undefined);
+  assert.equal(continuousMemoryFieldDoctor.timeoutSeconds, 120);
   assert.equal(gsdfRestart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
   assert.equal(skill0Restart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
   assert.equal(nowledgeRestart.uiLabel, "Reset");
@@ -960,6 +975,7 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   const skill0Gui = audit.services.find((row) => row.id === "skill-0-GUI:review-studio-http");
   const nowledgeCompat = audit.services.find((row) => row.id === "chatgpt-local-files-mcp:nowledge-compat-http");
   const chromeAiModelStore = audit.services.find((row) => row.id === "chrome-ai-model-store-filesystem");
+  const continuousMemoryField = audit.services.find((row) => row.id === "continuous-memory-field-on-demand-health");
 
   assert.equal(audit.schema, "devgov.service-onboarding-audit.v1");
   assert.ok(audit.summary.services >= state.ports.length);
@@ -992,6 +1008,14 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   assert.equal(chromeAiModelStore.flags.missingDashboardStatus, false);
   assert.ok(chromeAiModelStore.quickLinks.some((link) => link.label === "Doctor"));
   assert.ok(chromeAiModelStore.quickLinks.some((link) => link.label === "Health"));
+  assert.ok(continuousMemoryField);
+  assert.equal(continuousMemoryField.registryReadiness, "READY");
+  assert.equal(continuousMemoryField.restartState, "NOT_APPLICABLE");
+  assert.equal(continuousMemoryField.flags.missingDoctor, false);
+  assert.equal(continuousMemoryField.flags.missingRestart, false);
+  assert.equal(continuousMemoryField.flags.missingDashboardStatus, false);
+  assert.ok(continuousMemoryField.quickLinks.some((link) => link.label === "Doctor"));
+  assert.ok(continuousMemoryField.quickLinks.some((link) => link.label === "Health"));
 });
 
 test("doctor verifies DevGov dashboard governance without modifying canonical registries", async () => {
@@ -1008,6 +1032,8 @@ test("doctor verifies DevGov dashboard governance without modifying canonical re
   assert.ok(result.checks.some((check) => check.id === "script-scripts/register-gov-public-route-startup.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/require-governed-port.mjs" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "script-scripts/service-control/doctor-devgov-service-control.ps1" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "script-scripts/service-control/quickcheck-continuous-memory-field.ps1" && check.ok));
+  assert.ok(result.checks.some((check) => check.id === "script-scripts/service-control/doctor-continuous-memory-field.ps1" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "registry-service-onboarding.registry.json" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "registry-local-cloudflare.registry.json" && check.ok));
   assert.ok(result.checks.some((check) => check.id === "local-agent-registry" && check.ok));

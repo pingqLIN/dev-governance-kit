@@ -308,6 +308,15 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed GSDF/EOTF video adjuster ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "continuous-memory-field" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-continuous-memory-field.ps1"),
+      runtimeKind: "continuous-memory-field-on-demand-health",
+      summary: "Run the reviewed Continuous Memory Field on-demand doctor through DevGov local control."
+    };
+  }
   if (controlEntry.controlTargetId === "skill-0-gui" && controlEntry.action === "doctor") {
     return {
       controlTargetId: controlEntry.controlTargetId,

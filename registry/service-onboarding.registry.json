@@ -400,6 +400,24 @@
       "notes": "Local development UI for the GSDF/EOTF video adjuster. DevGov does not modify the target project during startup checks."
     },
     {
+      "id": "continuous-memory-field-on-demand-health",
+      "project": "Continuous Memory Field",
+      "service": "on-demand-health",
+      "readiness": "READY",
+      "ownerKind": "source-repo",
+      "sourceRef": "registry/service-control.registry.json#continuous-memory-field-doctor",
+      "healthProcedure": "Use the reviewed DevGov quickcheck wrapper to confirm package identity, core documentation, observation schema authority, source entry, and data placeholder without starting a runtime.",
+      "doctorProcedure": "Use the reviewed DevGov Doctor wrapper to run the quick project-shape probe, TypeScript typecheck, and package test suite as an on-demand health trigger.",
+      "resetProcedure": "Not applicable. Continuous Memory Field is a source-repo/library workflow with no resident runtime, listener, login startup, or reset action registered in DevGov.",
+      "startupProcedure": "No startup automation applies. Run project health checks on demand through the reviewed DevGov quickcheck or Doctor control.",
+      "dashboardProcedure": "Surface as an onboarding-only source-repo health target with Quick Test and Doctor controls through the local-only DevGov control listener.",
+      "cloudflareProcedure": "No Cloudflare route applies. Continuous Memory Field has no public health endpoint or runtime exposure boundary registered in DevGov.",
+      "reviewStatus": "reviewed",
+      "reviewEvidence": "registry/service-control.registry.json#continuous-memory-field-doctor",
+      "nextAction": "Keep the health trigger aligned with the repo's observation-first M0-M4 boundary; add separate governance before any future resident service or M7 LLM runtime is introduced.",
+      "notes": "Project health is intentionally evaluated by stable source-repo checks rather than a daemon. Canonical registry data stores only stable IDs and wrapper references, not machine-local evidence."
+    },
+    {
       "id": "chrome-ai-model-store-filesystem",
       "project": "chrome-ai-model-store",
       "service": "shared-model-cache",

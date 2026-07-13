@@ -889,6 +889,26 @@
       }
     },
     {
+      "id": "continuous-memory-field-doctor",
+      "controlTargetId": "continuous-memory-field",
+      "surfaceTargets": [
+        "continuous-memory-field",
+        "continuous-memory-field-on-demand-health"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-continuous-memory-field.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Run the reviewed source-repo quick probe, TypeScript typecheck, and package tests without starting a listener, registering startup, or invoking M7 LLM research scripts.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "Doctor does not modify DevGov registry or runtime state. If package tests fail, inspect the target repo test output and keep restart/startup actions out of DevGov until separately reviewed.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed on-demand health trigger for Continuous Memory Field as a source-repo/library workflow."
+    },
+    {
       "id": "chrome-ai-model-store-doctor",
       "controlTargetId": "chrome-ai-model-store",
       "surfaceTargets": [
