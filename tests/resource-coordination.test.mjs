@@ -121,7 +121,7 @@ test("resource coordination memory hint proposal rejects unsafe text", () => {
   assert.throws(
     () => buildResourceCoordinationMemoryHintProposal({
       project: "devgov",
-      intent: "Use sk-1234567890abcdefghijklmnop"
+      intent: `Use ${["sk", "1234567890abcdefghijklmnop"].join("-")}`
     }),
     /credential-like values/
   );

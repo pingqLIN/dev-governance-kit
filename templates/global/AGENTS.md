@@ -131,6 +131,13 @@ Agents should minimize non-actionable commentary. Report progress when it:
 - summarizes a completed phase, or
 - records a high-risk gate decision.
 
+For tasks with multiple execution items, if any item fails, errors, is blocked
+or paused, or remains incomplete, the final response must include a standalone
+status block at the beginning or end. State plainly that the task has a
+`FAILURE`, `ERROR`, or `INCOMPLETE` item, name the affected item and its current
+state, and do not bury the negative status in routine details or describe the
+overall task as complete.
+
 Platform-specific reporting cadence belongs in platform overlays.
 
 ### 1.3 Execution Modes
