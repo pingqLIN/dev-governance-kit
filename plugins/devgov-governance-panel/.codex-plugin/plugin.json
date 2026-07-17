@@ -1,15 +1,15 @@
 {
   "name": "devgov-governance-panel",
-  "version": "0.1.0",
-  "description": "A native-feeling, read-only DevGov governance pulse for ChatGPT and Codex.",
+  "version": "0.2.1",
+  "description": "A native-feeling DevGov governance pulse with reviewed local controls for ChatGPT and Codex.",
   "author": {
     "name": "DevGov"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "DevGov Governance Pulse",
-    "shortDescription": "See high-value governance health inside ChatGPT.",
-    "longDescription": "A responsive read-only panel for service exceptions, protected routes, registered projects, and shared host pressure.",
+    "shortDescription": "See governance health and run reviewed controls.",
+    "longDescription": "A host-themed, content-sized governance summary with full details and approved Doctor or Restart actions in Manage mode.",
     "developerName": "DevGov",
     "category": "Productivity",
     "capabilities": ["Read", "Interactive"],
