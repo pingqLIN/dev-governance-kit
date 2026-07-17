@@ -6,13 +6,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "Resolve-DevGovProjectsRoot.ps1")
 
 if ($ControlTargetId -ne "tunnel-client-local-filesystem-mcp" -or $Action -ne "doctor") {
   throw "Unsupported control request: $ControlTargetId/$Action"
 }
 
 $WorkspaceRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$TargetRoot = Join-Path (Split-Path -Parent $WorkspaceRoot) "openai-mcp-tunnel"
+$TargetRoot = Join-Path (Resolve-DevGovProjectsRoot -WorkspaceRoot $WorkspaceRoot) "openai-mcp-tunnel"
 $RuntimeScript = Join-Path $TargetRoot "scripts\tunnel-client\tunnel-client-runtime.ps1"
 
 if (-not (Test-Path -LiteralPath $RuntimeScript)) {

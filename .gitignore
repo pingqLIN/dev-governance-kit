@@ -1,3 +1,4 @@
 reports/*
 !reports/.gitkeep
 
+node_modules/

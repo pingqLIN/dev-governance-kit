@@ -1,0 +1,20 @@
+{
+  "name": "devgov-local",
+  "interface": {
+    "displayName": "DevGov Local"
+  },
+  "plugins": [
+    {
+      "name": "devgov-governance-panel",
+      "source": {
+        "source": "local",
+        "path": "./plugins/devgov-governance-panel"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

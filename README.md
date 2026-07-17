@@ -28,6 +28,8 @@ Chinese companion and reference documents:
 - [docs/context-budget-governance.zh-tw.md](docs/context-budget-governance.zh-tw.md)
 - [docs/resource-coordination-governance.md](docs/resource-coordination-governance.md)
 - [docs/resource-coordination-governance.zh-tw.md](docs/resource-coordination-governance.zh-tw.md)
+- [docs/chatgpt-governance-panel.md](docs/chatgpt-governance-panel.md)
+- [docs/chatgpt-governance-panel.zh-tw.md](docs/chatgpt-governance-panel.zh-tw.md)
 - [docs/local-antivirus-governance.md](docs/local-antivirus-governance.md)
 - [docs/local-antivirus-governance.zh-tw.md](docs/local-antivirus-governance.zh-tw.md)
 - [templates/PORTS.zh-tw.md](templates/PORTS.zh-tw.md)

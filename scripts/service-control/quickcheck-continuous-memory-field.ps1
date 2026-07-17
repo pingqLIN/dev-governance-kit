@@ -1,7 +1,8 @@
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "Resolve-DevGovProjectsRoot.ps1")
 
 $WorkspaceRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$ProjectsRoot = Split-Path -Parent $WorkspaceRoot
+$ProjectsRoot = Resolve-DevGovProjectsRoot -WorkspaceRoot $WorkspaceRoot
 $TargetRoot = Join-Path $ProjectsRoot "memory-field\Continuous Memory Field"
 $PackageJsonPath = Join-Path $TargetRoot "package.json"
 $ObservationSchemaPath = Join-Path $TargetRoot "design\observation.schema.json"

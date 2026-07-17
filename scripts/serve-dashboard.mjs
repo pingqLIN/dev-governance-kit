@@ -9,6 +9,7 @@ import { buildResourceCoordinationSnapshot } from "./lib/resource-coordination-c
 import { loadServiceOnboardingAudit } from "./lib/service-onboarding-core.mjs";
 import { executeServiceControl, SERVICE_CONTROL_HOST, SERVICE_CONTROL_PORT } from "./lib/service-control-core.mjs";
 import { isAllowedControlOrigin } from "./lib/service-control-resolver.mjs";
+import { handleGovernanceMcpRequest } from "./lib/chatgpt-governance-app.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = parseArgs(process.argv.slice(2));
@@ -22,6 +23,10 @@ const server = http.createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${host}:${port}`);
     if (url.pathname === "/health") {
       sendJson(response, { ok: true, project: "devgov", service: "dashboard-http", port });
+      return;
+    }
+    if (url.pathname === "/mcp") {
+      await handleGovernanceMcpRequest(request, response, root);
       return;
     }
     if (url.pathname === "/favicon.ico") {
