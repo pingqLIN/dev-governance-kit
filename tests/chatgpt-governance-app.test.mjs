@@ -9,6 +9,11 @@ import {
   RESTART_CONFIRMATION_TTL_MS,
   renderGovernancePanelHtml
 } from "../scripts/lib/chatgpt-governance-app.mjs";
+import {
+  buildGovernanceWorkspaceView,
+  buildWorkspacePathPrediction,
+  GOVERNANCE_WORKSPACE_VIEWS
+} from "../scripts/lib/governance-workspace-core.mjs";
 
 test("governance pulse keeps only high-value runtime and governance signals", () => {
   const pulse = buildGovernancePulse({
@@ -102,10 +107,10 @@ test("restart confirmations are target-bound, short-lived, and single-use", () =
   );
 });
 
-test("governance panel matches host styling, stays content-sized, and uses host controls", () => {
+test("governance panel renders the finite Fusion Depth Drawer with host controls", () => {
   const html = renderGovernancePanelHtml();
   assert.equal(GOVERNANCE_PANEL_RESOURCE_URI, "ui://devgov/governance-pulse.html");
-  assert.match(html, /DevGov governance/);
+  assert.match(html, />DevGov</);
   assert.match(html, /openai:set_globals/);
   assert.match(html, /setWidgetState/);
   assert.match(html, /requestDisplayMode/);
@@ -114,23 +119,98 @@ test("governance panel matches host styling, stays content-sized, and uses host 
   assert.match(html, /run_governance_doctor/);
   assert.match(html, /prepare_governance_restart/);
   assert.match(html, /restart_governed_service/);
-  assert.match(html, /Confirm restart/);
-  assert.match(html, /role="alertdialog"/);
-  assert.match(html, /DevGov 治理/);
+  assert.match(html, /query_governance_workspace/);
+  assert.match(html, /predict_governance_workspace_path/);
+  assert.match(html, /aria-modal="true"/);
+  assert.match(html, /role="dialog"/);
+  assert.match(html, /深度資料夾|Depth folder/);
   assert.match(html, /window\.openai\?\.locale/);
-  assert.match(html, /@media\(max-width:460px\)/);
-  assert.match(html, /@media\(max-width:300px\)/);
+  assert.match(html, /@media\(max-width:540px\)/);
+  assert.match(html, /@media\(max-width:340px\)/);
+  assert.match(html, /prefers-reduced-motion:reduce/);
   assert.match(html, /safe-area-inset-bottom/);
   assert.match(html, /styles\?\.variables/);
   assert.match(html, /--color-background-primary/);
   assert.match(html, /--host-bg:#f7f7f5/);
   assert.match(html, /data-display-mode/);
-  assert.match(html, /INLINE_EXCEPTION_LIMIT=2/);
-  assert.match(html, /issues\.slice\(0,INLINE_EXCEPTION_LIMIT\)/);
-  assert.match(html, /full-detail/);
-  assert.match(html, /more in Manage/);
+  assert.match(html, /height:min\(620px/);
+  assert.match(html, /html,body\{[^}]*overflow:hidden/);
+  assert.match(html, /\.view-button\{[^}]*min-height:44px/);
+  assert.match(html, /class="actions-cell"/);
+  assert.match(html, /th\.actions-cell,.data-table td\.actions-cell\{display:table-cell\}/);
+  assert.match(html, /translate3d\(14px,-8px,-20px\) scale\(\.97\)/);
+  assert.match(html, /translate3d\(27px,-15px,-40px\) scale\(\.94\)/);
+  assert.match(html, /min-height:44px/);
+  assert.match(html, /aria-hidden="true"/);
+  assert.match(html, /role="tablist"/);
+  assert.match(html, /Workspace Predictor/);
+  assert.match(html, /Web Console Events/);
   assert.match(html, /minmax\(0,1fr\)/);
-  assert.match(html, /overflow-wrap:anywhere/);
-  assert.doesNotMatch(html, /100vh|overflow:hidden|overflow-y|background:var\(--panel\)/);
+  assert.doesNotMatch(html, /100vh|overflow-y|background:var\(--panel\)|min-height:520px|min-height:500px/);
   assert.doesNotMatch(html, /<iframe/i);
+});
+
+test("workspace view exposes all 15 views through sanitized paginated payloads", () => {
+  const services = Array.from({ length: 8 }, (_, index) => ({
+    id: `service-${index}`,
+    controlTargetId: `service-${index}`,
+    label: `Service ${index}`,
+    project: "demo",
+    quickTest: {
+      state: index === 0 ? "ERROR" : "ONLINE",
+      latencyMs: index,
+      detail: index === 0 ? "C:\\Users\\operator\\secret\\error.log token-abcdefghijklmnop" : "healthy"
+    }
+  }));
+  const result = buildGovernanceWorkspaceView({
+    state: { summary: { registeredProjects: 1, ports: 2, publicRoutes: 3 } },
+    serviceStatus: { generatedAt: "2026-07-18T00:00:00.000Z", services },
+    resourceSnapshot: { host: { cpuPercent: 46.2, memoryUsedPercent: 68.6 } },
+    approvedControls: [{ controlTargetId: "service-0", action: "doctor", approved: true, status: "approved" }]
+  }, { viewId: "service-status", page: 2, pageSize: 6 });
+
+  assert.equal(GOVERNANCE_WORKSPACE_VIEWS.length, 15);
+  assert.equal(result.schema, "devgov.governance-workspace-view.v1");
+  assert.equal(result.navigation.flatMap((folder) => folder.views).length, 15);
+  assert.equal(result.view.rows.length, 2);
+  assert.equal(result.view.page.number, 2);
+  assert.equal(result.view.page.totalRows, 8);
+  assert.doesNotMatch(JSON.stringify(result), /C:\\Users|abcdefghijklmnop/);
+
+  const firstPage = buildGovernanceWorkspaceView({
+    state: { summary: {} },
+    serviceStatus: { services },
+    resourceSnapshot: {},
+    approvedControls: [{ controlTargetId: "service-0", action: "doctor", approved: true, status: "approved" }]
+  }, { viewId: "service-status", page: 1, pageSize: 6 });
+  assert.deepEqual(firstPage.view.rows[0].actions, ["doctor"]);
+
+  const restartReady = buildGovernanceWorkspaceView({
+    state: { summary: {} },
+    serviceStatus: { services },
+    resourceSnapshot: {},
+    approvedControls: [{
+      controlTargetId: "service-0",
+      action: "restart",
+      approved: true,
+      status: "approved",
+      restartPolicy: {
+        permissionBoundary: "operator confirmation",
+        backupExpectation: "no persistent state",
+        rollbackExpectation: "run doctor"
+      }
+    }]
+  }, { viewId: "service-status", page: 1, pageSize: 6 });
+  assert.deepEqual(restartReady.view.rows[0].actions, ["restart"]);
+});
+
+test("workspace predictor classifies paths without returning the supplied local path", () => {
+  const state = { workspacePrediction: { layers: [{ id: "workspace", scope: "workspace", status: "active" }], rules: [{ id: "one" }] } };
+  const ready = buildWorkspacePathPrediction(state, "Q:\\Projects\\example-app");
+  const blocked = buildWorkspacePathPrediction(state, "C:\\Users\\operator\\example-app");
+
+  assert.equal(ready.state, "READY");
+  assert.equal(ready.projectName, "example-app");
+  assert.equal(blocked.state, "BLOCKED");
+  assert.doesNotMatch(JSON.stringify(blocked), /C:\\Users/);
 });
