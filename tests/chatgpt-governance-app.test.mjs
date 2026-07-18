@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { Script } from "node:vm";
 import {
   buildGovernancePulse,
   clearRestartConfirmations,
@@ -119,6 +120,9 @@ test("restart confirmations are target-bound, short-lived, and single-use", () =
 
 test("governance panel renders the finite Fusion Depth Drawer with host controls", () => {
   const html = renderGovernancePanelHtml();
+  const embeddedScript = html.match(/<script>([\s\S]*)<\/script>/)?.[1];
+  assert.ok(embeddedScript);
+  assert.doesNotThrow(() => new Script(embeddedScript));
   assert.equal(GOVERNANCE_PANEL_RESOURCE_URI, "ui://devgov/governance-pulse.html");
   assert.match(html, />DevGov</);
   assert.match(html, /openai:set_globals/);
@@ -133,7 +137,19 @@ test("governance panel renders the finite Fusion Depth Drawer with host controls
   assert.match(html, /predict_governance_workspace_path/);
   assert.match(html, /aria-modal="true"/);
   assert.match(html, /role="dialog"/);
-  assert.match(html, /深度資料夾|Depth folder/);
+  assert.match(html, /class="depth-dock"/);
+  assert.match(html, /class="depth-scene" id="depth-scene"/);
+  assert.match(html, /class="transition-stack" id="transition-stack"/);
+  assert.match(html, /class="transition-sheet"/);
+  assert.match(html, /const VIEW_STACK=/);
+  assert.match(html, /data-depth-direction=/);
+  assert.match(html, /data-depth-phase/);
+  assert.match(html, /beginDepthTransition/);
+  assert.match(html, /animateDepthPlane/);
+  assert.match(html, /clearDepthTransition/);
+  assert.match(html, /viewRequestSequence/);
+  assert.match(html, /requestId!==viewRequestSequence/);
+  assert.match(html, /pendingDepthFrom/);
   assert.match(html, /window\.openai\?\.locale/);
   assert.match(html, /@media\(max-width:540px\)/);
   assert.match(html, /@media\(max-width:340px\)/);
@@ -143,21 +159,60 @@ test("governance panel renders the finite Fusion Depth Drawer with host controls
   assert.match(html, /--color-background-primary/);
   assert.match(html, /--host-bg:#f7f7f5/);
   assert.match(html, /data-display-mode/);
-  assert.match(html, /height:min\(620px/);
+  assert.match(html, /\.shell\{height:620px/);
+  assert.match(html, /data-display-mode="fullscreen"\] \.shell\{height:720px/);
   assert.match(html, /html,body\{[^}]*overflow:hidden/);
-  assert.match(html, /\.view-button\{[^}]*min-height:44px/);
+  assert.match(html, /\.view-button\{[^}]*min-height:26px/);
+  assert.match(html, /\.depth-dock\{[^}]*overflow-y:auto/);
+  assert.match(html, /scrollbar-width:none/);
+  assert.match(html, /\.depth-dock::-webkit-scrollbar\{display:none\}/);
+  assert.match(html, /touch-action:pan-y/);
+  assert.match(html, /\.depth-dock,\.depth-dock \.view-button\{cursor:grab/);
+  assert.match(html, /alignActiveDepth/);
+  assert.match(html, /scrollIntoView\(\{block:"nearest"/);
+  assert.match(html, /window\.addEventListener\("pointermove"/);
+  assert.match(html, /window\.addEventListener\("pointerup",endDepthDockDrag\)/);
+  assert.match(html, /window\.addEventListener\("blur",\(\)=>endDepthDockDrag\(\)\)/);
+  assert.doesNotMatch(html, /setPointerCapture|releasePointerCapture/);
+  assert.match(html, /suppressDepthDockClickUntil/);
+  assert.match(html, /DEPTH_DRAG_CLICK_GUARD_MS=140/);
+  assert.match(html, /class="active-sheet" id="active-sheet"/);
+  assert.match(html, /\.active-sheet\{[^}]*display:block/);
+  assert.match(html, /\.workspace\[data-predictor="true"\]\{grid-template-rows:auto auto auto auto minmax\(0,1fr\) auto\}/);
+  assert.match(html, /workspace"\)\.dataset\.predictor=String\(predictorActive\)/);
   assert.match(html, /class="actions-cell"/);
   assert.match(html, /th\.actions-cell,.data-table td\.actions-cell\{display:table-cell\}/);
-  assert.match(html, /translate3d\(14px,-8px,-20px\) scale\(\.97\)/);
-  assert.match(html, /translate3d\(27px,-15px,-40px\) scale\(\.94\)/);
+  assert.match(html, /translate3d\(11px,-6px,-26px\) scale\(\.978\)/);
+  assert.match(html, /translate3d\(20px,-11px,-52px\) scale\(\.956\)/);
+  assert.match(html, /rotateY\("\+rotationY\+"deg\)/);
+  assert.match(html, /compact\?10:12/);
+  assert.match(html, /compact\?7\+depth\*8:20\+depth\*20/);
+  assert.match(html, /compact\?depth\*8:depth\*10/);
+  assert.match(html, /Math\.max\(compact\?\.18:\.28,\.78-depth\*\(compact\?\.1:\.032\)\)/);
+  assert.match(html, /duration:260/);
+  assert.match(html, /duration:480/);
+  assert.match(html, /DEPTH_MIN_HOLD_MS=520/);
+  assert.match(html, /transition\.enteredAt=performance\.now\(\)/);
+  assert.match(html, /await delay\(holdRemaining\)/);
+  assert.match(html, /iterations:Infinity/);
+  assert.match(html, /\.slice\(0,compact\?5:VIEW_STACK\.length\)/);
   assert.match(html, /min-height:44px/);
   assert.match(html, /aria-hidden="true"/);
   assert.match(html, /role="tablist"/);
   assert.match(html, /Workspace Predictor/);
   assert.match(html, /Web Console Events/);
   assert.match(html, /minmax\(0,1fr\)/);
-  assert.doesNotMatch(html, /100vh|overflow-y|background:var\(--panel\)|min-height:520px|min-height:500px/);
+  assert.match(html, /\.depth-dock,\.preview-sheet\{display:none\}/);
+  assert.match(html, /\.transition-stack\{display:none!important\}/);
+  assert.doesNotMatch(html, /100d?vh|background:var\(--panel\)|min-height:520px|min-height:500px/);
+  assert.doesNotMatch(html, /class="depth-rail"|class="folder-tabs"/);
+  assert.doesNotMatch(html, /<script[^>]+src=|gsap\./i);
   assert.doesNotMatch(html, /<iframe/i);
+
+  const depthAnimationStart = html.indexOf("async function animateDepthPlane");
+  const depthAnimationEnd = html.indexOf("function renderWorkspace", depthAnimationStart);
+  const depthAnimation = html.slice(depthAnimationStart, depthAnimationEnd);
+  assert.ok(depthAnimation.indexOf("await transition.entered") < depthAnimation.indexOf('transition.phase="settling"'));
 });
 
 test("workspace view exposes all 15 views through sanitized paginated payloads", () => {
