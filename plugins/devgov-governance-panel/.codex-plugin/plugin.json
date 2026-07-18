@@ -1,15 +1,15 @@
 {
   "name": "devgov-governance-panel",
-  "version": "0.2.1",
-  "description": "A native-feeling DevGov governance pulse with reviewed local controls for ChatGPT and Codex.",
+  "version": "0.3.0",
+  "description": "A Fusion-native DevGov governance workspace with a finite Depth Drawer and reviewed local controls.",
   "author": {
     "name": "DevGov"
   },
   "skills": "./skills/",
   "interface": {
     "displayName": "DevGov Governance Pulse",
-    "shortDescription": "See governance health and run reviewed controls.",
-    "longDescription": "A host-themed, content-sized governance summary with full details and approved Doctor or Restart actions in Manage mode.",
+    "shortDescription": "Explore governance through the Fusion Depth Drawer.",
+    "longDescription": "A host-themed finite viewport with 15 governed views, shallow Z-axis navigation, workspace prediction, and approved Doctor or Restart controls.",
     "developerName": "DevGov",
     "category": "Productivity",
     "capabilities": ["Read", "Interactive"],

@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildGovernancePulse,
   clearRestartConfirmations,
   consumeRestartConfirmation,
   GOVERNANCE_PANEL_RESOURCE_URI,
+  GOVERNANCE_PANEL_VERSION,
   issueRestartConfirmation,
   RESTART_CONFIRMATION_TTL_MS,
   renderGovernancePanelHtml
@@ -14,6 +16,14 @@ import {
   buildWorkspacePathPrediction,
   GOVERNANCE_WORKSPACE_VIEWS
 } from "../scripts/lib/governance-workspace-core.mjs";
+
+test("plugin manifest version matches the governance MCP App version", () => {
+  const manifest = JSON.parse(readFileSync(
+    new URL("../plugins/devgov-governance-panel/.codex-plugin/plugin.json", import.meta.url),
+    "utf8"
+  ));
+  assert.equal(manifest.version, GOVERNANCE_PANEL_VERSION);
+});
 
 test("governance pulse keeps only high-value runtime and governance signals", () => {
   const pulse = buildGovernancePulse({

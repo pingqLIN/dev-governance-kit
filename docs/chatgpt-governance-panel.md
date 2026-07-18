@@ -40,7 +40,7 @@ npm run dashboard
 Install the repo marketplace only after reviewing the plugin manifests:
 
 ```powershell
-codex plugin marketplace add Q:\Projects\dev-governance-kit.worktrees\chatgpt-native-panel-20260717
+codex plugin marketplace add Q:\Projects\dev-governance-kit
 codex plugin add devgov-governance-panel@devgov-local
 ```
 
