@@ -819,6 +819,10 @@ function withControlReadiness(target) {
 }
 
 function deriveControlReadiness(target, options = {}) {
+  if (target.governanceOnly === true) {
+    return "NOT_APPLICABLE";
+  }
+
   if (isControlSuppressedTarget(target)) {
     return "BLOCKED";
   }
@@ -1343,6 +1347,70 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
         state: "NOT_APPLICABLE",
         ref: "",
         notes: continuousMemoryField.resetProcedure
+      }
+    });
+  }
+  const externalAiSurfaces = [
+    {
+      id: "openai-api",
+      project: "openai",
+      label: "OpenAI API",
+      kind: "external-api-governance",
+      executionSurface: "api",
+      target: "external-provider-api"
+    },
+    {
+      id: "google-antigravity-api",
+      project: "google-antigravity",
+      label: "Google / Antigravity API",
+      kind: "external-api-governance",
+      executionSurface: "api",
+      target: "external-provider-api"
+    },
+    {
+      id: "chatgpt-web-manual",
+      project: "chatgpt",
+      label: "ChatGPT Web (manual)",
+      kind: "manual-web-governance",
+      executionSurface: "manual-web",
+      target: "external-manual-web"
+    },
+    {
+      id: "gemini-web-manual",
+      project: "gemini",
+      label: "Gemini Web (manual)",
+      kind: "manual-web-governance",
+      executionSurface: "manual-web",
+      target: "external-manual-web"
+    }
+  ];
+  for (const surface of externalAiSurfaces) {
+    const entry = onboardingEntries.find((candidate) => candidate.id === surface.id);
+    if (!entry) continue;
+    targets.push({
+      id: `onboarding:${entry.id}`,
+      controlTargetId: entry.id,
+      project: surface.project,
+      label: surface.label,
+      kind: surface.kind,
+      executionSurface: surface.executionSurface,
+      visibility: "external",
+      governanceOnly: true,
+      registryStatus: entry.reviewStatus === "reviewed" ? "approved" : "candidate",
+      url: "",
+      target: surface.target,
+      quickTest: buildQuickTest("", {
+        notes: entry.healthProcedure
+      }),
+      doctor: {
+        state: "NOT_APPLICABLE",
+        ref: "",
+        notes: entry.doctorProcedure
+      },
+      restart: {
+        state: "NOT_APPLICABLE",
+        ref: "",
+        notes: entry.resetProcedure
       }
     });
   }
@@ -3356,6 +3424,9 @@ const messages = {
       doctor: 'Doctor',
       restart: 'Restart',
       readiness: 'Readiness',
+      executionSurface: 'Execution Surface',
+      registryReadiness: 'Registry Readiness',
+      controlReadiness: 'Control Readiness',
       nextAction: 'Next Action',
       tags: 'Tags',
       sources: 'Sources',
@@ -3668,6 +3739,9 @@ const messages = {
       doctor: '診斷 (Doctor)',
       restart: '重啟 (Restart)',
       readiness: '就緒狀態',
+      executionSurface: '執行介面',
+      registryReadiness: '登記就緒度 (Registry)',
+      controlReadiness: '控制就緒度 (Control)',
       nextAction: '下一步',
       tags: '標籤',
       sources: '來源',
@@ -5173,11 +5247,13 @@ function renderServiceStatusTable(query, rows) {
 }
 function renderServiceOnboardingTable(query, rows) {
   const filtered = rows.filter(row => match(row, query));
-  renderTable('service-onboarding', [t('labels.project'), t('labels.service'), t('labels.socket'), t('labels.readiness'), t('labels.gaps'), t('labels.links')], filtered.map(row => [
+  renderTable('service-onboarding', [t('labels.project'), t('labels.service'), t('labels.executionSurface'), t('labels.socket'), t('labels.registryReadiness'), t('labels.controlReadiness'), t('labels.gaps'), t('labels.links')], filtered.map(row => [
     textCell(row.project),
     textCell(row.service),
+    pill(row.executionSurface),
     '<code>' + esc(row.socket) + '</code>',
-    pill(row.readiness),
+    pill(row.registryReadiness),
+    pill(row.controlReadiness || row.readiness),
     renderGapCell(row),
     renderOnboardingLinks(row)
   ]));

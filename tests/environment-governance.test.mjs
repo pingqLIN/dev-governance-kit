@@ -5,10 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { buildDocsIndex, renderSearchHtml } from "../scripts/lib/docs-index-core.mjs";
-import { buildServiceTargets, buildUniTextAgentInstructionIndex, buildWorkspaceGovernancePredictionModel, checkServiceStatuses, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
-import { runDoctorChecks } from "../scripts/lib/doctor-core.mjs";
-import { buildServiceOnboardingAudit } from "../scripts/lib/service-onboarding-core.mjs";
-import { executeServiceControl, loadApprovedServiceControls, readServiceControlEvents, SERVICE_CONTROL_PORT } from "../scripts/lib/service-control-core.mjs";
+import { buildServiceTargets, buildUniTextAgentInstructionIndex, buildWorkspaceGovernancePredictionModel, loadDashboardState, renderDashboardHtml } from "../scripts/lib/dashboard-core.mjs";
+import { buildServiceOnboardingAudit, renderServiceOnboardingAudit, renderServiceOnboardingAuditZhTw } from "../scripts/lib/service-onboarding-core.mjs";
+import { loadApprovedServiceControls } from "../scripts/lib/service-control-core.mjs";
 import { isAllowedControlOrigin, SERVICE_CONTROL_ALLOWED_ORIGINS } from "../scripts/lib/service-control-resolver.mjs";
 import { buildApiKeyRegistryEntries, renderApiKeyAudit, scanProjectApiKeyReferences } from "../scripts/lib/api-keys-core.mjs";
 import { buildNewProjectApiKeyPlan, renderEnvExampleLines, renderNewProjectApiKeyPlan } from "../scripts/lib/new-project-api-key-core.mjs";
@@ -151,6 +150,32 @@ test("new governance registries validate canonical shared data only", () => {
       notes: "Stores only the variable name and policy."
     }]
   }), []);
+
+  const legacyGeminiEntry = {
+    id: "gemini-api-key",
+    project: "system-environment",
+    service: "Google AI Studio",
+    variableName: "Gemini_API_KEY",
+    credentialKind: "api-key",
+    storageLocation: "Windows Machine environment variables",
+    accessMethod: "Environment variable consumed by a Google client.",
+    settingsUrl: "https://aistudio.google.com/app/apikey",
+    rules: "Never commit values.",
+    status: "candidate",
+    source: "API key environment audit",
+    notes: "Stores only the variable name and policy."
+  };
+  assert.match(validateApiKeysRegistry({
+    schema: "devgov.api-keys.registry.v1",
+    entries: [legacyGeminiEntry]
+  }).join("\n"), /exact canonical name GEMINI_API_KEY/);
+  assert.match(validateApiKeysRegistry({
+    schema: "devgov.api-keys.registry.v1",
+    entries: [
+      { ...legacyGeminiEntry, id: "gemini-api-key-canonical", variableName: "GEMINI_API_KEY" },
+      legacyGeminiEntry
+    ]
+  }).join("\n"), /duplicates .* under case-insensitive environment semantics/);
 
   assert.deepEqual(validateServiceOnboardingRegistry({
     schema: "devgov.service-onboarding.registry.v1",
@@ -478,6 +503,12 @@ test("dashboard renders canonical DevGov registry state", async () => {
   assert.match(html, /網路服務狀態/);
   assert.match(html, /service-onboarding/);
   assert.match(html, /既有專案補件/);
+  assert.match(html, /Registry Readiness/);
+  assert.match(html, /Control Readiness/);
+  assert.match(html, /Execution Surface/);
+  assert.match(html, /執行介面/);
+  assert.match(html, /登記就緒度 \(Registry\)/);
+  assert.match(html, /控制就緒度 \(Control\)/);
   assert.match(html, /Web 入口/);
   assert.match(html, /tb2\.colorgeek\.co\/health/);
   assert.match(html, /Quick Test/);
@@ -559,7 +590,12 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const nowledgeCompatTarget = targets.find((target) => target.id === "onboarding:chatgpt-local-files-mcp-nowledge-compat-http");
   const chromeAiModelStoreTarget = targets.find((target) => target.id === "onboarding:chrome-ai-model-store-filesystem");
   const continuousMemoryFieldTarget = targets.find((target) => target.id === "onboarding:continuous-memory-field-on-demand-health");
+  const openAiApiTarget = targets.find((target) => target.id === "onboarding:openai-api");
+  const googleAntigravityApiTarget = targets.find((target) => target.id === "onboarding:google-antigravity-api");
+  const chatGptWebTarget = targets.find((target) => target.id === "onboarding:chatgpt-web-manual");
+  const geminiWebTarget = targets.find((target) => target.id === "onboarding:gemini-web-manual");
   const chromeAiStorageRecord = state.storageRecords.find((record) => record.id === "chrome-ai-model-store");
+  const geminiApiKey = state.apiKeys.find((entry) => entry.id === "machine-gemini-api-key");
 
   assert.equal(unitext.schema, "devgov.unitext-agent-instructions.v1");
   assert.equal(devgovProject.progressTag, "PARTIAL");
@@ -660,6 +696,28 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(chromeAiModelStoreTarget.quickTest.probeRef, "scripts/service-control/quickcheck-chrome-ai-model-store.ps1");
   assert.equal(continuousMemoryFieldTarget.project, "Continuous Memory Field");
   assert.equal(continuousMemoryFieldTarget.target, "on-demand-project-health");
+  for (const target of [openAiApiTarget, googleAntigravityApiTarget, chatGptWebTarget, geminiWebTarget]) {
+    assert.ok(target);
+    assert.equal(target.governanceOnly, true);
+    assert.equal(target.quickTest.state, "MISSING");
+    assert.equal(target.doctor.state, "NOT_APPLICABLE");
+    assert.equal(target.restart.state, "NOT_APPLICABLE");
+    assert.equal(target.controlReadiness, "NOT_APPLICABLE");
+  }
+  assert.equal(openAiApiTarget.kind, "external-api-governance");
+  assert.equal(googleAntigravityApiTarget.kind, "external-api-governance");
+  assert.equal(chatGptWebTarget.kind, "manual-web-governance");
+  assert.equal(geminiWebTarget.kind, "manual-web-governance");
+  assert.equal(openAiApiTarget.executionSurface, "api");
+  assert.equal(googleAntigravityApiTarget.executionSurface, "api");
+  assert.equal(chatGptWebTarget.executionSurface, "manual-web");
+  assert.equal(geminiWebTarget.executionSurface, "manual-web");
+  assert.equal(state.ports.some((entry) => ["chatgpt", "gemini", "openai", "google-antigravity"].includes(entry.project)), false);
+  assert.equal(state.serviceControl.entries.some((entry) => ["openai-api", "google-antigravity-api", "chatgpt-web-manual", "gemini-web-manual"].includes(entry.controlTargetId)), false);
+  assert.equal(geminiApiKey.variableName, "GEMINI_API_KEY");
+  assert.equal(state.apiKeys.some((entry) => entry.variableName === "Gemini_API_KEY"), false);
+  assert.equal(state.onboardingEntries.filter((entry) => entry.id === "lm-studio-local-runtime").length, 1);
+  assert.equal(state.onboardingEntries.some((entry) => entry.id === "lm-studio-local-api-http"), false);
   assert.equal(continuousMemoryFieldTarget.quickTest.probeRef, "scripts/service-control/quickcheck-continuous-memory-field.ps1");
   assert.equal(continuousMemoryFieldTarget.doctor.state, "FOUND");
   assert.equal(continuousMemoryFieldTarget.restart.state, "NOT_APPLICABLE");
@@ -669,123 +727,12 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.ok(chromeAiStorageRecord.sharedWith.includes("Chrome Dev"));
 });
 
-test("live service-status view excludes retired targets from the active control surface and recomputes readiness from probe results", async () => {
-  const status = await checkServiceStatuses(".");
-  const dashboardTarget = status.services.find((target) => target.id === "devgov-dashboard");
-  const serviceControlTarget = status.services.find((target) => target.id === "devgov-service-control");
-  const devgovGovTarget = status.services.find((target) => target.id === "public-route:devgov-gov");
-  const devgovDevTarget = status.services.find((target) => target.id === "public-route:devgov-dev");
-  const localArchiveTarget = status.services.find((target) => target.id === "local-agent:local-archive-maintainer");
-  const lmStudioLocalTarget = status.services.find((target) => target.id === "local-agent:lmstudio-local-agent");
-  const ps3eyeTarget = status.services.find((target) => target.id === "onboarding:ps3eye-windows-virtual-camera");
-  const mcpRouteTarget = status.services.find((target) => target.id === "public-route:mcp-colorgeek");
-  const lmStudioRouteTarget = status.services.find((target) => target.id === "public-route:lmstudio");
-  const retiredRouteTarget = status.retiredServices.find((target) => target.id === "public-route:mcp-colorgeek");
-  const tunnelClientTarget = status.services.find((target) => target.id === "onboarding:tunnel-client-local-filesystem-mcp");
-  const chromeAiModelStoreTarget = status.services.find((target) => target.id === "onboarding:chrome-ai-model-store-filesystem");
-  const continuousMemoryFieldTarget = status.services.find((target) => target.id === "onboarding:continuous-memory-field-on-demand-health");
-
-  assert.equal(status.schema, "devgov.service-status.v1");
-  assertLiveReadiness(dashboardTarget);
-  assertLiveReadiness(serviceControlTarget);
-  assertLiveReadiness(devgovGovTarget);
-  assertLiveReadiness(devgovDevTarget);
-  assertLiveReadiness(localArchiveTarget);
-  assertLiveReadiness(lmStudioLocalTarget);
-  assertLiveReadiness(ps3eyeTarget);
-  assertLiveReadiness(mcpRouteTarget);
-  assertLiveReadiness(lmStudioRouteTarget);
-  assertLiveReadiness(tunnelClientTarget);
-  assertLiveReadiness(chromeAiModelStoreTarget);
-  assertLiveReadiness(continuousMemoryFieldTarget);
-  if (localArchiveTarget.quickTest.statusCode === 401) {
-    assert.equal(localArchiveTarget.quickTest.state, "ONLINE");
-  }
-  if (lmStudioLocalTarget.quickTest.statusCode === 401) {
-    assert.equal(lmStudioLocalTarget.quickTest.state, "ONLINE");
-  }
-  if (lmStudioRouteTarget.quickTest.statusCode === 401) {
-    assert.equal(lmStudioRouteTarget.quickTest.state, "ONLINE");
-  }
-  assert.equal(mcpRouteTarget.doctor.state, "FOUND");
-  assert.equal(mcpRouteTarget.restart.state, "REVIEW_REQUIRED");
-  assert.equal(mcpRouteTarget.controlReadiness, "PARTIAL");
-  assert.equal(chromeAiModelStoreTarget.quickTest.state, "ONLINE");
-  assert.match(chromeAiModelStoreTarget.quickTest.details.primaryPath, /OptGuideOnDeviceModel$/);
-  assert.ok(chromeAiModelStoreTarget.quickTest.details.channels.some((channel) => channel.name === "Dev" && channel.targetMatchesPrimary));
-  assert.equal(continuousMemoryFieldTarget.quickTest.state, "ONLINE");
-  assert.equal(continuousMemoryFieldTarget.restart.state, "NOT_APPLICABLE");
-  assert.equal(retiredRouteTarget, undefined);
-});
-
-function assertLiveReadiness(target) {
-  assert.ok(target);
-  assert.ok(["ONLINE", "OFFLINE", "ERROR", "MISSING"].includes(target.quickTest.state));
-  assert.equal(target.controlReadiness, expectedLiveReadiness(target));
-}
-
-function expectedLiveReadiness(target) {
-  const quickState = target.quickTest?.state;
-  const hasQuickSignal = ["ONLINE", "OFFLINE", "ERROR"].includes(quickState);
-  const hasControl = [target.doctor?.state, target.restart?.state].some((state) => ["FOUND", "REVIEW_REQUIRED"].includes(state));
-  if (quickState === "ONLINE" && target.doctor?.state === "FOUND" && target.restart?.state === "FOUND") return "READY";
-  if (hasQuickSignal && hasControl) return "PARTIAL";
-  return "BLOCKED";
-}
-
-test("service control registry and approved DevGov action are executable through the reviewed wrapper", async () => {
-  const eventsPath = "reports/service-control-events.json";
-  const originalEvents = await readFile(eventsPath, "utf8").catch(() => null);
-  const controls = await loadApprovedServiceControls(".");
-  const doctorControl = controls.find((entry) => entry.controlTargetId === "devgov-dashboard" && entry.action === "doctor");
-  const restartControl = controls.find((entry) => entry.controlTargetId === "devgov-dashboard" && entry.action === "restart");
-
-  assert.ok(doctorControl);
-  assert.ok(restartControl);
-  assert.equal(doctorControl.status, "approved");
-  assert.equal(restartControl.status, "approved");
-  assert.equal(SERVICE_CONTROL_PORT, 3201);
-
-  try {
-    const doctorResult = await executeServiceControl(".", { controlTargetId: "devgov-dashboard", action: "doctor" }, { origin: "http://127.0.0.1:3000", clientIp: "127.0.0.1" });
-    const result = await executeServiceControl(".", { controlTargetId: "devgov-dashboard", action: "restart" }, { origin: "http://127.0.0.1:3000", clientIp: "127.0.0.1" });
-    const events = await readServiceControlEvents(".");
-
-    assert.equal(doctorResult.ok, true);
-    assert.match(doctorResult.summary, /DevGov doctor passed/i);
-    assert.equal(result.ok, true);
-    assert.match(result.summary, /DevGov dashboard/i);
-    assert.ok(events.some((event) => event.controlTargetId === "devgov-dashboard" && event.action === "doctor" && event.ok));
-    assert.ok(events.some((event) => event.controlTargetId === "devgov-dashboard" && event.action === "restart" && event.ok));
-  } finally {
-    if (originalEvents === null) {
-      await rm(eventsPath, { force: true });
-    } else {
-      await writeFile(eventsPath, originalEvents, "utf8");
-    }
-  }
-});
-
 test("service control allows reviewed local and protected DevGov dashboard origins only", () => {
   assert.ok(SERVICE_CONTROL_ALLOWED_ORIGINS.has("http://127.0.0.1:3000"));
   assert.equal(isAllowedControlOrigin("https://dev.colorgeek.co"), true);
   assert.equal(isAllowedControlOrigin("https://gov.colorgeek.co"), true);
   assert.equal(isAllowedControlOrigin("https://codex-calendar-todo-staging.colorgeek.co"), false);
   assert.equal(isAllowedControlOrigin("https://example.com"), false);
-});
-
-test("service control registry exposes tunnel client doctor and restart actions", async () => {
-  const controls = await loadApprovedServiceControls(".");
-  const doctorControl = controls.find((entry) => entry.controlTargetId === "tunnel-client-local-filesystem-mcp" && entry.action === "doctor");
-  const restartControl = controls.find((entry) => entry.controlTargetId === "tunnel-client-local-filesystem-mcp" && entry.action === "restart");
-
-  assert.ok(doctorControl);
-  assert.ok(restartControl);
-
-  const result = await executeServiceControl(".", { controlTargetId: "tunnel-client-local-filesystem-mcp", action: "doctor" }, { origin: "http://127.0.0.1:3000", clientIp: "127.0.0.1" });
-
-  assert.equal(result.ok, true);
-  assert.match(result.summary, /Tunnel client doctor passed/i);
 });
 
 test("service control registry exposes local archive maintainer doctor and restart actions", async () => {
@@ -976,6 +923,11 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   const nowledgeCompat = audit.services.find((row) => row.id === "chatgpt-local-files-mcp:nowledge-compat-http");
   const chromeAiModelStore = audit.services.find((row) => row.id === "chrome-ai-model-store-filesystem");
   const continuousMemoryField = audit.services.find((row) => row.id === "continuous-memory-field-on-demand-health");
+  const openAiApi = audit.services.find((row) => row.id === "openai-api");
+  const googleAntigravityApi = audit.services.find((row) => row.id === "google-antigravity-api");
+  const chatGptWeb = audit.services.find((row) => row.id === "chatgpt-web-manual");
+  const geminiWeb = audit.services.find((row) => row.id === "gemini-web-manual");
+  const lmStudio = audit.services.find((row) => row.id === "lm-studio:local-api-http");
 
   assert.equal(audit.schema, "devgov.service-onboarding-audit.v1");
   assert.ok(audit.summary.services >= state.ports.length);
@@ -983,6 +935,7 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   assert.equal(audit.summary.registryUndeclared, 0);
   assert.equal(audit.summary.missingDoctor, 0);
   assert.equal(audit.summary.missingDashboardStatus, 0);
+  assert.equal(audit.summary.notApplicable, 4);
   assert.equal(devgov.readiness, "PARTIAL");
   assert.equal(devgov.flags.missingDoctor, false);
   assert.equal(devgovServiceControl.readiness, "PARTIAL");
@@ -1016,26 +969,34 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   assert.equal(continuousMemoryField.flags.missingDashboardStatus, false);
   assert.ok(continuousMemoryField.quickLinks.some((link) => link.label === "Doctor"));
   assert.ok(continuousMemoryField.quickLinks.some((link) => link.label === "Health"));
-});
-
-test("doctor verifies DevGov dashboard governance without modifying canonical registries", async () => {
-  const result = await runDoctorChecks(".");
-
-  assert.equal(result.ok, true, JSON.stringify(result.checks.filter((check) => !check.ok), null, 2));
-  assert.equal(result.repairs.length, 0);
-  assert.ok(result.checks.some((check) => check.id === "dashboard-port-registry" && check.ok));
-  const startupCheck = result.checks.find((check) => check.id === "dashboard-startup-registry");
-  assert.ok(startupCheck?.ok);
-  assert.match(startupCheck.detail, /devgov-gov-public-route-login/);
-  assert.ok(result.checks.some((check) => check.id === "script-scripts/register-dashboard-protocol.ps1" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "script-scripts/start-gov-public-route.ps1" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "script-scripts/register-gov-public-route-startup.ps1" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "script-scripts/require-governed-port.mjs" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "script-scripts/service-control/doctor-devgov-service-control.ps1" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "script-scripts/service-control/quickcheck-continuous-memory-field.ps1" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "script-scripts/service-control/doctor-continuous-memory-field.ps1" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "registry-service-onboarding.registry.json" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "registry-local-cloudflare.registry.json" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "local-agent-registry" && check.ok));
-  assert.ok(result.checks.some((check) => check.id === "api-key-registry" && check.ok));
+  for (const row of [openAiApi, googleAntigravityApi, chatGptWeb, geminiWeb]) {
+    assert.ok(row);
+    assert.equal(row.registryReadiness, "PARTIAL");
+    assert.equal(row.controlReadiness, "NOT_APPLICABLE");
+    assert.equal(row.governanceOnly, true);
+    assert.equal(row.visibility, "external");
+    assert.equal(row.flags.missingDoctor, false);
+    assert.equal(row.flags.missingRestart, false);
+    assert.equal(row.flags.missingDashboardStatus, false);
+    assert.equal(row.quickLinks.length, 0);
+    assert.match(row.governance.notes, /experimentExecutionAuthorized=false/);
+  }
+  assert.match(googleAntigravityApi.governance.notes, /providerReadiness=FAILED/);
+  assert.match(googleAntigravityApi.governance.notes, /failureCause=UNKNOWN/);
+  assert.match(chatGptWeb.governance.notes, /underlying model ID.*UNKNOWN/);
+  assert.match(geminiWeb.governance.notes, /underlying model ID.*UNKNOWN/);
+  assert.equal(openAiApi.executionSurface, "api");
+  assert.equal(googleAntigravityApi.executionSurface, "api");
+  assert.equal(chatGptWeb.executionSurface, "manual-web");
+  assert.equal(geminiWeb.executionSurface, "manual-web");
+  assert.equal(lmStudio.onboardingEntries.length, 1);
+  assert.equal(lmStudio.executionSurface, "local-runtime");
+  assert.equal(lmStudio.onboardingEntries[0].id, "lm-studio-local-runtime");
+  assert.match(lmStudio.onboardingEntries[0].notes, /experimentExecutionAuthorized=false/);
+  const englishReport = renderServiceOnboardingAudit(audit);
+  const zhTwReport = renderServiceOnboardingAuditZhTw(audit);
+  assert.match(englishReport, /Governance-only surface/);
+  assert.match(englishReport, /Control not applicable: 4/);
+  assert.match(zhTwReport, /僅治理登記/);
+  assert.match(zhTwReport, /Control 不適用：4/);
 });

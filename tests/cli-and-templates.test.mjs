@@ -228,6 +228,29 @@ test("scan-service-onboarding refuses absolute output paths outside reports by d
   assert.match(`${result.stderr}\n${result.stdout}`, /Refusing to write audit evidence outside reports/);
 });
 
+test("scan-service-onboarding writes authoritative English, Traditional Chinese, and JSON evidence", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "scripts/scan-service-onboarding.mjs",
+      "--out",
+      "reports/service-onboarding-audit.test.md",
+      "--zh-tw-out",
+      "reports/service-onboarding-audit.test.zh-tw.md",
+      "--json-out",
+      "reports/service-onboarding-audit.test.json"
+    ],
+    { encoding: "utf8" }
+  );
+
+  assert.equal(result.status, 0, `${result.stderr}\n${result.stdout}`);
+  assert.match(readFileSyncUtf8("reports/service-onboarding-audit.test.md"), /Control not applicable: 4/);
+  assert.match(readFileSyncUtf8("reports/service-onboarding-audit.test.zh-tw.md"), /Control 不適用：4/);
+  const json = JSON.parse(readFileSyncUtf8("reports/service-onboarding-audit.test.json"));
+  assert.equal(json.summary.notApplicable, 4);
+  assert.equal(json.services.find((row) => row.id === "chatgpt-web-manual").controlReadiness, "NOT_APPLICABLE");
+});
+
 test("scan CLIs fail when the requested root is missing", () => {
   const projectResult = spawnSync(
     process.execPath,
@@ -326,7 +349,8 @@ test("resource coordination AGENTS templates stay thin and proposal-only", async
   assert.match(english, /## Shared Resource Coordination/);
   assert.match(english, /Project Exclusive Resources/);
   assert.match(english, /do not bulk-apply it to projects automatically/);
-  assert.match(chinese, /Shared Resource Coordination/);
+  assert.match(chinese, /## (?:Shared Resource Coordination|共用資源協調)/);
+  assert.match(chinese, /### (?:Project Exclusive Resources|專案獨占資源)/);
   assert.match(chinese, /不要對多個專案自動 bulk apply/);
   assert.match(memoryEnglish, /proposal-only/);
   assert.match(memoryEnglish, /soft-hint-only/);

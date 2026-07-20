@@ -22,7 +22,7 @@ const ENV_FILE_PATTERN = /(^|[\\/])\.env(?:\..*)?$/i;
 const CREDENTIAL_NAME_PATTERN = /(?:API[_ -]?KEY|TOKEN|SECRET|PASSWORD|PASS|CREDENTIAL|BEARER|ACCESS[_ -]?TOKEN|AUTH[_ -]?TOKEN|PRIVATE[_ -]?KEY|GLOBAL[_ -]?API[_ -]?KEY|NVAPI)/i;
 const SERVICE_SPECIFIC_NAME_PATTERN = /^(?:Cloudflare_API|CLOUDFLARE_EMAIL)$/i;
 const IGNORE_ENV_NAME_PATTERN = /^(?:GIT_CONFIG_KEY_\d+|npm_config_.*)$/i;
-const KNOWN_ENV_NAME_PATTERN = /\b(?:OPENAI_API_KEY|openai_api_key_falcon|openai_api_key_translate|ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|CF_API_TOKEN|CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_TOKEN_INITIAL|Cloudflare_API|CLOUDFLARE_EMAIL|Global_API_Key|Gemini_API_KEY|Jules_API_Key|HF_API_Token|BROWSERLESS_TOKEN|CONTEXT7_API_KEY|ANTIGRAVITY_API_KEY|dbos_api_key|SPB_Access_Token|ACTION_API_KEY|ACTION_BEARER_TOKEN|github_codex_api|codex_cloudflare|nvapi)\b/gi;
+const KNOWN_ENV_NAME_PATTERN = /\b(?:OPENAI_API_KEY|openai_api_key_falcon|openai_api_key_translate|ANTHROPIC_API_KEY|ANTHROPIC_AUTH_TOKEN|CF_API_TOKEN|CLOUDFLARE_API_TOKEN|CLOUDFLARE_API_TOKEN_INITIAL|Cloudflare_API|CLOUDFLARE_EMAIL|Global_API_Key|GEMINI_API_KEY|Jules_API_Key|HF_API_Token|BROWSERLESS_TOKEN|CONTEXT7_API_KEY|ANTIGRAVITY_API_KEY|dbos_api_key|SPB_Access_Token|ACTION_API_KEY|ACTION_BEARER_TOKEN|github_codex_api|codex_cloudflare|nvapi)\b/g;
 const UPPER_ENV_NAME_PATTERN = /\b(?:[A-Z][A-Z0-9]*_)+(?:API_KEY|TOKEN|SECRET|PASSWORD|PASS|CREDENTIAL|BEARER|ACCESS_TOKEN|AUTH_TOKEN|PRIVATE_KEY)(?:_[A-Z0-9]+)*\b/g;
 
 const SERVICE_PROFILES = [
@@ -63,8 +63,8 @@ const SERVICE_PROFILES = [
     match: /(?:GEMINI|GOOGLE)/i,
     service: "Google AI Studio",
     settingsUrl: "https://aistudio.google.com/app/apikey",
-    accessMethod: "Environment variable consumed by Gemini or Google AI SDK clients.",
-    rules: "Restrict keys in Google Cloud where supported, never commit values, rotate in AI Studio or Google Cloud Console, then restart dependent shells or services."
+    accessMethod: "Exact GEMINI_API_KEY environment variable consumed by approved Gemini or Google Antigravity API clients.",
+    rules: "Use the exact cross-platform contract name GEMINI_API_KEY without fallback aliases. Restrict keys in Google Cloud where supported, never commit values, rotate in AI Studio or Google Cloud Console, then restart dependent shells or services."
   },
   {
     id: "hugging-face",

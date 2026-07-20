@@ -200,6 +200,7 @@ export function validateApiKeysRegistry(registry) {
   if (errors.length) return errors;
 
   const seen = new Set();
+  const seenVariableNames = new Map();
   for (const [index, entry] of registry.entries.entries()) {
     const label = `entries[${index}]`;
     requireStrings(entry, [
@@ -219,6 +220,18 @@ export function validateApiKeysRegistry(registry) {
     rejectMachineLocalStrings(entry, label, errors);
     if (seen.has(entry.id)) errors.push(`${label}.id duplicates another API key entry`);
     seen.add(entry.id);
+    const semanticVariableName = String(entry.variableName).toUpperCase();
+    if (seenVariableNames.has(semanticVariableName)) {
+      errors.push(`${label}.variableName duplicates ${seenVariableNames.get(semanticVariableName)} under case-insensitive environment semantics`);
+    } else {
+      seenVariableNames.set(semanticVariableName, `${label}.variableName`);
+    }
+    if (semanticVariableName === "GEMINI_API_KEY" && entry.variableName !== "GEMINI_API_KEY") {
+      errors.push(`${label}.variableName must use the exact canonical name GEMINI_API_KEY`);
+    }
+    if (semanticVariableName === "OPENAI_API_KEY" && entry.variableName !== "OPENAI_API_KEY") {
+      errors.push(`${label}.variableName must use the exact canonical name OPENAI_API_KEY`);
+    }
     if (!VALID_CREDENTIAL_KIND.has(entry.credentialKind)) {
       errors.push(`${label}.credentialKind must be one of ${[...VALID_CREDENTIAL_KIND].join(", ")}`);
     }

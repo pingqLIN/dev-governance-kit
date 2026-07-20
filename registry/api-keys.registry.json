@@ -63,15 +63,15 @@
       "id": "machine-gemini-api-key",
       "project": "system-environment",
       "service": "Google AI Studio",
-      "variableName": "Gemini_API_KEY",
+      "variableName": "GEMINI_API_KEY",
       "credentialKind": "api-key",
       "storageLocation": "Windows Machine environment variables",
-      "accessMethod": "Environment variable consumed by Gemini or Google AI SDK clients.",
+      "accessMethod": "Exact GEMINI_API_KEY environment variable consumed by approved Gemini or Google Antigravity API clients.",
       "settingsUrl": "https://aistudio.google.com/app/apikey",
-      "rules": "Restrict keys in Google Cloud where supported, never commit values, rotate in AI Studio or Google Cloud Console, then restart dependent shells or services.",
+      "rules": "Use the exact cross-platform contract name GEMINI_API_KEY. Do not fall back to case variants or similarly named variables. Restrict keys in Google Cloud where supported, never commit values, rotate in AI Studio or Google Cloud Console, then restart dependent shells or services.",
       "status": "candidate",
       "source": "API key environment audit",
-      "notes": "Candidate credential-location record only. Do not store or print the credential value in DevGov registry data."
+      "notes": "Canonical Google and Antigravity API credential-location metadata only. The former Gemini_API_KEY spelling is deprecated and is not a second active credential source. Do not store, inspect, or print the credential value in DevGov registry data."
     },
     {
       "id": "user-x-goog-api-key",
