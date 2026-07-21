@@ -17,6 +17,7 @@
     "scan:agents": "node scripts/scan-agent-instructions.mjs",
     "scan:context-budget": "node scripts/scan-context-budget.mjs",
     "scan:resource-coordination": "node scripts/scan-resource-coordination.mjs",
+    "scan:project-registry": "node scripts/scan-project-registry.mjs",
     "scan:api-keys": "node scripts/scan-api-keys.mjs",
     "plan:new-project-api-keys": "node scripts/plan-new-project-api-keys.mjs",
     "scan:service-onboarding": "node scripts/scan-service-onboarding.mjs",
@@ -36,7 +37,7 @@
     "chrome-ai:reset": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/service-control/restart-chrome-ai-model-store.ps1 -ControlTargetId chrome-ai-model-store -Action restart",
     "test:live-governance": "node --test tests/live-governance.opt-in.mjs",
     "test:service-controls": "node --test tests/service-controls.opt-in.mjs",
-    "test": "node --test"
+    "test": "node --test \"tests/*.test.mjs\""
   },
   "engines": {
     "node": ">=20"

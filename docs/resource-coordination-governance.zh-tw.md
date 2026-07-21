@@ -1,15 +1,15 @@
-# Resource Coordination Governance
+# 資源協調治理
 
-DevGov 將本機多專案開發共享資源視為需要治理的 observation surface。目標是讓多個並行 LLM 開發工作能分辨「目標專案真的不健康」與「主機層資源競爭」，且不新增沉重的常駐協調器。
+DevGov 將多專案本機資源視為需要治理的觀測面（observation surface）。目標是讓多個並行 LLM 開發工作區分「目標專案真的是不健康」與「主機層資源競爭」，且不新增沉重的常駐協調器。
 
 ## 模型
 
-v1 平台採 observe-first：
+v1 平台採觀測優先（observe-first）：
 
 - `registry/resource-coordination.registry.json` 是 canonical policy 與 channel contract。
 - `npm run scan:resource-coordination` 會把輕量 snapshot 寫入 `reports/`。
 - 儀表板提供 `/api/resource-coordination` 作為同一份 read model。
-- Codex memory 可以承載短期 soft hint，但只能作為經 proposal review 的 awareness，不是 authoritative current state。
+- Codex memory 可以承載短期 soft hint，但只能做為經 proposal review 的 awareness，不是 authoritative current state。
 - 優先重用既有 dashboard state、service-status rows、service-control events 與作業系統觀測機制。
 
 此平台本身不會 throttle、restart、pause、kill 或 schedule 工作。
@@ -17,13 +17,13 @@ v1 平台採 observe-first：
 
 ## 診斷
 
-不要把 lag 直接當作 target instability 證據。Degraded observations 應分類為：
+不要把 lag 直接當作 target instability 證據。退化觀測（degraded observations）請依下列分類：
 
 | 狀態 | 意義 |
 | --- | --- |
 | `target-unhealthy` | 有 target-local evidence，例如 health check 失敗、listener crash、project error 或 Doctor failure。 |
-| `environment-contention` | target evidence 薄弱或健康，但 shared host pressure 或 exclusive resource use 足以解釋 lag。 |
-| `unknown-degraded` | evidence 過期或不足；remediation 前要先 refresh。 |
+| `environment-contention` | target evidence 薄弱或看似正常，但 shared host pressure 或 exclusive resource use 足以解釋 lag。 |
+| `unknown-degraded` | evidence 過期或不足；先 refresh 後再進行 remediation。 |
 
 ## 排他資源
 
@@ -33,7 +33,7 @@ v1 平台採 observe-first：
 - GPU-heavy 3D rendering、WebGL/WebGPU、canvas checks、video rendering 或 local model inference
 - foreground screen、pointer、keyboard、simulator、display 或 interactive desktop control
 
-登記只是 coordination signal，不是權限覆寫。Claims 必須 sanitized 且 time-bound。不要把 secrets、cookies、session data、credential paths、完整 command lines、private screenshots 或 personal activity 放進 canonical registry data。
+登記只是一種 coordination signal，不是權限覆寫。Claims 必須 sanitized 且限定時效（time-bound）。不要把 secrets、cookies、session data、credential paths、完整 command lines、private screenshots 或 personal activity 放進 canonical registry data。
 
 ## 時效
 

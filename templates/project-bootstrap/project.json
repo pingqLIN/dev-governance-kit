@@ -1,0 +1,13 @@
+{
+  "$schema": "devgov.project.v1",
+  "id": "{{PROJECT_ID}}",
+  "name": "{{PROJECT_NAME}}",
+  "layer": "project-bootstrap",
+  "status": "initialized",
+  "createdAt": "{{GENERATED_AT}}",
+  "governance": {
+    "agentsFile": "AGENTS.md",
+    "environmentSnapshot": ".governance/environment-snapshot.json",
+    "handoff": ".governance/handoff.json"
+  }
+}

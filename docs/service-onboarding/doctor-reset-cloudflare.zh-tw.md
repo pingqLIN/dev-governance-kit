@@ -8,7 +8,7 @@
 
 - `healthProcedure`: 安全的唯讀檢查，通常是 loopback 或 public health URL。
 - `doctorProcedure`: 診斷 command 或 checklist。Doctor 可以檢查與回報；repair 必須有明確邊界。
-- `resetProcedure`: reset、restart、recover、republish、clear-state 的政策。
+- `resetProcedure`: reset、restart、recover、republish、clear-state 等程序與原則。
 - `startupProcedure`: 已審查的 start 或 ensure path。
 - `dashboardProcedure`: DevGov 如何顯示該服務，以及為什麼允許或不允許 dashboard execution。
 - `cloudflareProcedure`: 本機 Cloudflare Tunnel、Access 與 public-route 處理方式。
@@ -20,7 +20,7 @@ reset 或 restart procedure 中的 `REVIEW_REQUIRED` 代表：
 - 已有或預期會有候選 reset/restart path
 - DevGov 尚未核准自動執行
 - dashboard 不得直接執行
-- 必須先由 operator 或 reviewed apply path 定義 command 邊界、rollback expectation、log handling 與 credential safety
+- 必須由 operator 或 reviewed apply path 明確定義 command 邊界、rollback expectation、log handling 與 credential safety
 
 這和 `MISSING` 不同。`MISSING` 代表還沒有已知穩定 reset/start path。`REVIEW_REQUIRED` 代表路徑存在或可建立，但它會改變本機 runtime state，所以仍需要 execution gate。
 
@@ -49,11 +49,11 @@ Doctor repair 只能做明確文件化的本機 repair。重新產生 report art
 7. Protected app/API routes 應要求 Cloudflare Access，除非該 route 明確分類為 public health。
 8. Tunnel restart 或 ingress changes 需要 backup/rollback evidence 才能 apply。
 
-## Service Review Checklist
+## 服務審查清單
 
 服務要往 `READY` 推進前，確認：
 
-- health procedure 安全且 deterministic
+- 健康檢查流程必須安全且具可重現性
 - Doctor procedure 存在，且預設唯讀
 - reset procedure 明確 disabled 或標為 `REVIEW_REQUIRED`
 - startup procedure 使用穩定且已審查的 reference

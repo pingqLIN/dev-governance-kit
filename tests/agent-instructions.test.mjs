@@ -87,6 +87,17 @@ test("AGENTS.md remains the single authoritative runtime source", async () => {
   assert.ok(registry.entries.every((entry) => !entry.evidence.startsWith("AGENTS.zh-tw.md#")));
 });
 
+test("human-facing audit Markdown requires a Traditional Chinese companion", async () => {
+  const registry = await loadRegistry();
+  const policy = registry.entries.find((entry) => entry.id === "agent.data.audit-doc-zh-tw-companion");
+
+  assert.equal(policy?.type, "data-contract");
+  assert.equal(policy?.layer, "global-home");
+  assert.match(policy?.requirement ?? "", /every human-facing Markdown audit document or audit report/);
+  assert.match(policy?.enforcement ?? "", /JSON or YAML/);
+  assert.match(policy?.enforcement ?? "", /preserve source redactions/);
+});
+
 test("resource coordination overlay proposal detects missing thin overlay", () => {
   const proposal = buildResourceCoordinationOverlayProposal("# AGENTS.md\n\n## Project Rules\n\nUse local tests.\n", {
     generatedAt: "2026-07-09T00:00:00.000Z",

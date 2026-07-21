@@ -8,19 +8,19 @@ Chrome built-in AI model-cache sharing 程序記錄在 `docs/service-onboarding/
 
 ## 審核規則
 
-每個 service record 建立或更新後，都必須完成審核。審核內容包含：
+每個 service 記錄建立或更新後，都必須完成稽核。內容包含：
 
 - service 仍存在於 `registry/ports.registry.json`
-- health、Doctor、startup、dashboard procedure 都有明確描述
-- reset 與 Cloudflare procedure 都有明確描述
+- health、Doctor、startup、dashboard 程序都要有明確描述
+- reset 與 Cloudflare 程序都要明確說明
 - machine-local paths、credentials、process IDs、logs、temporary probe details 不得進入 canonical registry data
-- dashboard restart 維持停用，除非日後有另一個 reviewed apply path 明確核准 execution
+- dashboard restart 維持停用，除非日後有另一個 reviewed apply path 明確核准執行
 
 ## 本批次
 
 | Service | Readiness | Review | Next action |
 |---|---|---|---|
-| `devgov:dashboard-http` | `READY` | `reviewed` | 作為 reference implementation。 |
+| `devgov:dashboard-http` | `READY` | `reviewed` | 作為參考實作。 |
 | `local-archive-maintainer:app-server-http` | `PARTIAL` | `needs-implementation` | 新增或登記 project Doctor。 |
 | `codex-calendar-todo:staging-http` | `PARTIAL` | `needs-implementation` | 將 runtime operations 包成 Doctor。 |
 | `codex-remote:remote-services-http` | `PARTIAL` | `needs-implementation` | 對齊 `/health` 與 `/healthz`，再新增 Doctor。 |
@@ -35,4 +35,4 @@ Chrome built-in AI model-cache sharing 程序記錄在 `docs/service-onboarding/
 
 ## 批次審核
 
-本批次只審核 DevGov planning 與 recording change。它不修改 target projects、不登記新 startup entries，也不啟用 dashboard restart execution。
+本批次只稽核 DevGov 規劃與記錄異動。它不修改目標專案、不登記新的啟動項目，也不啟用 dashboard restart 執行。

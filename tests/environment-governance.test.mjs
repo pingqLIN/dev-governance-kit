@@ -587,6 +587,8 @@ test("dashboard exposes UniText query records and service targets", async () => 
   const photoHdrFlowTarget = targets.find((target) => target.id === "onboarding:photo-hdr-flow-web-ui-http");
   const gsdfEotfTarget = targets.find((target) => target.id === "onboarding:gsdf-eotf-video-adjuster-vite-dev");
   const skill0GuiTarget = targets.find((target) => target.id === "onboarding:skill-0-gui-review-studio-http");
+  const skill0Target = targets.find((target) => target.id === "onboarding:skill-0-core-api-http");
+  const skill0DashboardTarget = targets.find((target) => target.id === "onboarding:skill-0-dashboard-web-http");
   const nowledgeCompatTarget = targets.find((target) => target.id === "onboarding:chatgpt-local-files-mcp-nowledge-compat-http");
   const chromeAiModelStoreTarget = targets.find((target) => target.id === "onboarding:chrome-ai-model-store-filesystem");
   const continuousMemoryFieldTarget = targets.find((target) => target.id === "onboarding:continuous-memory-field-on-demand-health");
@@ -685,6 +687,17 @@ test("dashboard exposes UniText query records and service targets", async () => 
   assert.equal(skill0GuiTarget.doctor.state, "FOUND");
   assert.equal(skill0GuiTarget.restart.state, "FOUND");
   assert.equal(skill0GuiTarget.controlReadiness, "PARTIAL");
+  assert.equal(skill0Target.project, "skill-0");
+  assert.equal(skill0Target.target, "127.0.0.1:8000");
+  assert.equal(skill0Target.doctor.state, "FOUND");
+  assert.equal(skill0Target.restart.state, "FOUND");
+  assert.equal(skill0Target.controlReadiness, "PARTIAL");
+  assert.equal(skill0DashboardTarget.project, "skill-0");
+  assert.equal(skill0DashboardTarget.target, "127.0.0.1:5173");
+  assert.equal(skill0DashboardTarget.doctor.state, "FOUND");
+  assert.equal(skill0DashboardTarget.restart.state, "FOUND");
+  assert.equal(skill0DashboardTarget.restart.policyReadiness.complete, true);
+  assert.equal(skill0DashboardTarget.controlReadiness, "PARTIAL");
   assert.equal(nowledgeCompatTarget.project, "chatgpt-local-files-mcp");
   assert.equal(nowledgeCompatTarget.target, "127.0.0.1:14242");
   assert.equal(nowledgeCompatTarget.doctor.state, "FOUND");
@@ -893,22 +906,28 @@ test("service control registry exposes reviewed controls for newly supplemented 
   const controls = await loadApprovedServiceControls(".");
   const gsdfDoctor = controls.find((entry) => entry.controlTargetId === "gsdf-eotf-video-adjuster" && entry.action === "doctor");
   const gsdfRestart = controls.find((entry) => entry.controlTargetId === "gsdf-eotf-video-adjuster" && entry.action === "restart");
-  const skill0Doctor = controls.find((entry) => entry.controlTargetId === "skill-0-gui" && entry.action === "doctor");
-  const skill0Restart = controls.find((entry) => entry.controlTargetId === "skill-0-gui" && entry.action === "restart");
+  const skill0GuiDoctor = controls.find((entry) => entry.controlTargetId === "skill-0-gui" && entry.action === "doctor");
+  const skill0GuiRestart = controls.find((entry) => entry.controlTargetId === "skill-0-gui" && entry.action === "restart");
+  const skill0Doctor = controls.find((entry) => entry.controlTargetId === "skill-0" && entry.action === "doctor");
+  const skill0Restart = controls.find((entry) => entry.controlTargetId === "skill-0" && entry.action === "restart");
+  const skill0DashboardDoctor = controls.find((entry) => entry.controlTargetId === "skill-0-dashboard" && entry.action === "doctor");
+  const skill0DashboardRestart = controls.find((entry) => entry.controlTargetId === "skill-0-dashboard" && entry.action === "restart");
   const mcpDoctor = controls.find((entry) => entry.controlTargetId === "mcp-colorgeek" && entry.action === "doctor");
   const nowledgeDoctor = controls.find((entry) => entry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && entry.action === "doctor");
   const nowledgeRestart = controls.find((entry) => entry.controlTargetId === "chatgpt-local-files-mcp-nowledge-compat" && entry.action === "restart");
   const continuousMemoryFieldDoctor = controls.find((entry) => entry.controlTargetId === "continuous-memory-field" && entry.action === "doctor");
   const continuousMemoryFieldRestart = controls.find((entry) => entry.controlTargetId === "continuous-memory-field" && entry.action === "restart");
 
-  for (const control of [gsdfDoctor, gsdfRestart, skill0Doctor, skill0Restart, mcpDoctor, nowledgeDoctor, nowledgeRestart, continuousMemoryFieldDoctor]) {
+  for (const control of [gsdfDoctor, gsdfRestart, skill0GuiDoctor, skill0GuiRestart, skill0Doctor, skill0Restart, skill0DashboardDoctor, skill0DashboardRestart, mcpDoctor, nowledgeDoctor, nowledgeRestart, continuousMemoryFieldDoctor]) {
     assert.ok(control);
     assert.equal(control.status, "approved");
   }
   assert.equal(continuousMemoryFieldRestart, undefined);
   assert.equal(continuousMemoryFieldDoctor.timeoutSeconds, 120);
   assert.equal(gsdfRestart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
+  assert.equal(skill0GuiRestart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
   assert.equal(skill0Restart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
+  assert.equal(skill0DashboardRestart.restartPolicy.permissionBoundary.includes("loopback-only"), true);
   assert.equal(nowledgeRestart.uiLabel, "Reset");
 });
 
@@ -920,6 +939,9 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   const archive = audit.services.find((row) => row.id === "local-archive-maintainer:app-server-http");
   const gsdfEotf = audit.services.find((row) => row.id === "gsdf-eotf-video-adjuster:vite-dev");
   const skill0Gui = audit.services.find((row) => row.id === "skill-0-GUI:review-studio-http");
+  const skill0 = audit.services.find((row) => row.id === "skill-0:core-api-http");
+  const skill0DashboardApi = audit.services.find((row) => row.id === "skill-0:dashboard-api-http");
+  const skill0DashboardWeb = audit.services.find((row) => row.id === "skill-0:dashboard-web-http");
   const nowledgeCompat = audit.services.find((row) => row.id === "chatgpt-local-files-mcp:nowledge-compat-http");
   const chromeAiModelStore = audit.services.find((row) => row.id === "chrome-ai-model-store-filesystem");
   const continuousMemoryField = audit.services.find((row) => row.id === "continuous-memory-field-on-demand-health");
@@ -946,7 +968,7 @@ test("service onboarding audit summarizes registered service gaps", async () => 
   assert.equal(archive.flags.missingDoctor, false);
   assert.ok(archive.quickLinks.some((link) => link.label === "Doctor"));
   assert.ok(archive.quickLinks.some((link) => link.label === "Health"));
-  for (const row of [gsdfEotf, skill0Gui, nowledgeCompat]) {
+  for (const row of [gsdfEotf, skill0Gui, skill0, skill0DashboardApi, skill0DashboardWeb, nowledgeCompat]) {
     assert.ok(row);
     assert.equal(row.flags.missingDoctor, false);
     assert.equal(row.flags.missingRestart, false);

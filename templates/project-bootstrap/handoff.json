@@ -1,0 +1,16 @@
+{
+  "$schema": "devgov.agent-handoff.v1",
+  "project": "{{PROJECT_NAME}}",
+  "from": "bootstrap",
+  "to": "human-review",
+  "status": "ready",
+  "summary": "Project scaffold created; inspect the repository before implementation.",
+  "claims": [],
+  "nextActions": [
+    "Review AGENTS.md",
+    "Run git status --short --branch",
+    "Replace this handoff with task-specific evidence"
+  ],
+  "verification": [],
+  "generatedAt": "{{GENERATED_AT}}"
+}

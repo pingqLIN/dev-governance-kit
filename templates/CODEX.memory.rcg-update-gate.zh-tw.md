@@ -1,6 +1,6 @@
 # CODEX.memory.rcg-update-gate
 
-Status: deprecated as a DevGov-local update gate。
+狀態：此檔已在 DevGov 本機作為 proposal-only 更新閘道，不再作為正式套件流程。
 
 這個檔案現在只是 external handoff reference stub。它保留舊 DevGov 入口的可發現性，但正式 RCG memory update gate 屬於 `memory-field` architecture：
 

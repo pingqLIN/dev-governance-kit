@@ -1216,6 +1216,84 @@ function buildOnboardingOnlyTargets({ onboardingEntries = [], startupById, start
       }
     });
   }
+  const skill0 = onboardingEntries.find((entry) => entry.id === "skill-0-core-api-http");
+  if (skill0) {
+    const portEntry = portsByProjectService.get("skill-0:core-api-http");
+    const healthUrl = portEntry ? `${portEntry.protocol}://${portEntry.host}:${portEntry.port}/health` : "http://127.0.0.1:8000/health";
+    targets.push({
+      id: "onboarding:skill-0-core-api-http",
+      controlTargetId: "skill-0",
+      project: "skill-0",
+      label: "Skill-0 Core API",
+      kind: "local-api",
+      registryStatus: "reviewed",
+      url: healthUrl,
+      target: portEntry ? `${portEntry.host}:${portEntry.port}` : "127.0.0.1:8000",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0.resetProcedure
+      }
+    });
+  }
+  const skill0DashboardApi = onboardingEntries.find((entry) => entry.id === "skill-0-dashboard-api-http");
+  if (skill0DashboardApi) {
+    const apiPort = portsByProjectService.get("skill-0:dashboard-api-http");
+    const healthUrl = apiPort ? `${apiPort.protocol}://${apiPort.host}:${apiPort.port}/health` : "http://127.0.0.1:8001/health";
+    targets.push({
+      id: "onboarding:skill-0-dashboard-api-http",
+      controlTargetId: "skill-0-dashboard",
+      project: "skill-0",
+      label: "Skill-0 Dashboard API",
+      kind: "local-api",
+      registryStatus: "reviewed",
+      url: healthUrl,
+      target: apiPort ? `${apiPort.host}:${apiPort.port}` : "127.0.0.1:8001",
+      quickTest: buildQuickTest(healthUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0DashboardApi.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0DashboardApi.resetProcedure
+      }
+    });
+  }
+  const skill0Dashboard = onboardingEntries.find((entry) => entry.id === "skill-0-dashboard-web-http");
+  if (skill0Dashboard) {
+    const webPort = portsByProjectService.get("skill-0:dashboard-web-http");
+    const webUrl = webPort ? `${webPort.protocol}://${webPort.host}:${webPort.port}/` : "http://127.0.0.1:5173/";
+    targets.push({
+      id: "onboarding:skill-0-dashboard-web-http",
+      controlTargetId: "skill-0-dashboard",
+      project: "skill-0",
+      label: "Skill-0 Governance Dashboard",
+      kind: "local-dashboard",
+      registryStatus: "reviewed",
+      url: webUrl,
+      target: webPort ? `${webPort.host}:${webPort.port}` : "127.0.0.1:5173",
+      quickTest: buildQuickTest(webUrl),
+      doctor: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0Dashboard.doctorProcedure
+      },
+      restart: {
+        state: "MISSING",
+        ref: "",
+        notes: skill0Dashboard.resetProcedure
+      }
+    });
+  }
   const comfyui = onboardingEntries.find((entry) => entry.id === "comfyui-local-http");
   if (comfyui) {
     const portEntry = portsByProjectService.get("ComfyUI:comfyui-local-http");

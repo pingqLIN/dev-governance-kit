@@ -1,14 +1,14 @@
-## Shared Resource Coordination
+## 共用資源協調
 
-本專案遵循 DevGov shared-resource coordination。
+本專案遵循 DevGov 共用資源協調機制。
 
-在把 lag、timeout、browser automation 變慢、UI feedback 變慢或 tool response 延遲判定為專案失敗前，先檢查目前 DevGov resource-coordination status，並將觀測分類為 `target-unhealthy`、`environment-contention` 或 `unknown-degraded`。
+在把 lag、timeout、browser automation 變慢、UI 回應變慢或 tool 回應延遲直接判定為專案失敗前，先檢查目前 DevGov resource-coordination status，並將觀測分類為 `target-unhealthy`、`environment-contention` 或 `unknown-degraded`。
 
-使用排他性或容量有限資源前，例如 browser profiles、DevTools sessions、GPU-heavy rendering、3D/WebGL/WebGPU、foreground screen control、keyboard、pointer、simulator 或 display control，必須先透過 DevGov resource-coordination surface 登記 sanitized、time-bound claim。
+使用排他性或容量有限資源前，例如 browser profiles、DevTools sessions、GPU-heavy rendering、3D/WebGL/WebGPU、foreground screen control、keyboard、pointer、simulator 或 display control，必須先透過 DevGov resource-coordination surface 登記經清洗、具時間界限的 claim。
 
-過期的 resource snapshot 或 claim 只能作為歷史 evidence。若要用於目前診斷、資源占用或排程判斷，必須先 refresh。
+過期的 resource snapshot 或 claim 只能作為歷史證據。若要用於目前診斷、資源占用或排程判斷，必須先更新到最新狀態。
 
-### Project Exclusive Resources
+### 專案獨占資源
 
 只宣告本專案實際可能占用的資源。若本專案不使用某類資源，填 `None known`。
 

@@ -1,6 +1,6 @@
-# Context Budget Governance
+# Context Budget 治理
 
-DevGov 將 context budget 視為需要治理的 runtime surface。目標是在不削弱安全性、正確性與明確使用者意圖的前提下，降低 always-loaded prompt、tool、skill、memory 與 project context。
+DevGov 將 context budget 視為要治理的 runtime surface。目標是在不削弱安全性、正確性與明確使用者意圖的前提下，降低 always-loaded prompt、tool、skill、memory 與 project context 的常駐負擔。
 
 ## 模型
 

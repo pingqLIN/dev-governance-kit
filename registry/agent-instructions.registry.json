@@ -262,6 +262,18 @@
       "notes": "Adopts the operator recommendation that AGENTS files are agent-specialized and should not require a translated authoritative copy."
     },
     {
+      "id": "agent.data.audit-doc-zh-tw-companion",
+      "type": "data-contract",
+      "layer": "global-home",
+      "appliesTo": "Human-facing Markdown audit documents and audit reports, including generated or local-only reports intended for operator review.",
+      "requirement": "Provide a Traditional Chinese .zh-tw.md companion for every human-facing Markdown audit document or audit report.",
+      "enforcement": "Exempt machine-readable-only artifacts such as JSON or YAML; preserve source redactions and do not add secrets, sensitive local evidence, or machine-local details absent from the source.",
+      "evidence": "AGENTS.md#Documentation Companion Policy",
+      "status": "approved",
+      "source": "AGENTS.md",
+      "notes": "Extends the important-document companion policy explicitly to audit-related human-readable documentation."
+    },
+    {
       "id": "agent.safety.review-gates",
       "type": "safety-gate",
       "layer": "repo-local",

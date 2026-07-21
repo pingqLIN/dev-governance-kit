@@ -824,6 +824,98 @@
       }
     },
     {
+      "id": "skill-0-doctor",
+      "controlTargetId": "skill-0",
+      "surfaceTargets": [
+        "skill-0",
+        "skill-0-core-api-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-skill-0.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Validate the governed Core API port, Windows Python runtime, API import path, database file, and live health response when online.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 60,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the Skill-0 checkout, Python environment, database file, and current 8000 listener before attempting restart.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed loopback-only doctor action for the canonical Skill-0 Core API."
+    },
+    {
+      "id": "skill-0-restart",
+      "controlTargetId": "skill-0",
+      "surfaceTargets": [
+        "skill-0",
+        "skill-0-core-api-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-skill-0.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure the canonical Skill-0 Core API is listening on 127.0.0.1:8000 through the direct Uvicorn ASGI entrypoint.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "If ensure-running fails, inspect reports/service-control-logs/skill-0.*.log and the governed port state before retrying.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed loopback-only ensure-running action for the canonical Skill-0 Core API.",
+      "restartPolicy": {
+        "permissionBoundary": "Use the reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service-control logs and process state before invoking restart; the wrapper does not modify project files or stateful data.",
+        "rollbackExpectation": "If ensure-running fails, stop only the newly started Skill-0 process if present, inspect the local logs and port-binding state on 8000, and return to manual diagnostics before retrying."
+      }
+    },
+    {
+      "id": "skill-0-dashboard-doctor",
+      "controlTargetId": "skill-0-dashboard",
+      "surfaceTargets": [
+        "skill-0-dashboard",
+        "skill-0-dashboard-api-http",
+        "skill-0-dashboard-web-http"
+      ],
+      "action": "doctor",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/doctor-skill-0-dashboard.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Validate governed Dashboard ports, Python and Node runtimes, API import path, Web dependencies, and live health responses when online.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 90,
+      "rollbackNotes": "Doctor is read-only. If it fails, inspect the Skill-0 Dashboard checkout, dependencies, and current 8001/5173 listeners before attempting restart.",
+      "uiLabel": "Doctor",
+      "requiresConfirmation": false,
+      "status": "approved",
+      "notes": "Reviewed loopback-only doctor action for the Skill-0 Governance Dashboard."
+    },
+    {
+      "id": "skill-0-dashboard-restart",
+      "controlTargetId": "skill-0-dashboard",
+      "surfaceTargets": [
+        "skill-0-dashboard",
+        "skill-0-dashboard-api-http",
+        "skill-0-dashboard-web-http"
+      ],
+      "action": "restart",
+      "approved": true,
+      "wrapperRef": "scripts/service-control/restart-skill-0-dashboard.ps1",
+      "resolverRef": "scripts/lib/service-control-resolver.mjs#resolveControlTarget",
+      "inputContract": "No user input. Ensure Core API, Dashboard API, and Dashboard Web are listening on loopback ports 8000, 8001, and 5173.",
+      "auditLevel": "server-authored-local-log",
+      "timeoutSeconds": 120,
+      "rollbackNotes": "If ensure-running fails, inspect reports/service-control-logs/skill-0-dashboard-* and the governed port state before retrying.",
+      "uiLabel": "Restart",
+      "requiresConfirmation": true,
+      "status": "approved",
+      "notes": "Reviewed loopback-only ensure-running action for the Skill-0 Governance Dashboard.",
+      "restartPolicy": {
+        "permissionBoundary": "Use the reviewed local wrapper only; execution is loopback-only and must be approved as a one-click operation by the dashboard operator.",
+        "backupExpectation": "Capture current service-control logs and process state before invoking restart; the wrapper does not modify project data.",
+        "rollbackExpectation": "If startup fails, stop only processes newly started by this wrapper, inspect logs and port ownership on 8001 and 5173, and return to manual diagnostics before retrying."
+      }
+    },
+    {
       "id": "chatgpt-local-files-mcp-doctor",
       "controlTargetId": "mcp-colorgeek",
       "surfaceTargets": [

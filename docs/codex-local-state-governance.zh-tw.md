@@ -1,8 +1,8 @@
 # Codex 本機狀態治理
 
-當要檢查像 `%USERPROFILE%\.codex` 這類本機 Codex home 時，使用此 workflow。
+在檢查像 `%USERPROFILE%\.codex` 這類本機 Codex home 時，請使用此流程。
 
-Codex home 可以是 Git repository，但只能定位成 private local rollback surface。除非每個 tracked file 都已經完成 secrets 與 machine-specific state 審查，否則不要把它當成可發布專案、共享 registry，或連到 remote 的 repo。
+Codex home 可以是 Git repository，但只能作為 private local rollback surface。除非每個 tracked file 都完成 secrets 與 machine-specific state 的審查，否則不要把它當成可發布專案、共享 registry，或連到 remote 的 repo。
 
 ## 預設分類
 
@@ -24,7 +24,7 @@ git -C $env:USERPROFILE\.codex status --short --branch
 git -C $env:USERPROFILE\.codex remote -v
 ```
 
-只要有 remote，就進入 promotion gate。tracked files 沒有掃描與 redaction 前，不要 push。
+只要有 remote，就先進入 promotion gate。tracked files 沒有完成掃描與 redaction 前，不要 push。
 
 2. 改動前先檢查 tracked files。
 
@@ -40,7 +40,7 @@ git -C $env:USERPROFILE\.codex ls-files
 
 4. 另外檢查 startup 與 resident service surface。
 
-Codex-created startup entries、Scheduled Tasks、Cloudflare tunnels、`0.0.0.0` app servers 應該放在 startup 或 local-agent reports，不要把它們當成普通專案檔案處理。
+Codex-created startup entries、Scheduled Tasks、Cloudflare tunnels、`0.0.0.0` app servers 應該放在 startup 或 local-agent reports，不要把它們當成一般專案檔案處理。
 
 5. 將重複發生的 tool failure 轉成 agent policy。
 

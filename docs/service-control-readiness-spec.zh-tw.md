@@ -37,7 +37,7 @@ Service control readiness 是觀測模型。它用來告訴 operator 某個 serv
 
 ## UI 規則
 
-- `Network Service Status` 必須把 `Quick Test` 呈現為 table column，而不是獨立 action button。
+- `Network Service Status` 必須把 `Quick Test` 顯示為 table column，而不是獨立 action button。
 - `Quick Test` cell 應同時呈現該 service 的 health、Doctor、restart 與 readiness。
 - 同一個 cell 不得重複顯示狀態 label 與可執行 control。Doctor 或 restart 已核准可執行時，狀態 flag 本身就是一鍵控制，並帶有 reviewed-control marker。
 - dashboard 不得提供一鍵 restart，直到另一次已審查的 apply path 定義 command 邊界、權限、backup 或 rollback expectation，以及 audit evidence。缺少完整審查 metadata 的 service 必須維持 `REVIEW_REQUIRED` 或 disabled。
@@ -58,7 +58,7 @@ Service control readiness 是觀測模型。它用來告訴 operator 某個 serv
 - Cloudflare 本機架構必須將 governed loopback origins 放在 `ports.registry.json`，public exposure 放在 `public-routes.registry.json`。
 - Cloudflare credential files、tunnel config paths、certs、private keys、API tokens、process IDs 與 local logs 留在 reports 或 local evidence，不進 canonical registries。
 
-## Existing Project Supplementation
+## 現有專案補充稽核
 
 使用 `npm run scan:service-onboarding` 或 dashboard 的 Onboarding 視圖，稽核已經登記過的服務。這份補充 audit 應交叉檢查：
 

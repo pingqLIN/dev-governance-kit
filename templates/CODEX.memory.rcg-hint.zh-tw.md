@@ -1,6 +1,6 @@
 # CODEX.memory.rcg-hint
 
-Codex Resource Coordination Governance memory hint 的 proposal-only template。
+Codex Resource Coordination Governance 記憶提示的 proposal-only template。
 
 除非 operator 明確要求「更新記憶」，不要把這個 template 或衍生 hint 寫入真實 Codex memory。
 
@@ -10,11 +10,11 @@ RCG memory hints 是本機多專案並行開發時的短期 soft awareness。它
 
 它不是：
 
-- authoritative current-state ledger
-- resource lock
-- transaction store
-- scheduling queue
-- task-dispatch gate
+- 權威當前狀態帳本
+- 資源鎖
+- 交易存放區
+- 排程佇列
+- 任務派發閘道
 
 因為 hint 只改善脈絡品質，所以 eventual consistency、重複 hint、漏登與 memory sync 延遲都可以接受。
 

@@ -75,7 +75,14 @@ Agents must treat `AGENTS.md` as the single authoritative runtime instruction so
 
 `AGENTS.zh-tw.md` may exist to help human operators review the policy in Traditional Chinese, but it must not introduce rules that are absent from `AGENTS.md`. If the two files drift, `AGENTS.md` wins and the Traditional Chinese reference should be corrected or removed.
 
-Do not require a Traditional Chinese companion for `AGENTS.md` in new repos by default. The bilingual public-document rule applies to human-facing operational or release documentation, not to agent-runtime instruction files unless a repo explicitly promotes such a companion as human reference material.
+Do not require a Traditional Chinese companion for `AGENTS.md` in new repos by default. The bilingual public-document rule applies to human-facing operational, release, or audit documentation, not to agent-runtime instruction files unless a repo explicitly promotes such a companion as human reference material.
+
+## Documentation Companion Policy
+
+- Important public, operator-facing, or release-facing Markdown documents should have a Traditional Chinese companion using the `.zh-tw.md` suffix unless a repo-local convention explicitly defines another format.
+- Human-facing audit documents and audit reports in Markdown must have a Traditional Chinese companion, including generated or local-only reports intended for operator review.
+- Machine-readable-only audit artifacts such as JSON or YAML are exempt from the companion requirement.
+- Unless a repo explicitly defines another authority model, the non-suffixed English document remains authoritative. The companion must preserve the source document's redactions and must not introduce secrets, sensitive local evidence, or machine-local details absent from the source.
 
 ## External Review Adoption
 

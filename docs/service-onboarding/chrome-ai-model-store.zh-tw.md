@@ -1,6 +1,6 @@
-# Chrome AI Model Store 治理
+# Chrome AI 模型庫治理
 
-這份紀錄治理本機檔案系統程序：讓已安裝的多個 Chrome channel 共用 Chrome built-in AI 模型檔案。
+這份文件治理本機檔案系統流程：讓已安裝的多個 Chrome channel 共用 Chrome 內建 AI 模型檔案。
 
 ## 政策
 

@@ -1,0 +1,10 @@
+{
+  "$schema": "devgov.project-registry.v1",
+  "description": "Canonical contract for the AI Workspace Root project index. Machine-local paths and live observations belong in .governance/project-registry.json or reports/.",
+  "workspaceRootPolicy": {
+    "defaultRoot": "Q:\\Projects",
+    "governedDirectory": ".governance",
+    "defaultHost": "127.0.0.1"
+  },
+  "projects": []
+}

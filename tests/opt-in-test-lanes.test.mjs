@@ -8,7 +8,7 @@ test("default tests exclude live probes and executable service controls", async 
   const liveLane = await readFile("tests/live-governance.opt-in.mjs", "utf8");
   const controlLane = await readFile("tests/service-controls.opt-in.mjs", "utf8");
 
-  assert.equal(pkg.scripts.test, "node --test");
+  assert.equal(pkg.scripts.test, 'node --test "tests/*.test.mjs"');
   assert.equal(pkg.scripts["test:live-governance"], "node --test tests/live-governance.opt-in.mjs");
   assert.equal(pkg.scripts["test:service-controls"], "node --test tests/service-controls.opt-in.mjs");
   assert.doesNotMatch(defaultGovernanceTests, /checkServiceStatuses\(|runDoctorChecks\(|executeServiceControl\(/);

@@ -623,6 +623,11 @@ approval gate is satisfied:
   have a Traditional Chinese companion. Use the `.zh-tw.md` suffix globally, for
   example `AGENTS.zh-tw.md`, unless a repo-local convention explicitly defines
   another format.
+- Human-facing audit documents and audit reports in Markdown must have a
+  Traditional Chinese companion, including generated or local-only reports
+  intended for operator review. Machine-readable-only audit artifacts such as
+  JSON or YAML are exempt. Preserve the source document's redactions, and do not
+  add secrets or sensitive local evidence that is absent from the source.
 - Publishable documentation should also have an English version.
 - Prefer English as the authoritative publishable default for new projects unless
   a repo-local convention explicitly says otherwise.

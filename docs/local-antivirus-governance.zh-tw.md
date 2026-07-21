@@ -4,9 +4,9 @@ English source: [local-antivirus-governance.md](local-antivirus-governance.md)
 
 ## 決策
 
-本機防毒或 endpoint protection 在 build、test、dev server、browser automation、產生 binary 或 subprocess 執行時阻擋流程，統一使用 `npm run av:triage` 作為 DevGov 入口。
+本機防毒或 endpoint protection 在 build、test、dev server、browser automation、產生 binary 或 subprocess 執行時若阻塞流程，請統一用 `npm run av:triage` 作為 DevGov 入口。
 
-這個指令只做 dry-run。它不會關閉防護、不會清除 quarantine、不會還原檔案、不會加入排除、不會修改 firewall，也不會改 browser 或 OS security settings。
+這個指令只做 dry-run。它不會關閉防護、不會清除 quarantine、不會還原檔案、不會加入排除名單，也不會修改 firewall 或 browser／OS security settings。
 
 ## 快速開始
 
@@ -55,7 +55,7 @@ npm run av:triage -- -Path "Q:\Projects\some-project\dist\app.exe" -ProjectRoot 
 - 已提供 generated artifact path，且 operator 或 agent 懷疑是防毒干擾。
 - 檔案 build 後立刻消失，或 spawn / access-denied failure 與 security alert 同時出現。
 
-不要用 hook 繞過 security triage。高風險 alert text 仍會進 `triage`，不會產生 allowlist candidate。
+不要用 hook 繞過 security triage。高風險 alert text 仍會進入 `triage`，不會產生 allowlist candidate。
 
 ## 安全候選規則
 

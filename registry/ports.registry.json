@@ -124,6 +124,36 @@
       "notes": "Loopback-only Skill-0 Review Studio web interface. Use the production server with PORT=3102 and loopback binding; no public route is approved."
     },
     {
+      "project": "skill-0",
+      "service": "core-api-http",
+      "port": 8000,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "skill-0 README; api/main.py runtime verification",
+      "notes": "Primary Skill-0 Core API. Keep the fixed project-defined port loopback-only; use the reviewed DevGov preflight and ensure-running wrapper before startup."
+    },
+    {
+      "project": "skill-0",
+      "service": "dashboard-api-http",
+      "port": 8001,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "skill-0 README; skill-0-dashboard/apps/api/main.py",
+      "notes": "Skill-0 Governance Dashboard API. Keep loopback-only and start through the reviewed Dashboard wrapper."
+    },
+    {
+      "project": "skill-0",
+      "service": "dashboard-web-http",
+      "port": 5173,
+      "host": "127.0.0.1",
+      "visibility": "local",
+      "protocol": "http",
+      "source": "skill-0 README; skill-0-dashboard/apps/web/vite.config.ts",
+      "notes": "Skill-0 Governance Dashboard Web development server. Keep loopback-only and use Vite strictPort."
+    },
+    {
       "project": "devgov",
       "service": "dashboard-http",
       "port": 3000,

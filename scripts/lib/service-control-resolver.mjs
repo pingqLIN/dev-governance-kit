@@ -335,6 +335,42 @@ export function resolveControlTarget(root, controlEntry) {
       summary: "Run the reviewed Skill-0 Review Studio ensure-running path through DevGov local control."
     };
   }
+  if (controlEntry.controlTargetId === "skill-0" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-skill-0.ps1"),
+      runtimeKind: "skill-0-core-api-http",
+      summary: "Run the reviewed Skill-0 Core API doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "skill-0" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-skill-0.ps1"),
+      runtimeKind: "skill-0-core-api-http",
+      summary: "Run the reviewed Skill-0 Core API ensure-running path through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "skill-0-dashboard" && controlEntry.action === "doctor") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "doctor-skill-0-dashboard.ps1"),
+      runtimeKind: "skill-0-dashboard-http",
+      summary: "Run the reviewed Skill-0 Dashboard doctor through DevGov local control."
+    };
+  }
+  if (controlEntry.controlTargetId === "skill-0-dashboard" && controlEntry.action === "restart") {
+    return {
+      controlTargetId: controlEntry.controlTargetId,
+      action: controlEntry.action,
+      wrapperPath: path.join(root, "scripts", "service-control", "restart-skill-0-dashboard.ps1"),
+      runtimeKind: "skill-0-dashboard-http",
+      summary: "Run the reviewed Skill-0 Dashboard ensure-running path through DevGov local control."
+    };
+  }
   if (controlEntry.controlTargetId === "mcp-colorgeek" && controlEntry.action === "doctor") {
     return {
       controlTargetId: controlEntry.controlTargetId,
