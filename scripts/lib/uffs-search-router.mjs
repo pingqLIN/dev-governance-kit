@@ -9,6 +9,8 @@ import { promisify } from 'node:util';
 const execFile = promisify(execFileCallback);
 const win = path.win32;
 const SENSITIVE_PARTS = new Set(['.ssh', '.aws', '.cloudflare', '.gnupg', '.env', 'id_rsa', 'id_ed25519', 'credentials.json', 'token.json']);
+// Mirror the Local Files MCP fs_search directory exclusions for this canary.
+const SEARCH_SKIP_DIRS = new Set(['.git', '.cache', '.clean', '.del', '.next', '.turbo', '.venv', '__pycache__', 'build', 'coverage', 'dist', 'node_modules', 'out']);
 const INTENTS = new Set(['ntfs-metadata', 'content', 'git', 'semantic', 'external', 'none']);
 const DELEGATED = { content: 'authorized-content-search', git: 'git-aware-search', semantic: 'document-semantic-search', external: 'provider-native-search' };
 const DEFAULT_LIMIT = 50;
@@ -127,8 +129,11 @@ async function nativeSearch(scope, pattern, limit, policy, filesystem) {
         incomplete = true; reason = 'search_budget_exhausted'; break;
       }
       const p = win.join(dir, child.name);
-      if (containsSensitive(p)) continue;
+      if (containsSensitive(p)) { incomplete = true; reason ||= 'sensitive_path_skipped'; continue; }
       if (child.isSymbolicLink()) { incomplete = true; reason ||= 'reparse_point_skipped'; continue; }
+      if (child.isDirectory() && SEARCH_SKIP_DIRS.has(child.name.toLowerCase())) {
+        incomplete = true; reason ||= 'excluded_directory_skipped'; continue;
+      }
       if (child.isDirectory()) {
         // lstat protects against a raced replacement or Windows junction.
         try {

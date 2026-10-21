@@ -31,7 +31,7 @@ test('native fallback finds names inside an approved subtree only', async t => {
   assert.equal(res.provider, 'native-fs');
   assert.equal(res.matches.length, 1);
   assert.equal(res.matches[0].name, 'my-test-file.md');
-  assert.equal(res.coverage.complete, true);
+  assert.equal(res.coverage.complete, false, 'excluded areas are not full coverage');
 });
 
 test('scoped searches do not call UFFS even if whole-drive UFFS is enabled', async t => {
@@ -48,7 +48,7 @@ test('scoped searches do not call UFFS even if whole-drive UFFS is enabled', asy
 test('missing result has bounded complete coverage, not a UFFS inference', async t => {
   const dir = await fixture(t);
   const res = await createSearchRouter({ allowedRoots: [dir] }).search({
-    intent: 'ntfs-metadata', scope: dir, pattern: '__not-a-file__'
+    intent: 'ntfs-metadata', scope: path.join(dir, 'nested'), pattern: '__not-a-file__'
   });
   assert.equal(res.status, 'not_found_with_coverage');
   assert.equal(res.coverage.complete, true);
